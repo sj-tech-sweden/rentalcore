@@ -384,7 +384,13 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v1.2** (Latest) - SSO Support with StorageCore
+### **v1.3** (Latest) - WebAuthn/Passkey SSO Fix
+- ✅ **Fixed WebAuthn Login**: Passkey login now properly sets shared cookie domain
+- ✅ **Complete SSO Support**: Both username/password and passkey login work with SSO
+- ✅ **Seamless Cross-App Authentication**: Login persists across RentalCore and StorageCore
+- ✅ **Production Ready**: Full SSO support for all authentication methods
+
+### **v1.2** - SSO Support with StorageCore
 - ✅ **Single Sign-On (SSO)**: Shared session cookies across RentalCore and StorageCore
 - ✅ **Shared Cookie Domain**: Automatic cookie domain detection for subdomain SSO
 - ✅ **Enhanced Session Management**: Cookie domain support for cross-app authentication
