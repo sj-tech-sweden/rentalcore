@@ -9,6 +9,7 @@ docker-compose.yml
 
 # Environment files
 .env
+config.json
 
 # Development files
 *.md

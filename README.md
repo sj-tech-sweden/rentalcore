@@ -141,6 +141,40 @@ docker-compose logs -f rentalcore
 open http://localhost:8080
 ```
 
+### 🔄 Integrated Deployment with StorageCore
+
+For integrated deployment of both RentalCore and StorageCore together, use the root docker-compose configuration:
+
+```bash
+# Navigate to the parent directory (NOT a git repo)
+cd /opt/dev/lager_weidelbach
+
+# Pull latest images from Docker Hub
+docker compose pull
+
+# Start both services
+docker compose up -d
+
+# Check status
+docker compose ps
+
+# View logs
+docker compose logs -f rentalcore
+docker compose logs -f storagecore
+```
+
+**Access the applications:**
+- **RentalCore**: http://localhost:8081
+- **StorageCore**: http://localhost:8082
+
+**Cross-navigation:**
+Both applications feature navbar links to seamlessly switch between RentalCore and StorageCore with a single click.
+
+**Note:** The images use `:latest` tags. Pull periodically to get the newest versions:
+```bash
+docker compose pull && docker compose up -d
+```
+
 ## 🏗️ Project Architecture
 
 ### 📁 **Directory Structure**
@@ -350,7 +384,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.9** (Latest) - Complete Responsive Design System
+### **v1.2** (Latest) - SSO Support with StorageCore
+- ✅ **Single Sign-On (SSO)**: Shared session cookies across RentalCore and StorageCore
+- ✅ **Shared Cookie Domain**: Automatic cookie domain detection for subdomain SSO
+- ✅ **Enhanced Session Management**: Cookie domain support for cross-app authentication
+- ✅ **Seamless Navigation**: Users stay logged in when switching between apps
+- ✅ **Production Ready**: Works with localhost (no domain) and production subdomains (.server-nt.de)
+
+### **v2.9** - Complete Responsive Design System
 - ✅ **Mobile-First Responsive Design**: Complete overhaul with mobile-first approach
 - ✅ **Adaptive Navigation**: Mobile drawer, tablet rail, desktop sidebar navigation
 - ✅ **Responsive Tables**: Card transformation and horizontal scroll options for mobile

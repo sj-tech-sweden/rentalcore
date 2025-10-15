@@ -100,7 +100,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		}
 		
 		// Redirect to 2FA verification page
-		c.SetCookie("temp_session_id", tempSessionID, 300, "/", "", false, true) // 5 minutes
+		cookieDomain := getCookieDomain(c)
+		c.SetCookie("temp_session_id", tempSessionID, 300, "/", cookieDomain, false, true) // 5 minutes
 		c.Redirect(http.StatusSeeOther, "/login/2fa")
 		return
 	}
@@ -130,9 +131,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	user.LastLogin = &now
 	h.db.Save(&user)
 
-	// Set cookie
-	c.SetCookie("session_id", sessionID, h.config.Security.SessionTimeout, "/", "", false, true)
-	fmt.Printf("DEBUG: Login successful, session created: %s\n", sessionID)
+	// Set cookie with shared domain for SSO
+	cookieDomain := getCookieDomain(c)
+	c.SetCookie("session_id", sessionID, h.config.Security.SessionTimeout, "/", cookieDomain, false, true)
+	fmt.Printf("DEBUG: Login successful, session created: %s with cookie domain: %s\n", sessionID, cookieDomain)
 
 	// Redirect to home
 	c.Redirect(http.StatusSeeOther, "/")
@@ -145,8 +147,9 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		h.db.Where("session_id = ?", sessionID).Delete(&models.Session{})
 	}
 
-	// Clear cookie
-	c.SetCookie("session_id", "", -1, "/", "", false, true)
+	// Clear cookie with same domain used for setting
+	cookieDomain := getCookieDomain(c)
+	c.SetCookie("session_id", "", -1, "/", cookieDomain, false, true)
 
 	// Redirect to login
 	c.Redirect(http.StatusSeeOther, "/login")
@@ -183,9 +186,10 @@ func (h *AuthHandler) Login2FAVerify(c *gin.Context) {
 	// Find temp session
 	var tempSession models.Session
 	if err := h.db.Where("session_id = ? AND expires_at > ?", tempSessionID, time.Now()).First(&tempSession).Error; err != nil {
-		c.SetCookie("temp_session_id", "", -1, "/", "", false, true) // Clear cookie
+		cookieDomain := getCookieDomain(c)
+		c.SetCookie("temp_session_id", "", -1, "/", cookieDomain, false, true) // Clear cookie
 		c.HTML(http.StatusUnauthorized, "login_2fa.html", gin.H{
-			"title": "Two-Factor Authentication", 
+			"title": "Two-Factor Authentication",
 			"error": "Session expired. Please log in again.",
 		})
 		return
@@ -241,8 +245,9 @@ func (h *AuthHandler) Login2FAVerify(c *gin.Context) {
 	}
 
 	// Delete temporary session
+	cookieDomain := getCookieDomain(c)
 	h.db.Delete(&tempSession)
-	c.SetCookie("temp_session_id", "", -1, "/", "", false, true)
+	c.SetCookie("temp_session_id", "", -1, "/", cookieDomain, false, true)
 
 	// Create full session
 	sessionID := h.generateSessionID()
@@ -267,8 +272,8 @@ func (h *AuthHandler) Login2FAVerify(c *gin.Context) {
 	user.LastLogin = &now
 	h.db.Save(&user)
 
-	// Set cookie
-	c.SetCookie("session_id", sessionID, h.config.Security.SessionTimeout, "/", "", false, true)
+	// Set cookie with shared domain for SSO
+	c.SetCookie("session_id", sessionID, h.config.Security.SessionTimeout, "/", cookieDomain, false, true)
 
 	// Redirect to home
 	c.Redirect(http.StatusSeeOther, "/")
@@ -294,7 +299,8 @@ func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 		if err := h.db.Where("session_id = ? AND expires_at > ?", sessionID, time.Now()).First(&session).Error; err != nil {
 			log.Printf("DEBUG: AuthMiddleware: Session validation failed for %s: %v", sessionID, err)
 			// Clean up invalid session cookie
-			c.SetCookie("session_id", "", -1, "/", "", false, true)
+			cookieDomain := getCookieDomain(c)
+			c.SetCookie("session_id", "", -1, "/", cookieDomain, false, true)
 			c.Redirect(http.StatusSeeOther, "/login")
 			c.Abort()
 			return
@@ -305,8 +311,9 @@ func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 		if err := h.db.Where("userID = ? AND is_active = ?", session.UserID, true).First(&user).Error; err != nil {
 			log.Printf("DEBUG: AuthMiddleware: User not found or inactive for session %s (UserID: %d): %v", sessionID, session.UserID, err)
 			// Delete the session since user is inactive/deleted
+			cookieDomain := getCookieDomain(c)
 			h.db.Where("session_id = ?", sessionID).Delete(&models.Session{})
-			c.SetCookie("session_id", "", -1, "/", "", false, true)
+			c.SetCookie("session_id", "", -1, "/", cookieDomain, false, true)
 			c.Redirect(http.StatusSeeOther, "/login")
 			c.Abort()
 			return
@@ -344,6 +351,54 @@ func (h *AuthHandler) generateSessionID() string {
 	bytes := make([]byte, 32)
 	rand.Read(bytes)
 	return hex.EncodeToString(bytes)
+}
+
+// getCookieDomain determines the appropriate cookie domain for SSO
+// Returns empty string for localhost, otherwise returns the parent domain with leading dot
+func getCookieDomain(c *gin.Context) string {
+	host := c.Request.Host
+
+	// Remove port if present
+	if idx := len(host) - 1; idx >= 0 {
+		for i := len(host) - 1; i >= 0; i-- {
+			if host[i] == ':' {
+				host = host[:i]
+				break
+			}
+		}
+	}
+
+	// Localhost: no domain restriction
+	if host == "localhost" || host == "127.0.0.1" {
+		return ""
+	}
+
+	// For production domains like rent.server-nt.de, storage.server-nt.de
+	// Extract parent domain: server-nt.de
+	parts := []string{}
+	currentPart := ""
+	for i := len(host) - 1; i >= 0; i-- {
+		if host[i] == '.' {
+			if currentPart != "" {
+				parts = append([]string{currentPart}, parts...)
+				currentPart = ""
+			}
+		} else {
+			currentPart = string(host[i]) + currentPart
+		}
+	}
+	if currentPart != "" {
+		parts = append([]string{currentPart}, parts...)
+	}
+
+	// If we have at least 2 parts (e.g., server-nt.de), use parent domain
+	if len(parts) >= 2 {
+		parentDomain := parts[len(parts)-2] + "." + parts[len(parts)-1]
+		return "." + parentDomain // Leading dot for all subdomains
+	}
+
+	// Fallback: no domain restriction
+	return ""
 }
 
 // CleanupExpiredSessions removes expired sessions from the database
@@ -420,6 +475,26 @@ func GetCurrentUser(c *gin.Context) (*models.User, bool) {
 		}
 	}
 	return nil, false
+}
+
+// GetAppDomains returns the cross-navigation domains from context
+func GetAppDomains(c *gin.Context) (string, string) {
+	storageCoreDomain := ""
+	rentalCoreDomain := ""
+
+	if val, exists := c.Get("StorageCoreDomain"); exists {
+		if domain, ok := val.(string); ok {
+			storageCoreDomain = domain
+		}
+	}
+
+	if val, exists := c.Get("RentalCoreDomain"); exists {
+		if domain, ok := val.(string); ok {
+			rentalCoreDomain = domain
+		}
+	}
+
+	return storageCoreDomain, rentalCoreDomain
 }
 
 // User Management Web Interface Handlers

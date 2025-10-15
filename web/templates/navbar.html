@@ -14,6 +14,48 @@
             
             <!-- Main navigation -->
             <ul class="rc-navbar-nav">
+                <!-- Cross-navigation to StorageCore -->
+                <li><a href="" id="storage-nav-link" class="rc-nav-link" style="color: var(--color-accent-red); font-weight: 600;" title="Switch to StorageCore">
+                    <i class="bi bi-boxes"></i> StorageCore
+                </a></li>
+                <script>
+                (function() {
+                    var link = document.getElementById('storage-nav-link');
+                    var storageDomain = '{{.StorageCoreDomain}}';
+                    var protocol = window.location.protocol; // Use same protocol as current page (http/https)
+
+                    // Build the URL
+                    var targetUrl;
+                    if (storageDomain && storageDomain !== '') {
+                        // Use configured domain from environment (no port, handled by reverse proxy)
+                        targetUrl = protocol + '//' + storageDomain;
+                    } else {
+                        // Auto-detect based on current hostname
+                        var hostname = window.location.hostname;
+                        var port = window.location.port;
+
+                        // Check if we're on a subdomain setup (e.g., rent.server-nt.de)
+                        if (hostname.startsWith('rent.') || hostname.startsWith('rental.')) {
+                            // Replace 'rent' or 'rental' with 'storage'
+                            var storageHost = hostname.replace(/^rent(al)?\./, 'storage.');
+                            targetUrl = protocol + '//' + storageHost;
+                        } else if (port === '8081') {
+                            // Running on port 8081 -> go to 8082 on same host
+                            targetUrl = protocol + '//' + hostname + ':8082';
+                        } else if (port === '') {
+                            // No port specified (reverse proxy) - keep same host
+                            targetUrl = protocol + '//' + hostname;
+                        } else {
+                            // Default fallback - try :8082 on same host
+                            targetUrl = protocol + '//' + hostname + ':8082';
+                        }
+                    }
+
+                    link.href = targetUrl;
+                    console.log('StorageCore URL:', targetUrl);
+                })();
+                </script>
+
                 <li><a href="/jobs" class="rc-nav-link {{if eq .currentPage "jobs"}}active{{end}}">
                     <i class="bi bi-briefcase"></i> Jobs
                 </a></li>
