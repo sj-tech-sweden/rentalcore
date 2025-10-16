@@ -35,11 +35,11 @@
     /* White for text on dark backgrounds */
     --white: #FFFFFF;
 
-    /* Semantic Colors - Only Gray and Red */
-    --success: #888888;      /* Gray for success */
-    --warning: #AAAAAA;      /* Light gray for warnings */
+    /* Semantic Colors - StorageCore Style (Green, Yellow, Blue, Red) */
+    --success: #22c55e;      /* Green for success/available */
+    --warning: #eab308;      /* Yellow for warnings/defective */
     --error: var(--accent-red);
-    --info: var(--gray-400);
+    --info: #60a5fa;         /* Blue for info/repair */
 
     /* Surface Colors - StorageCore Dark Grays */
     --surface-0: #0B0B0B;    /* StorageCore dark background */
@@ -161,12 +161,12 @@
     --gray-800: #1F1F1F;
     --gray-900: #111111;
 
-    /* Semantic Colors - Light Mode (Grayscale Only) */
-    --success: #888888;      /* Gray for success */
-    --warning: #AAAAAA;      /* Light gray for warnings */
+    /* Semantic Colors - Light Mode (StorageCore Style) */
+    --success: #22c55e;      /* Green for success/available */
+    --warning: #eab308;      /* Yellow for warnings/defective */
     --error: var(--accent-red);
-    --info: var(--gray-600);
-    --warning-20: rgba(170, 170, 170, 0.1);
+    --info: #60a5fa;         /* Blue for info/repair */
+    --warning-20: rgba(234, 179, 8, 0.1);
     
     /* Adjust shadows for light mode */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -189,13 +189,13 @@
 
 [data-theme="light"] .rc-btn-outline:hover {
     background: var(--surface-2);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     color: var(--gray-400);
 }
 
 [data-theme="light"] .rc-btn-outline.active {
     background: var(--gray-600);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     color: white;
 }
 
@@ -218,7 +218,7 @@
 }
 
 [data-theme="light"] .rc-input:focus {
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
 }
 
@@ -659,23 +659,22 @@ body {
 
 .rc-nav-link.active {
     color: white !important;
-    background: var(--primary) !important;
-    border: 2px solid var(--gray-400) !important;
-    box-shadow: 0 0 0 1px var(--primary) !important;
+    background: var(--accent-red) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(208, 2, 27, 0.4) !important;
 }
 
 /* Active dropdown styles */
 .rc-dropdown-toggle.active {
     color: white !important;
-    background: var(--primary) !important;
-    border: 2px solid var(--gray-400) !important;
-    box-shadow: 0 0 0 1px var(--primary) !important;
+    background: var(--accent-red) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(208, 2, 27, 0.4) !important;
 }
 
 .rc-dropdown-menu .rc-dropdown-item.active {
     color: white !important;
-    background: var(--primary) !important;
-    border: 2px solid var(--gray-400) !important;
+    background: var(--accent-red) !important;
     border-radius: var(--radius-md) !important;
 }
 
@@ -1005,7 +1004,7 @@ body {
 .rc-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
 }
 
 .rc-card-header {
@@ -1069,20 +1068,23 @@ body {
 }
 
 .rc-btn-primary {
-    background: linear-gradient(135deg, var(--gray-600), var(--gray-700));
-    color: var(--text-inverse);
-    box-shadow: var(--shadow-sm);
+    background: var(--accent-red);
+    color: white;
+    box-shadow: 0 4px 12px rgba(208, 2, 27, 0.3);
+    border: none;
 }
 
 /* Fix for primary submit buttons */
 .rc-btn-primary[type="submit"] {
-    background: linear-gradient(135deg, var(--gray-600), var(--gray-700));
-    border-color: var(--gray-400);
+    background: var(--accent-red);
+    color: white;
+    border: none;
 }
 
 .rc-btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-glow);
+    background: var(--accent-red-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(208, 2, 27, 0.4);
 }
 
 .rc-btn-secondary {
@@ -1093,7 +1095,7 @@ body {
 
 .rc-btn-secondary:hover {
     background: var(--surface-4);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
 }
 
 .rc-btn-ghost {
@@ -1105,7 +1107,7 @@ body {
 .rc-btn-ghost:hover {
     background: var(--surface-2);
     color: var(--text-primary);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(136, 136, 136, 0.2);
 }
@@ -1120,7 +1122,7 @@ body {
 .rc-btn-outline:hover {
     background: var(--surface-3);
     color: var(--gray-400);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(136, 136, 136, 0.2);
 }
@@ -1141,7 +1143,7 @@ body {
 
 .rc-btn-sm.rc-btn-outline:hover {
     background: rgba(136, 136, 136, 0.1);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     color: var(--gray-400);
     transform: translateY(-1px) scale(1.05);
     box-shadow: 0 6px 20px rgba(136, 136, 136, 0.25);
@@ -1155,7 +1157,7 @@ body {
 
 .rc-btn-sm.rc-btn-ghost:hover {
     background: rgba(136, 136, 136, 0.1);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     color: var(--gray-400);
     transform: translateY(-1px) scale(1.05);
     box-shadow: 0 6px 20px rgba(136, 136, 136, 0.25);
@@ -1268,7 +1270,7 @@ body {
 
 .rc-input:focus {
     outline: none;
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     background: var(--surface-1);
     box-shadow: 0 0 0 3px rgba(136, 136, 136, 0.1);
 }
@@ -1302,7 +1304,7 @@ body {
 
 .rc-textarea:focus {
     outline: none;
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     background: var(--surface-1);
     box-shadow: 0 0 0 3px rgba(136, 136, 136, 0.1);
 }
@@ -1920,7 +1922,7 @@ textarea:focus {
 .btn-group .btn:hover,
 .btn-group-sm .btn:hover {
     background: rgba(136, 136, 136, 0.1);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     color: var(--gray-400) !important;
     transform: translateY(-1px) scale(1.05);
     box-shadow: 0 6px 20px rgba(136, 136, 136, 0.25);
@@ -2177,7 +2179,7 @@ textarea:focus {
 .stat-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(136, 136, 136, 0.15);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
 }
 
 .stat-card::before {
@@ -2405,7 +2407,7 @@ textarea:focus {
 .rc-form-select:focus,
 .rc-form-textarea:focus {
     outline: none;
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     background: rgba(255, 255, 255, 0.08);
     box-shadow: 0 0 0 2px rgba(136, 136, 136, 0.2);
 }
@@ -2478,7 +2480,7 @@ input[type="url"]:focus,
 select:focus,
 textarea:focus {
     outline: none;
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     background: rgba(255, 255, 255, 0.08);
     box-shadow: 0 0 0 2px rgba(136, 136, 136, 0.2);
 }
@@ -2522,7 +2524,7 @@ label,
 
 .rc-input:focus {
     outline: none;
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     background: rgba(255, 255, 255, 0.08);
     box-shadow: 0 0 0 2px rgba(136, 136, 136, 0.2);
 }
@@ -2547,7 +2549,7 @@ label,
 
 .rc-select:focus {
     outline: none;
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     background: rgba(255, 255, 255, 0.08);
     box-shadow: 0 0 0 2px rgba(136, 136, 136, 0.2);
 }
@@ -2573,7 +2575,7 @@ label,
 
 .rc-textarea:focus {
     outline: none;
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     background: rgba(255, 255, 255, 0.08);
     box-shadow: 0 0 0 2px rgba(136, 136, 136, 0.2);
 }
@@ -2938,9 +2940,9 @@ label,
 /* Active Navigation Link */
 .rc-nav-link-active {
     color: white !important;
-    background: var(--primary) !important;
-    border: 2px solid var(--gray-400) !important;
-    box-shadow: 0 0 0 1px var(--primary) !important;
+    background: var(--accent-red) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(208, 2, 27, 0.4) !important;
 }
 
 .rc-nav-link-active::before {
@@ -2973,7 +2975,7 @@ label,
 
 .rc-nav-user .rc-dropdown-toggle:hover {
     background: var(--surface-2);
-    border-color: var(--gray-400);
+    border-color: var(--accent-red);
     color: var(--gray-400);
 }
 
