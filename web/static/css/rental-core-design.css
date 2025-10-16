@@ -3646,8 +3646,8 @@ body:has(.rc-sidebar.collapsed) .rc-header {
 /* Hide old navbar styles (if any remaining) */
 .rc-navbar,
 .rc-navbar-content,
-.rc-navbar-brand,
-.rc-navbar-toggle,
+.rc-navbar-brand:not(.rc-header-brand):not(.rc-sidebar-brand),
+.rc-navbar-toggle:not(.rc-sidebar-toggle),
 .rc-navbar-nav,
 .rc-dropdown,
 .rc-dropdown-menu,
@@ -3656,20 +3656,72 @@ body:has(.rc-sidebar.collapsed) .rc-header {
     display: none !important;
 }
 
-/* Override to ensure sidebar styles take precedence */
+/* Ensure all new sidebar navigation elements are visible */
 .rc-sidebar,
 .rc-header,
-.rc-main-content,
-.rc-sidebar-nav,
-.rc-nav-item {
+.rc-main-content {
     display: flex !important;
 }
 
-.rc-sidebar,
-.rc-sidebar-nav {
+.rc-sidebar-nav,
+.rc-sidebar-header,
+.rc-sidebar-footer,
+.rc-user-profile,
+.rc-user-menu {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.rc-nav-item,
+.rc-user-menu-item,
+.rc-logout-btn,
+.rc-login-btn {
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+.rc-header-content,
+.rc-header-left,
+.rc-user-info {
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+.rc-sidebar-toggle,
+.rc-sidebar-close {
+    display: flex !important;
+}
+
+/* Ensure proper layout */
+.rc-sidebar {
     flex-direction: column !important;
 }
 
 .rc-header {
     flex-direction: row !important;
+}
+
+/* Mobile-specific overrides */
+@media (max-width: 768px) {
+    .mobile-only {
+        display: block !important;
+    }
+
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-only {
+        display: none !important;
+    }
+
+    .desktop-only {
+        display: block !important;
+    }
+
+    .rc-sidebar-toggle.desktop-only {
+        display: flex !important;
+    }
 }
