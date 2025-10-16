@@ -78,13 +78,13 @@
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--accent-electric), var(--accent-purple));
+        background: linear-gradient(135deg, var(--accent-red), var(--accent-red-hover));
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 3rem;
         color: white;
-        box-shadow: 0 10px 30px rgba(0, 245, 255, 0.3);
+        box-shadow: 0 10px 30px rgba(255, 255, 255, 0.15);
         position: relative;
     }
 
@@ -93,7 +93,7 @@
         position: absolute;
         inset: -4px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--accent-electric), var(--accent-purple));
+        background: linear-gradient(135deg, var(--accent-red), var(--accent-red-hover));
         z-index: -1;
         animation: pulse-ring 2s infinite;
     }
@@ -112,7 +112,7 @@
         font-size: 2.5rem;
         font-weight: 800;
         margin: 0 0 var(--space-2);
-        background: linear-gradient(135deg, white, var(--accent-electric));
+        background: linear-gradient(135deg, white, var(--accent-red));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -166,7 +166,7 @@
     .settings-card:hover {
         transform: translateY(-8px);
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        border-color: var(--accent-electric);
+        border-color: var(--accent-red);
     }
 
     .settings-card-header {
@@ -184,9 +184,9 @@
         justify-content: center;
         font-size: 1.75rem;
         margin-bottom: var(--space-4);
-        background: linear-gradient(135deg, var(--accent-electric), var(--accent-purple));
+        background: linear-gradient(135deg, var(--accent-red), var(--accent-red-hover));
         color: white;
-        box-shadow: 0 8px 20px rgba(0, 245, 255, 0.3);
+        box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
     }
 
     .settings-card-title {
@@ -225,7 +225,7 @@
     }
 
     .form-section-title i {
-        color: var(--accent-electric);
+        color: var(--accent-red);
     }
 
     .modern-input-group {
@@ -246,8 +246,8 @@
 
     .modern-input:focus {
         outline: none;
-        border-color: var(--accent-electric);
-        box-shadow: 0 0 0 4px rgba(0, 245, 255, 0.1);
+        border-color: var(--accent-red);
+        box-shadow: 0 0 0 4px rgba(136, 136, 136, 0.1);
         background: var(--surface-2);
     }
 
@@ -256,7 +256,7 @@
         left: var(--space-4);
         top: 50%;
         transform: translateY(-50%);
-        color: var(--accent-electric);
+        color: var(--accent-red);
         font-size: 1.25rem;
     }
 
@@ -337,15 +337,15 @@
     }
 
     .modern-btn-primary {
-        background: linear-gradient(135deg, var(--accent-electric), var(--accent-purple));
+        background: linear-gradient(135deg, var(--accent-red), var(--accent-red-hover));
         color: white;
         border: none;
-        box-shadow: 0 4px 20px rgba(0, 245, 255, 0.3);
+        box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
     }
 
     .modern-btn-primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(0, 245, 255, 0.4);
+        box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
     }
 
     .modern-btn-secondary {
@@ -588,7 +588,7 @@
                                 {{range .passkeys}}
                                 <div style="display: flex; align-items: center; justify-content: space-between; padding: var(--space-3); background: var(--surface-3); border-radius: var(--radius-md); margin-bottom: var(--space-3);">
                                     <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                        <i class="bi bi-key" style="color: var(--accent-electric);"></i>
+                                        <i class="bi bi-key" style="color: var(--accent-red);"></i>
                                         <div>
                                             <div style="font-weight: 500; color: var(--text-primary);">{{.Name}}</div>
                                             <div style="font-size: 0.75rem; color: var(--text-muted);">Added {{.CreatedAt.Format "Jan 2, 2006"}}</div>
