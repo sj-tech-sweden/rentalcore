@@ -48,11 +48,12 @@
     --surface-3: #1F1F1F;    /* Medium gray */
     --surface-4: #2A2A2A;    /* Lighter medium gray */
 
-    /* Text Colors - Pure White */
-    --text-primary: #FFFFFF;    /* Pure white */
-    --text-secondary: #FFFFFF;  /* Pure white */
-    --text-muted: #E5E7EB;      /* Very light gray */
-    --text-inverse: #111111;    /* Dark gray */
+    /* Text Colors - Pure White (RentalCore: Rot=Accent, Weiß=Text) */
+    --text-primary: #FFFFFF;    /* Pure white for primary text */
+    --text-secondary: #FFFFFF;  /* Pure white for secondary text */
+    --text-muted: #FFFFFF;      /* Pure white for muted text (was gray, now white) */
+    --text-inverse: #111111;    /* Dark gray for inverse text */
+    --text-label: #CCCCCC;      /* Light gray for very small labels only */
     
     /* Design System Spacing Scale (4, 8, 12, 16, 20, 24, 32, 40, 48) */
     --space-1: 0.25rem;   /* 4px */
@@ -98,12 +99,19 @@
     --radius-xl: 1.25rem;    /* 20px */
     --radius-2xl: 1.5rem;    /* 24px */
     
-    /* Shadows */
+    /* Shadows - Pure Grayscale */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 20px rgba(156, 163, 175, 0.3);
+    --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.15);  /* White glow instead of blue */
+
+    /* Gradient Definitions - Beautiful Grayscale Gradients */
+    --gradient-surface: linear-gradient(135deg, #111111 0%, #1F1F1F 100%);
+    --gradient-card: linear-gradient(135deg, #161616 0%, #111111 100%);
+    --gradient-button: linear-gradient(135deg, #2A2A2A 0%, #1F1F1F 100%);
+    --gradient-header: linear-gradient(180deg, #0B0B0B 0%, #111111 100%);
+    --gradient-subtle: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
     
     /* Typography */
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
@@ -173,7 +181,7 @@
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
-    --shadow-glow: 0 0 20px rgba(107, 114, 128, 0.2);
+    --shadow-glow: 0 0 20px rgba(0, 0, 0, 0.1);  /* Gray glow instead of blue */
 }
 
 /* Light theme body background */
@@ -190,7 +198,7 @@
 [data-theme="light"] .rc-btn-outline:hover {
     background: var(--surface-2);
     border-color: var(--accent-red);
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
 }
 
 [data-theme="light"] .rc-btn-outline.active {
@@ -207,7 +215,7 @@
 
 /* Light Mode Modal Overlays */
 [data-theme="light"] .rc-modal-overlay {
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(17, 17, 17, 0.5);  /* Pure gray instead of blue */
 }
 
 /* Light Mode Input Fields */
@@ -219,7 +227,7 @@
 
 [data-theme="light"] .rc-input:focus {
     border-color: var(--accent-red);
-    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+    box-shadow: 0 0 0 3px rgba(136, 136, 136, 0.1);  /* Gray focus instead of cyan */
 }
 
 /* Light Mode Badges */
@@ -574,7 +582,7 @@ body {
 
 /* Navigation System */
 .rc-navbar {
-    background: rgba(15, 23, 42, 0.95);
+    background: var(--gradient-surface);  /* Use grayscale gradient */
     backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--surface-3);
     position: sticky;
@@ -594,7 +602,7 @@ body {
 .rc-navbar-brand {
     font-size: 1.5rem;
     font-weight: 800;
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     text-decoration: none;
     display: flex;
     align-items: center;
@@ -604,7 +612,7 @@ body {
 
 .rc-navbar-brand:hover {
     color: var(--accent-red);
-    text-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);  /* White glow instead of blue */
     transform: scale(1.02);
 }
 
@@ -651,7 +659,7 @@ body {
 }
 
 .rc-nav-link:hover {
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     border-color: rgba(136, 136, 136, 0.3);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(136, 136, 136, 0.15);
@@ -786,14 +794,14 @@ body {
 
 .rc-dropdown-item:hover:not(.active) {
     background: var(--surface-2);
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     transform: translateX(4px);
 }
 
 .rc-dropdown-item:focus:not(.active) {
     outline: none;
     background: var(--surface-2);
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     transform: translateX(4px);
 }
 
@@ -802,7 +810,7 @@ body {
 }
 
 .rc-dropdown-item:hover:not(.active) i {
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
 }
 
 .rc-dropdown-header {
@@ -836,7 +844,7 @@ body {
 }
 
 .rc-navbar-toggle:hover {
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     background: rgba(136, 136, 136, 0.1);
 }
 
@@ -979,7 +987,7 @@ body {
 
 /* Card System */
 .rc-card {
-    background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%);
+    background: var(--gradient-card);  /* Beautiful grayscale gradient */
     border: 1px solid var(--surface-3);
     border-radius: var(--radius-lg);
     padding: var(--space-6);  /* 24px consistent padding */
@@ -997,8 +1005,8 @@ body {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--gray-600), var(--gray-700));
-    opacity: 0.6;
+    background: linear-gradient(90deg, var(--surface-3) 0%, var(--surface-4) 50%, var(--surface-3) 100%);  /* Subtle gradient top border */
+    opacity: 0.8;
 }
 
 .rc-card:hover {
@@ -1088,14 +1096,16 @@ body {
 }
 
 .rc-btn-secondary {
-    background: var(--surface-3);
+    background: var(--gradient-button);  /* Grayscale gradient for depth */
     color: var(--text-primary);
     border: 1px solid var(--surface-4);
 }
 
 .rc-btn-secondary:hover {
-    background: var(--surface-4);
+    background: linear-gradient(135deg, #2A2A2A 0%, #4A4A4A 100%);  /* Lighter gradient on hover */
     border-color: var(--accent-red);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .rc-btn-ghost {
@@ -1121,7 +1131,7 @@ body {
 
 .rc-btn-outline:hover {
     background: var(--surface-3);
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     border-color: var(--accent-red);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(136, 136, 136, 0.2);
@@ -1137,28 +1147,28 @@ body {
 /* Quick Action Button Enhancements */
 .rc-btn-sm.rc-btn-outline {
     border-width: 1.5px;
-    background: rgba(15, 23, 42, 0.8);
+    background: rgba(17, 17, 17, 0.8);  /* Pure gray instead of blue */
     backdrop-filter: blur(5px);
 }
 
 .rc-btn-sm.rc-btn-outline:hover {
     background: rgba(136, 136, 136, 0.1);
     border-color: var(--accent-red);
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     transform: translateY(-1px) scale(1.05);
     box-shadow: 0 6px 20px rgba(136, 136, 136, 0.25);
 }
 
 .rc-btn-sm.rc-btn-ghost {
     border-width: 1.5px;
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(17, 17, 17, 0.6);  /* Pure gray instead of blue */
     backdrop-filter: blur(5px);
 }
 
 .rc-btn-sm.rc-btn-ghost:hover {
     background: rgba(136, 136, 136, 0.1);
     border-color: var(--accent-red);
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     transform: translateY(-1px) scale(1.05);
     box-shadow: 0 6px 20px rgba(136, 136, 136, 0.25);
 }
@@ -1531,7 +1541,7 @@ body {
 
 .rc-badge-primary {
     background: rgba(136, 136, 136, 0.2);
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     border: 1px solid rgba(136, 136, 136, 0.3);
 }
 
@@ -1578,7 +1588,7 @@ body {
 .rc-alert-info {
     background: rgba(136, 136, 136, 0.1);
     border: 1px solid rgba(136, 136, 136, 0.2);
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
 }
 
 /* Layout Utilities */
@@ -1747,7 +1757,7 @@ body {
 
 .accordion-icon {
     font-size: 1.2rem;
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     transition: transform var(--transition-normal);
 }
 
@@ -1772,7 +1782,7 @@ body {
 }
 
 [data-theme-toggle]:hover i {
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     filter: drop-shadow(0 0 8px currentColor);
 }
 
@@ -1909,7 +1919,7 @@ textarea:focus {
 .btn-group .btn,
 .btn-group-sm .btn {
     border-width: 1.5px;
-    background: rgba(15, 23, 42, 0.8);
+    background: rgba(17, 17, 17, 0.8);  /* Pure gray instead of blue */
     backdrop-filter: blur(5px);
     transition: all var(--transition-fast) ease;
     min-width: 2rem;
@@ -2145,7 +2155,7 @@ textarea:focus {
 }
 
 .info-item span.rc-text-accent {
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     font-weight: 700;
 }
 
@@ -2194,7 +2204,7 @@ textarea:focus {
 
 .stat-icon {
     font-size: 2rem;
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     margin-bottom: 12px;
 }
 
@@ -2294,7 +2304,7 @@ textarea:focus {
 }
 
 .equipment-header:hover {
-    background: rgba(0, 245, 255, 0.05);
+    background: rgba(255, 255, 255, 0.05);  /* White tint instead of cyan */
 }
 
 .equipment-info h4 {
@@ -2350,8 +2360,8 @@ textarea:focus {
 
 /* Badge Variants */
 .rc-badge-info {
-    background: linear-gradient(135deg, rgba(136, 136, 136, 0.2), rgba(0, 138, 255, 0.2));
-    color: var(--gray-400);
+    background: var(--gradient-subtle);  /* Use grayscale gradient instead of blue */
+    color: var(--text-primary);  /* White text instead of gray */
     border: 1px solid rgba(136, 136, 136, 0.3);
 }
 
@@ -2369,7 +2379,7 @@ textarea:focus {
 
 /* Text Color Utilities */
 .rc-text-accent {
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
 }
 
 .rc-text-lg {
@@ -2623,7 +2633,7 @@ label,
 
 .rc-modal-content {
     position: relative;
-    background: var(--surface-1);
+    background: var(--gradient-card);  /* Beautiful gradient for modal */
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
     border: 1px solid var(--surface-3);
@@ -2651,6 +2661,7 @@ label,
 .rc-modal-header {
     padding: var(--space-lg);
     border-bottom: 1px solid var(--surface-3);
+    background: var(--gradient-header);  /* Subtle header gradient */
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2866,7 +2877,7 @@ label,
     gap: var(--space-sm);
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
     margin-bottom: var(--space-sm);
 }
 
@@ -2912,7 +2923,7 @@ label,
 }
 
 .rc-footer-links a:hover {
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
 }
 
 .rc-footer-links a i {
@@ -2976,7 +2987,7 @@ label,
 .rc-nav-user .rc-dropdown-toggle:hover {
     background: var(--surface-2);
     border-color: var(--accent-red);
-    color: var(--gray-400);
+    color: var(--text-label);  /* Light gray for labels */
 }
 
 .rc-nav-user .rc-dropdown-toggle i:first-child {
