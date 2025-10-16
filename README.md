@@ -384,7 +384,17 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v1.7** (Latest) - Pure Grayscale Color Correction
+### **v1.8** (Latest) - StorageCore Color Scheme Match
+- ✅ **Complete Color Overhaul**: Matched StorageCore's exact color palette
+- ✅ **StorageCore Red**: Changed accent from #dc2626 to #D0021B (StorageCore red)
+- ✅ **Pure Grayscale Palette**: #0B0B0B, #111111, #161616, #1F1F1F, #2A2A2A backgrounds
+- ✅ **Removed ALL Color Tints**: Eliminated cyan, blue, green, orange rgba values
+- ✅ **Solid Backgrounds**: Replaced gradients with solid colors
+- ✅ **Pure White Text**: #FFFFFF on dark backgrounds, #111111 on light backgrounds
+- ✅ **Gray Neutrals**: All semantic colors (success/warning/info) now use gray tones
+- ✅ **Brand Consistency**: 100% alignment with StorageCore design language
+
+### **v1.7** - Pure Grayscale Color Correction
 - ✅ **Complete Bluish Tone Removal**: Eliminated all remaining blue/bluish tints
 - ✅ **Pure Neutral Grays**: Primary colors converted from blue-grey to pure neutral (#111827, #1f2937, etc.)
 - ✅ **Pure Black Surfaces**: Surface colors changed from bluish slate to pure black/gray (#000000)
