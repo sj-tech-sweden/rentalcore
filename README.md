@@ -384,7 +384,16 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.0** (Latest) - White Text & Login Fix
+### **v2.1** (Latest) - Cookie Domain SSO Fix
+- ✅ **Login Functionality Restored**: Fixed cookie domain parsing for SSO
+- ✅ **Proper Domain Extraction**: Rewrote getCookieDomain() with clearer logic
+- ✅ **Cross-Subdomain Cookies**: Cookie now correctly uses `.server-nt.de` (with leading dot)
+- ✅ **SSO Working**: Sessions persist across rent.server-nt.de and storage.server-nt.de
+- ✅ **Debug Logging Added**: Track domain parsing for troubleshooting
+- ✅ **Fixed Parse Logic**: Simplified string parsing eliminates edge cases
+- ✅ **Production Ready**: Login works properly with session cookie recognition
+
+### **v2.0** - White Text & Login Fix
 - ✅ **All Text White**: Changed all text colors to pure white (#FFFFFF)
 - ✅ **Fixed Login Page**: Replaced old color variables with StorageCore red
 - ✅ **Login Button Red**: Login button now uses #D0021B background
