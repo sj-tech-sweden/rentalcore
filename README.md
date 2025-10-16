@@ -384,7 +384,16 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v1.6** (Latest) - Professional Design Refinement
+### **v1.7** (Latest) - Pure Grayscale Color Correction
+- ✅ **Complete Bluish Tone Removal**: Eliminated all remaining blue/bluish tints
+- ✅ **Pure Neutral Grays**: Primary colors converted from blue-grey to pure neutral (#111827, #1f2937, etc.)
+- ✅ **Pure Black Surfaces**: Surface colors changed from bluish slate to pure black/gray (#000000)
+- ✅ **Neutral Text**: Text colors changed from bluish to neutral white/gray (#ffffff, #d1d5db)
+- ✅ **Grayscale Status**: Success/Warning changed from green/orange to gray tones
+- ✅ **Final Color Palette**: Only gray, white, black, and red (#dc2626) accents
+- ✅ **Brand Consistency**: Complete alignment with Tsunami Events brand identity
+
+### **v1.6** - Professional Design Refinement
 - ✅ **Color Scheme Overhaul**: Replaced colorful accents with professional grayscale + red
 - ✅ **Grayscale Palette**: Extended gray-50 to gray-900 for consistent UI elements
 - ✅ **Accent Red**: Primary accent color for important actions (#dc2626)
