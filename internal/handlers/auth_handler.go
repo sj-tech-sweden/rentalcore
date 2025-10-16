@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -356,6 +357,11 @@ func (h *AuthHandler) generateSessionID() string {
 // getCookieDomain determines the appropriate cookie domain for SSO
 // Returns empty string for localhost, otherwise returns the parent domain with leading dot
 func getCookieDomain(c *gin.Context) string {
+	// Check if COOKIE_DOMAIN is set in environment (highest priority for explicit control)
+	if domain := os.Getenv("COOKIE_DOMAIN"); domain != "" {
+		return domain
+	}
+
 	host := c.Request.Host
 
 	// Remove port if present
