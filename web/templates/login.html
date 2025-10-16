@@ -52,10 +52,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(0, 245, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(255, 107, 107, 0.05) 0%, transparent 50%);
+            background:
+                radial-gradient(circle at 20% 80%, rgba(208, 2, 27, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(208, 2, 27, 0.08) 0%, transparent 50%);
             z-index: -1;
         }
 
@@ -83,7 +82,7 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, var(--accent-electric), var(--accent-purple), var(--accent-coral));
+            background: var(--accent-red);
         }
 
         .login-card::after {
@@ -93,7 +92,7 @@
             right: -50%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(45deg, transparent, rgba(0, 245, 255, 0.03), transparent);
+            background: linear-gradient(45deg, transparent, rgba(208, 2, 27, 0.03), transparent);
             transform: rotate(45deg);
             pointer-events: none;
         }
@@ -106,15 +105,16 @@
         .login-brand h1 {
             font-size: 2.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-electric), var(--accent-purple));
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--text-primary);
             margin-bottom: var(--space-sm);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: var(--space-sm);
+        }
+
+        .login-brand h1 i {
+            color: var(--accent-red);
         }
 
         .login-brand p {
@@ -152,9 +152,9 @@
 
         .floating-input:focus {
             outline: none;
-            border-color: var(--accent-electric);
+            border-color: var(--accent-red);
             background: var(--surface-1);
-            box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(208, 2, 27, 0.2);
         }
 
         .floating-input:focus + .floating-label-text,
@@ -162,7 +162,7 @@
             top: -8px;
             left: 12px;
             font-size: 0.75rem;
-            color: var(--accent-electric);
+            color: var(--accent-red);
             background: var(--surface-1);
             padding: 0 var(--space-xs);
         }
@@ -185,8 +185,8 @@
         .login-submit {
             width: 100%;
             padding: var(--space-lg);
-            background: linear-gradient(135deg, var(--accent-electric), var(--accent-purple));
-            color: var(--text-inverse);
+            background: var(--accent-red);
+            color: white;
             border: none;
             border-radius: var(--radius-md);
             font-size: 1.1rem;
@@ -197,6 +197,7 @@
             overflow: hidden;
             font-family: inherit;
             margin-bottom: var(--space-lg);
+            box-shadow: 0 4px 12px rgba(208, 2, 27, 0.3);
         }
 
         .login-submit::before {
@@ -215,8 +216,9 @@
         }
 
         .login-submit:hover {
+            background: var(--accent-red-hover);
             transform: translateY(-2px);
-            box-shadow: var(--shadow-glow);
+            box-shadow: 0 8px 20px rgba(208, 2, 27, 0.4);
         }
 
         .login-submit:active {

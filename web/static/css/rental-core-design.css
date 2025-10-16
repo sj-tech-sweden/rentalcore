@@ -48,10 +48,10 @@
     --surface-3: #1F1F1F;    /* Medium gray */
     --surface-4: #2A2A2A;    /* Lighter medium gray */
 
-    /* Text Colors - Pure White and Grays */
+    /* Text Colors - Pure White */
     --text-primary: #FFFFFF;    /* Pure white */
-    --text-secondary: #CCCCCC;  /* Light gray */
-    --text-muted: #888888;      /* Medium gray */
+    --text-secondary: #FFFFFF;  /* Pure white */
+    --text-muted: #E5E7EB;      /* Very light gray */
     --text-inverse: #111111;    /* Dark gray */
     
     /* Design System Spacing Scale (4, 8, 12, 16, 20, 24, 32, 40, 48) */
