@@ -476,18 +476,18 @@ body {
     align-items: center;
 }
 
-.rc-sidebar {
+.rc-sidebar-layout {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-lg);
 }
 
-.rc-sidebar > :first-child {
+.rc-sidebar-layout > :first-child {
     flex-basis: 20rem;
     flex-grow: 1;
 }
 
-.rc-sidebar > :last-child {
+.rc-sidebar-layout > :last-child {
     flex-basis: 0;
     flex-grow: 999;
     min-width: calc(50% - var(--space-lg));
