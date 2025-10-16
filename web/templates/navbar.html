@@ -1,181 +1,295 @@
-<!-- Navigation -->
-<nav class="rc-navbar">
-    <div class="rc-container">
-        <div class="rc-navbar-content">
-            <a href="/" class="rc-navbar-brand">
-                <i class="bi bi-gear-wide-connected"></i>
-                RentalCore
-            </a>
-            
-            <!-- Mobile toggle -->
-            <button class="rc-navbar-toggle">
+<!-- Header -->
+<header class="rc-header" id="rc-header">
+    <div class="rc-header-content">
+        <div class="rc-header-left">
+            <!-- Desktop: Collapse/Expand toggle -->
+            <button class="rc-sidebar-toggle desktop-only" id="sidebarToggle" aria-label="Toggle sidebar">
+                <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
+            </button>
+
+            <!-- Mobile: Hamburger menu -->
+            <button class="rc-sidebar-toggle mobile-only" id="mobileSidebarToggle" aria-label="Toggle menu">
                 <i class="bi bi-list"></i>
             </button>
-            
-            <!-- Main navigation -->
-            <ul class="rc-navbar-nav">
-                <!-- Cross-navigation to StorageCore -->
-                <li><a href="" id="storage-nav-link" class="rc-nav-link" style="color: var(--color-accent-red); font-weight: 600;" title="Switch to StorageCore">
-                    <i class="bi bi-boxes"></i> StorageCore
-                </a></li>
-                <script>
-                (function() {
-                    var link = document.getElementById('storage-nav-link');
-                    var storageDomain = '{{.StorageCoreDomain}}';
-                    var protocol = window.location.protocol; // Use same protocol as current page (http/https)
 
-                    // Build the URL
-                    var targetUrl;
-                    if (storageDomain && storageDomain !== '') {
-                        // Use configured domain from environment (no port, handled by reverse proxy)
-                        targetUrl = protocol + '//' + storageDomain;
-                    } else {
-                        // Auto-detect based on current hostname
-                        var hostname = window.location.hostname;
-                        var port = window.location.port;
-
-                        // Check if we're on a subdomain setup (e.g., rent.server-nt.de)
-                        if (hostname.startsWith('rent.') || hostname.startsWith('rental.')) {
-                            // Replace 'rent' or 'rental' with 'storage'
-                            var storageHost = hostname.replace(/^rent(al)?\./, 'storage.');
-                            targetUrl = protocol + '//' + storageHost;
-                        } else if (port === '8081') {
-                            // Running on port 8081 -> go to 8082 on same host
-                            targetUrl = protocol + '//' + hostname + ':8082';
-                        } else if (port === '') {
-                            // No port specified (reverse proxy) - keep same host
-                            targetUrl = protocol + '//' + hostname;
-                        } else {
-                            // Default fallback - try :8082 on same host
-                            targetUrl = protocol + '//' + hostname + ':8082';
-                        }
-                    }
-
-                    link.href = targetUrl;
-                    console.log('StorageCore URL:', targetUrl);
-                })();
-                </script>
-
-                <li><a href="/jobs" class="rc-nav-link {{if eq .currentPage "jobs"}}active{{end}}">
-                    <i class="bi bi-briefcase"></i> Jobs
-                </a></li>
-                <li><a href="/devices" class="rc-nav-link {{if eq .currentPage "devices"}}active{{end}}">
-                    <i class="bi bi-cpu"></i> Devices
-                </a></li>
-                <!-- Products Dropdown -->
-                <li class="rc-dropdown">
-                    <a href="#" class="rc-nav-link rc-dropdown-toggle {{if or (eq .currentPage "products") (eq .currentPage "rental-equipment") (eq .currentPage "rental-analytics")}}active{{end}}">
-                        <i class="bi bi-box"></i> Products
-                    </a>
-                    <div class="rc-dropdown-menu">
-                        <div class="rc-dropdown-header">
-                            <i class="bi bi-building"></i> Inventory
-                        </div>
-                        <a href="/products" class="rc-dropdown-item {{if eq .currentPage "products"}}active{{end}}">
-                            <i class="bi bi-boxes"></i> Own Products
-                        </a>
-                        <a href="/rental-equipment" class="rc-dropdown-item {{if eq .currentPage "rental-equipment"}}active{{end}}">
-                            <i class="bi bi-box-seam"></i> Rental Equipment
-                        </a>
-                        <hr class="rc-dropdown-divider">
-                        <div class="rc-dropdown-header">
-                            <i class="bi bi-graph-up"></i> Analytics
-                        </div>
-                        <a href="/rental-equipment/analytics" class="rc-dropdown-item {{if eq .currentPage "rental-analytics"}}active{{end}}">
-                            <i class="bi bi-clipboard-data"></i> Rental Analytics
-                        </a>
-                    </div>
-                </li>
-                <li><a href="/cables" class="rc-nav-link {{if eq .currentPage "cables"}}active{{end}}">
-                    <i class="bi bi-lightning-charge"></i> Cables
-                </a></li>
-                <li><a href="/customers" class="rc-nav-link {{if eq .currentPage "customers"}}active{{end}}">
-                    <i class="bi bi-people"></i> Customers
-                </a></li>
-                <li><a href="/cases" class="rc-nav-link {{if eq .currentPage "cases"}}active{{end}}">
-                    <i class="bi bi-archive"></i> Cases
-                </a></li>
-                
-                <!-- Tools Dropdown -->
-                <li class="rc-dropdown">
-                    <a href="#" class="rc-nav-link rc-dropdown-toggle {{if or (eq .currentPage "packages") (eq .currentPage "invoices") (eq .currentPage "analytics") (eq .currentPage "financial")}}active{{end}}">
-                        <i class="bi bi-tools"></i> Tools
-                    </a>
-                    <div class="rc-dropdown-menu">
-                        <div class="rc-dropdown-header">
-                            <i class="bi bi-folder"></i> Management
-                        </div>
-                        <a href="/workflow/packages" class="rc-dropdown-item {{if eq .currentPage "packages"}}active{{end}}">
-                            <i class="bi bi-box-seam"></i> Equipment Packages
-                        </a>
-                        <hr class="rc-dropdown-divider">
-                        <div class="rc-dropdown-header">
-                            <i class="bi bi-building"></i> Business
-                        </div>
-                        <a href="/invoices" class="rc-dropdown-item {{if eq .currentPage "invoices"}}active{{end}}">
-                            <i class="bi bi-file-text"></i> Invoices
-                        </a>
-                        <a href="/analytics" class="rc-dropdown-item {{if eq .currentPage "analytics"}}active{{end}}">
-                            <i class="bi bi-graph-up"></i> Analytics
-                        </a>
-                        <a href="/financial" class="rc-dropdown-item {{if eq .currentPage "financial"}}active{{end}}">
-                            <i class="bi bi-calculator"></i> Financial
-                        </a>
-                    </div>
-                </li>
-                
-                <!-- User Dropdown -->
-                {{if .user}}
-                <li class="rc-dropdown">
-                    <a href="#" class="rc-nav-link rc-dropdown-toggle {{if or (eq .currentPage "profile") (eq .currentPage "profile-settings") (eq .currentPage "settings") (eq .currentPage "users") (eq .currentPage "security")}}active{{end}}">
-                        <i class="bi bi-person-circle"></i> {{.user.Username}}
-                    </a>
-                    <div class="rc-dropdown-menu">
-                        <div class="rc-dropdown-header">
-                            <i class="bi bi-person"></i> {{.user.FirstName}} {{.user.LastName}}
-                        </div>
-                        <hr class="rc-dropdown-divider">
-                        <div class="rc-dropdown-header">Personal</div>
-                        <a href="/profile/settings" class="rc-dropdown-item {{if or (eq .currentPage "profile") (eq .currentPage "profile-settings")}}active{{end}}">
-                            <i class="bi bi-person-gear"></i> Profile Settings
-                        </a>
-                        <hr class="rc-dropdown-divider">
-                        <div class="rc-dropdown-header">Company</div>
-                        <a href="/settings/company" class="rc-dropdown-item {{if eq .currentPage "settings"}}active{{end}}">
-                            <i class="bi bi-building-gear"></i> Company Settings
-                        </a>
-                        <hr class="rc-dropdown-divider">
-                        <div class="rc-dropdown-header">System</div>
-                        <a href="/users" class="rc-dropdown-item {{if eq .currentPage "users"}}active{{end}}">
-                            <i class="bi bi-people-fill"></i> User Management
-                        </a>
-                        <a href="/security/roles" class="rc-dropdown-item {{if eq .currentPage "security"}}active{{end}}">
-                            <i class="bi bi-person-badge"></i> Role Management
-                        </a>
-                        <a href="/security/audit" class="rc-dropdown-item {{if eq .currentPage "security"}}active{{end}}">
-                            <i class="bi bi-shield-check"></i> Security & Audit
-                        </a>
-                        <hr class="rc-dropdown-divider">
-                        <a href="/logout" class="rc-dropdown-item">
-                            <i class="bi bi-box-arrow-right"></i> Logout
-                        </a>
-                    </div>
-                </li>
-                {{else}}
-                <li>
-                    <a href="/login" class="rc-btn rc-btn-primary rc-btn-sm">
-                        <i class="bi bi-box-arrow-in-right"></i> Login
-                    </a>
-                </li>
-                {{end}}
-                
-                <!-- Theme Toggle -->
-                <li>
-                    <button class="rc-btn rc-btn-ghost rc-btn-sm" data-theme-toggle title="Toggle theme">
-                        <i class="bi bi-moon-fill"></i>
-                    </button>
-                </li>
-            </ul>
+            <h1 class="rc-header-brand">
+                <span class="brand-rental">Rental</span><span class="brand-core">Core</span>
+            </h1>
+        </div>
+        <div class="rc-header-right desktop-only">
+            <span class="rc-header-company">Tsunami Events UG</span>
         </div>
     </div>
-</nav>
+</header>
+
+<!-- Mobile Backdrop -->
+<div class="rc-sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<!-- Sidebar -->
+<aside class="rc-sidebar" id="rcSidebar">
+    <!-- Sidebar Header (Mobile only) -->
+    <div class="rc-sidebar-header mobile-only">
+        <h2 class="rc-sidebar-brand">
+            <span class="brand-rental">Rental</span><span class="brand-core">Core</span>
+        </h2>
+        <button class="rc-sidebar-close" id="mobileSidebarClose" aria-label="Close menu">
+            <i class="bi bi-x"></i>
+        </button>
+    </div>
+
+    <nav class="rc-sidebar-nav">
+        <!-- Cross-navigation to StorageCore -->
+        <a href="" id="storage-nav-link" class="rc-nav-item rc-nav-crosslink" title="Switch to StorageCore">
+            <i class="bi bi-box-seam"></i>
+            <span class="rc-nav-label">StorageCore</span>
+        </a>
+        <script>
+        (function() {
+            var link = document.getElementById('storage-nav-link');
+            var storageDomain = '{{.StorageCoreDomain}}';
+            var protocol = window.location.protocol;
+
+            var targetUrl;
+            if (storageDomain && storageDomain !== '') {
+                targetUrl = protocol + '//' + storageDomain;
+            } else {
+                var hostname = window.location.hostname;
+                var port = window.location.port;
+
+                if (hostname.startsWith('rent.') || hostname.startsWith('rental.')) {
+                    var storageHost = hostname.replace(/^rent(al)?\./, 'storage.');
+                    targetUrl = protocol + '//' + storageHost;
+                } else if (port === '8081') {
+                    targetUrl = protocol + '//' + hostname + ':8082';
+                } else if (port === '') {
+                    targetUrl = protocol + '//' + hostname;
+                } else {
+                    targetUrl = protocol + '//' + hostname + ':8082';
+                }
+            }
+
+            link.href = targetUrl;
+        })();
+        </script>
+
+        <!-- Main navigation items -->
+        <a href="/" class="rc-nav-item {{if eq .currentPage "home"}}active{{end}}" title="Dashboard">
+            <i class="bi bi-house-door"></i>
+            <span class="rc-nav-label">Dashboard</span>
+        </a>
+
+        <a href="/scan" class="rc-nav-item {{if eq .currentPage "scan"}}active{{end}}" title="Scanner">
+            <i class="bi bi-upc-scan"></i>
+            <span class="rc-nav-label">Scanner</span>
+        </a>
+
+        <a href="/jobs" class="rc-nav-item {{if eq .currentPage "jobs"}}active{{end}}" title="Jobs">
+            <i class="bi bi-briefcase"></i>
+            <span class="rc-nav-label">Jobs</span>
+        </a>
+
+        <a href="/devices" class="rc-nav-item {{if eq .currentPage "devices"}}active{{end}}" title="Devices">
+            <i class="bi bi-cpu"></i>
+            <span class="rc-nav-label">Devices</span>
+        </a>
+
+        <a href="/products" class="rc-nav-item {{if eq .currentPage "products"}}active{{end}}" title="Products">
+            <i class="bi bi-box"></i>
+            <span class="rc-nav-label">Products</span>
+        </a>
+
+        <a href="/cables" class="rc-nav-item {{if eq .currentPage "cables"}}active{{end}}" title="Cables">
+            <i class="bi bi-lightning-charge"></i>
+            <span class="rc-nav-label">Cables</span>
+        </a>
+
+        <a href="/customers" class="rc-nav-item {{if eq .currentPage "customers"}}active{{end}}" title="Customers">
+            <i class="bi bi-people"></i>
+            <span class="rc-nav-label">Customers</span>
+        </a>
+
+        <a href="/cases" class="rc-nav-item {{if eq .currentPage "cases"}}active{{end}}" title="Cases">
+            <i class="bi bi-archive"></i>
+            <span class="rc-nav-label">Cases</span>
+        </a>
+
+        <a href="/invoices" class="rc-nav-item {{if eq .currentPage "invoices"}}active{{end}}" title="Invoices">
+            <i class="bi bi-file-text"></i>
+            <span class="rc-nav-label">Invoices</span>
+        </a>
+
+        <a href="/analytics" class="rc-nav-item {{if eq .currentPage "analytics"}}active{{end}}" title="Analytics">
+            <i class="bi bi-graph-up"></i>
+            <span class="rc-nav-label">Analytics</span>
+        </a>
+
+        <a href="/financial" class="rc-nav-item {{if eq .currentPage "financial"}}active{{end}}" title="Financial">
+            <i class="bi bi-calculator"></i>
+            <span class="rc-nav-label">Financial</span>
+        </a>
+
+        <a href="/workflow/packages" class="rc-nav-item {{if eq .currentPage "packages"}}active{{end}}" title="Packages">
+            <i class="bi bi-box-seam"></i>
+            <span class="rc-nav-label">Packages</span>
+        </a>
+
+        <a href="/rental-equipment" class="rc-nav-item {{if eq .currentPage "rental-equipment"}}active{{end}}" title="Rental Equipment">
+            <i class="bi bi-box-seam"></i>
+            <span class="rc-nav-label">Rental Equip</span>
+        </a>
+    </nav>
+
+    <!-- User Profile & Logout -->
+    <div class="rc-sidebar-footer">
+        {{if .user}}
+        <div class="rc-user-profile">
+            <div class="rc-user-info">
+                <i class="bi bi-person-circle"></i>
+                <div class="rc-user-details">
+                    <span class="rc-user-name">{{.user.Username}}</span>
+                    {{if .user.Email}}
+                    <span class="rc-user-email">{{.user.Email}}</span>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+        <div class="rc-user-icon-only">
+            <i class="bi bi-person-circle"></i>
+        </div>
+
+        <!-- User Settings Dropdown -->
+        <div class="rc-user-menu">
+            <a href="/profile/settings" class="rc-user-menu-item" title="Profile Settings">
+                <i class="bi bi-person-gear"></i>
+                <span class="rc-nav-label">Profile</span>
+            </a>
+            <a href="/settings/company" class="rc-user-menu-item" title="Company Settings">
+                <i class="bi bi-building-gear"></i>
+                <span class="rc-nav-label">Company</span>
+            </a>
+            <a href="/users" class="rc-user-menu-item" title="Users">
+                <i class="bi bi-people-fill"></i>
+                <span class="rc-nav-label">Users</span>
+            </a>
+            <a href="/security/roles" class="rc-user-menu-item" title="Security">
+                <i class="bi bi-shield-check"></i>
+                <span class="rc-nav-label">Security</span>
+            </a>
+        </div>
+
+        <a href="/logout" class="rc-logout-btn" title="Logout">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="rc-nav-label">Logout</span>
+        </a>
+        {{else}}
+        <a href="/login" class="rc-login-btn" title="Login">
+            <i class="bi bi-box-arrow-in-right"></i>
+            <span class="rc-nav-label">Login</span>
+        </a>
+        {{end}}
+    </div>
+</aside>
+
+<!-- Sidebar Toggle Script -->
+<script>
+(function() {
+    // Elements
+    const sidebar = document.getElementById('rcSidebar');
+    const header = document.getElementById('rc-header');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+    const mobileSidebarClose = document.getElementById('mobileSidebarClose');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
+
+    // Check if mobile
+    function isMobile() {
+        return window.innerWidth < 768;
+    }
+
+    // Load sidebar state from localStorage
+    let sidebarOpen = localStorage.getItem('rc-sidebar-open');
+    if (sidebarOpen === null) {
+        sidebarOpen = !isMobile(); // Default: open on desktop, closed on mobile
+    } else {
+        sidebarOpen = sidebarOpen === 'true';
+    }
+
+    // Apply initial state
+    function applySidebarState() {
+        if (isMobile()) {
+            // Mobile: always start closed, use overlay mode
+            sidebar.classList.remove('open', 'collapsed');
+            sidebarBackdrop.classList.remove('show');
+        } else {
+            // Desktop: use saved state
+            if (sidebarOpen) {
+                sidebar.classList.add('open');
+                sidebar.classList.remove('collapsed');
+                if (sidebarToggleIcon) {
+                    sidebarToggleIcon.classList.remove('bi-chevron-right');
+                    sidebarToggleIcon.classList.add('bi-chevron-left');
+                }
+            } else {
+                sidebar.classList.add('collapsed');
+                sidebar.classList.remove('open');
+                if (sidebarToggleIcon) {
+                    sidebarToggleIcon.classList.remove('bi-chevron-left');
+                    sidebarToggleIcon.classList.add('bi-chevron-right');
+                }
+            }
+        }
+    }
+
+    applySidebarState();
+
+    // Desktop toggle
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebarOpen = !sidebarOpen;
+            localStorage.setItem('rc-sidebar-open', sidebarOpen);
+            applySidebarState();
+        });
+    }
+
+    // Mobile toggle (open)
+    if (mobileSidebarToggle) {
+        mobileSidebarToggle.addEventListener('click', function() {
+            sidebar.classList.add('open');
+            sidebarBackdrop.classList.add('show');
+        });
+    }
+
+    // Mobile close button
+    if (mobileSidebarClose) {
+        mobileSidebarClose.addEventListener('click', function() {
+            sidebar.classList.remove('open');
+            sidebarBackdrop.classList.remove('show');
+        });
+    }
+
+    // Mobile backdrop click
+    if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener('click', function() {
+            sidebar.classList.remove('open');
+            sidebarBackdrop.classList.remove('show');
+        });
+    }
+
+    // Close mobile sidebar on navigation
+    const navItems = sidebar.querySelectorAll('.rc-nav-item, .rc-user-menu-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            if (isMobile()) {
+                sidebar.classList.remove('open');
+                sidebarBackdrop.classList.remove('show');
+            }
+        });
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        applySidebarState();
+    });
+})();
+</script>
