@@ -384,7 +384,21 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.8** (Latest) - Content Positioning Fix
+### **v2.9** (Latest) - User Profile Dropdown Menu
+- ✅ **Click-Triggered User Menu**: Click on username to open settings and logout dropdown
+- ✅ **Consolidated User Actions**: All settings and logout in one dropdown menu
+- ✅ **Removed Email Display**: Cleaner footer with just username (no email)
+- ✅ **Upward Opening Dropdown**: Menu opens upward from footer with smooth animations
+- ✅ **5 Menu Items**: Profile, Company, Users, Security & Audit, Logout
+- ✅ **Divider Before Logout**: Visual separation with logout at bottom
+- ✅ **Red Logout Accent**: Logout item has red hover effect for visual distinction
+- ✅ **Click Outside to Close**: Dropdown closes when clicking anywhere outside
+- ✅ **Chevron Animation**: Icon rotates when opening/closing (up ↔ down)
+- ✅ **Active State Highlighting**: Current page highlighted in dropdown
+- ✅ **Smooth Transitions**: 0.3s fade and height transitions
+- ✅ **Collapsed Sidebar Support**: Icon-only view maintained when sidebar collapsed
+
+### **v2.8** - Content Positioning Fix
 - ✅ **Fixed Content Behind Sidebar/Header**: Content now displays in available space, not behind fixed elements
 - ✅ **Body-Level Padding**: Applied padding-top for header and padding-left for sidebar to body element
 - ✅ **Works With All Templates**: Fixes positioning for all 60+ templates using navbar.html
