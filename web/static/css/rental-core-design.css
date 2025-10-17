@@ -3304,6 +3304,9 @@ body:has(.rc-sidebar.collapsed) .rc-header {
     transition: all 0.3s ease-in-out;
     width: 16rem; /* 256px = w-64 */
     transform: translateX(0);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* Desktop collapsed state */
@@ -3370,17 +3373,38 @@ body:has(.rc-sidebar.collapsed) .rc-header {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar for sidebar */
+.rc-sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.rc-sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.rc-sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.rc-sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 @media (max-width: 768px) {
     .rc-sidebar-nav {
-        margin-top: 3rem; /* Space for mobile header */
+        padding-top: 4rem; /* Space for mobile header */
     }
 }
 
 @media (min-width: 768px) {
     .rc-sidebar-nav {
-        margin-top: 5rem; /* Space for fixed header */
+        padding-top: 5.5rem; /* Space for fixed header */
     }
 }
 
@@ -3447,13 +3471,11 @@ body:has(.rc-sidebar.collapsed) .rc-header {
 
 /* Sidebar Footer */
 .rc-sidebar-footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    flex-shrink: 0;
     padding: 1rem;
     border-top: 1px solid var(--surface-3);
-    background: rgba(3, 7, 18, 0.5);
+    background: rgba(3, 7, 18, 0.9);
+    backdrop-filter: blur(10px);
 }
 
 /* User Profile */
@@ -3608,6 +3630,7 @@ body:has(.rc-sidebar.collapsed) .rc-header {
 .rc-main-content {
     padding-top: 3.5rem; /* Space for header */
     transition: margin-left 0.3s ease;
+    min-height: 100vh;
 }
 
 @media (min-width: 640px) {
@@ -3616,18 +3639,18 @@ body:has(.rc-sidebar.collapsed) .rc-header {
     }
 }
 
-/* Main content adjusts based on sidebar state */
+/* Main content adjusts based on body classes set by JavaScript */
 @media (min-width: 768px) {
-    body:has(.rc-sidebar.open:not(.collapsed)) .rc-main-content {
+    body.sidebar-open .rc-main-content {
         margin-left: 16rem; /* 256px = w-64 */
     }
 
-    body:has(.rc-sidebar.collapsed) .rc-main-content {
+    body.sidebar-collapsed .rc-main-content {
         margin-left: 5rem; /* 80px = w-20 */
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .rc-main-content {
         margin-left: 0;
     }

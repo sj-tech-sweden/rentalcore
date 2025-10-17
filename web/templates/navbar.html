@@ -247,10 +247,14 @@
         if (isMobile()) {
             sidebar.classList.remove('open', 'collapsed');
             sidebarBackdrop.classList.remove('show');
+            // Remove desktop body classes on mobile
+            document.body.classList.remove('sidebar-open', 'sidebar-collapsed');
         } else {
             if (sidebarOpen) {
                 sidebar.classList.add('open');
                 sidebar.classList.remove('collapsed');
+                document.body.classList.add('sidebar-open');
+                document.body.classList.remove('sidebar-collapsed');
                 if (sidebarToggleIcon) {
                     sidebarToggleIcon.classList.remove('bi-chevron-right');
                     sidebarToggleIcon.classList.add('bi-chevron-left');
@@ -258,6 +262,8 @@
             } else {
                 sidebar.classList.add('collapsed');
                 sidebar.classList.remove('open');
+                document.body.classList.add('sidebar-collapsed');
+                document.body.classList.remove('sidebar-open');
                 if (sidebarToggleIcon) {
                     sidebarToggleIcon.classList.remove('bi-chevron-left');
                     sidebarToggleIcon.classList.add('bi-chevron-right');
