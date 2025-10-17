@@ -384,7 +384,16 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.12** (Latest) - Unified Sidebar Font Sizes
+### **v2.13** (Latest) - Auto-Scroll for Sidebar Dropdowns
+- ✅ **Automatic Scrolling**: Sidebar auto-scrolls when dropdowns are opened
+- ✅ **Smart Detection**: Only scrolls if dropdown extends below visible area
+- ✅ **Smooth Animation**: Uses smooth scrolling behavior for better UX
+- ✅ **Intelligent Positioning**: Positions dropdown at bottom of viewport
+- ✅ **No Manual Scrolling**: Users don't need to scroll manually to see dropdown items
+- ✅ **Works for All Dropdowns**: Products, Tools, and future dropdowns supported
+- ✅ **Preserves State**: Scroll position maintained when closing dropdown
+
+### **v2.12** - Unified Sidebar Font Sizes
 - ✅ **Consistent Text Sizing**: All sidebar navigation items now have uniform font size
 - ✅ **Fixed Dropdown Toggle Size**: Dropdown buttons (Products, Tools) match regular nav items
 - ✅ **Explicit Font Declaration**: Added font-size: 1rem to all navigation elements
