@@ -3437,6 +3437,9 @@ body:has(.rc-sidebar.collapsed) .rc-header {
     height: 1.25rem;
     flex-shrink: 0;
     font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .rc-nav-label {
@@ -3509,6 +3512,9 @@ body:has(.rc-sidebar.collapsed) .rc-header {
     font-size: 1.25rem;
     color: var(--accent-red);
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .rc-user-name {
@@ -3526,6 +3532,9 @@ body:has(.rc-sidebar.collapsed) .rc-header {
     color: var(--text-secondary);
     transition: transform 0.2s ease;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* User Dropdown Menu */
@@ -3584,6 +3593,9 @@ body:has(.rc-sidebar.collapsed) .rc-header {
     height: 1rem;
     font-size: 1rem;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Logout Item - Red accent */
@@ -3619,6 +3631,9 @@ body:has(.rc-sidebar.collapsed) .rc-header {
     height: 1.25rem;
     font-size: 1.25rem;
     color: var(--accent-red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @media (min-width: 768px) {
@@ -3852,6 +3867,9 @@ body {
     height: 1.25rem;
     flex-shrink: 0;
     font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .rc-dropdown-icon {
@@ -3860,6 +3878,9 @@ body {
     font-size: 1rem !important;
     transition: transform 0.2s ease;
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Dropdown Menu */
@@ -3908,6 +3929,9 @@ body {
     height: 1rem;
     font-size: 1rem;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Collapsed Sidebar: Hide Dropdowns completely */
