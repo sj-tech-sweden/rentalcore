@@ -384,7 +384,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.11** (Latest) - Sidebar Icon Vertical Centering
+### **v2.12** (Latest) - Unified Sidebar Font Sizes
+- ✅ **Consistent Text Sizing**: All sidebar navigation items now have uniform font size
+- ✅ **Fixed Dropdown Toggle Size**: Dropdown buttons (Products, Tools) match regular nav items
+- ✅ **Explicit Font Declaration**: Added font-size: 1rem to all navigation elements
+- ✅ **Button Inheritance Fix**: Added font-family: inherit to ensure proper font rendering
+- ✅ **Professional Appearance**: Eliminated visual inconsistency in navigation
+
+### **v2.11** - Sidebar Icon Vertical Centering
 - ✅ **Perfectly Centered Icons**: All sidebar navigation icons now vertically centered
 - ✅ **Flexbox Centering**: Applied display: flex with align-items and justify-content
 - ✅ **Fixed All Icon Types**: Main nav, dropdowns, user menu, and collapsed icons
