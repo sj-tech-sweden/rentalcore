@@ -162,52 +162,44 @@
     <!-- User Profile & Logout -->
     <div class="rc-sidebar-footer">
         {{if .user}}
-        <div class="rc-user-profile">
-            <div class="rc-user-info">
+        <!-- User Dropdown Trigger -->
+        <div class="rc-user-dropdown">
+            <button class="rc-user-profile-btn" id="userDropdownToggle" aria-label="User menu">
                 <i class="bi bi-person-circle"></i>
-                <div class="rc-user-details">
-                    <span class="rc-user-name">{{.user.Username}}</span>
-                    {{if .user.Email}}
-                    <span class="rc-user-email">{{.user.Email}}</span>
-                    {{end}}
-                </div>
-            </div>
-        </div>
-        <div class="rc-user-icon-only">
-            <i class="bi bi-person-circle"></i>
-        </div>
-
-        <!-- User Settings Dropdown -->
-        <div class="rc-nav-dropdown">
-            <button class="rc-nav-dropdown-toggle {{if or (eq .currentPage "profile") (eq .currentPage "profile-settings") (eq .currentPage "settings") (eq .currentPage "users") (eq .currentPage "security")}}active{{end}}" data-dropdown="user">
-                <i class="bi bi-gear"></i>
-                <span class="rc-nav-label">Settings</span>
-                <i class="bi bi-chevron-down rc-dropdown-icon"></i>
+                <span class="rc-nav-label rc-user-name">{{.user.Username}}</span>
+                <i class="bi bi-chevron-up rc-user-dropdown-icon"></i>
             </button>
-            <div class="rc-nav-dropdown-menu" id="dropdown-user">
-                <a href="/profile/settings" class="rc-nav-dropdown-item {{if or (eq .currentPage "profile") (eq .currentPage "profile-settings")}}active{{end}}">
+
+            <!-- User Dropdown Menu -->
+            <div class="rc-user-dropdown-menu" id="userDropdownMenu">
+                <a href="/profile/settings" class="rc-user-dropdown-item {{if or (eq .currentPage "profile") (eq .currentPage "profile-settings")}}active{{end}}">
                     <i class="bi bi-person-gear"></i>
                     <span class="rc-nav-label">Profile Settings</span>
                 </a>
-                <a href="/settings/company" class="rc-nav-dropdown-item {{if eq .currentPage "settings"}}active{{end}}">
+                <a href="/settings/company" class="rc-user-dropdown-item {{if eq .currentPage "settings"}}active{{end}}">
                     <i class="bi bi-building-gear"></i>
                     <span class="rc-nav-label">Company Settings</span>
                 </a>
-                <a href="/users" class="rc-nav-dropdown-item {{if eq .currentPage "users"}}active{{end}}">
+                <a href="/users" class="rc-user-dropdown-item {{if eq .currentPage "users"}}active{{end}}">
                     <i class="bi bi-people-fill"></i>
                     <span class="rc-nav-label">User Management</span>
                 </a>
-                <a href="/security/roles" class="rc-nav-dropdown-item {{if eq .currentPage "security"}}active{{end}}">
+                <a href="/security/roles" class="rc-user-dropdown-item {{if eq .currentPage "security"}}active{{end}}">
                     <i class="bi bi-shield-check"></i>
                     <span class="rc-nav-label">Security & Audit</span>
+                </a>
+                <div class="rc-user-dropdown-divider"></div>
+                <a href="/logout" class="rc-user-dropdown-item rc-logout-item">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="rc-nav-label">Logout</span>
                 </a>
             </div>
         </div>
 
-        <a href="/logout" class="rc-logout-btn" title="Logout">
-            <i class="bi bi-box-arrow-right"></i>
-            <span class="rc-nav-label">Logout</span>
-        </a>
+        <!-- Collapsed icon-only view -->
+        <div class="rc-user-icon-only">
+            <i class="bi bi-person-circle"></i>
+        </div>
         {{else}}
         <a href="/login" class="rc-login-btn" title="Login">
             <i class="bi bi-box-arrow-in-right"></i>
@@ -360,5 +352,41 @@
             icon.classList.add('bi-chevron-up');
         }
     });
+
+    // User dropdown toggle functionality
+    const userDropdownToggle = document.getElementById('userDropdownToggle');
+    const userDropdownMenu = document.getElementById('userDropdownMenu');
+
+    if (userDropdownToggle && userDropdownMenu) {
+        userDropdownToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const isOpen = userDropdownMenu.classList.contains('open');
+            const icon = this.querySelector('.rc-user-dropdown-icon');
+
+            if (isOpen) {
+                userDropdownMenu.classList.remove('open');
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-up');
+            } else {
+                userDropdownMenu.classList.add('open');
+                icon.classList.remove('bi-chevron-up');
+                icon.classList.add('bi-chevron-down');
+            }
+        });
+
+        // Close user dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!userDropdownToggle.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+                userDropdownMenu.classList.remove('open');
+                const icon = userDropdownToggle.querySelector('.rc-user-dropdown-icon');
+                if (icon) {
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-up');
+                }
+            }
+        });
+    }
 })();
 </script>
