@@ -69,7 +69,7 @@ func (h *HomeHandler) Dashboard(c *gin.Context) {
 		"stats":            stats,
 		"recentJobs":       recentJobs,
 		"currentPage":      "home",
-		"StorageCoreDomain": storageCoreDomain,
+		"WarehouseCoreDomain": storageCoreDomain,
 		"RentalCoreDomain":  rentalCoreDomain,
 	})
 }

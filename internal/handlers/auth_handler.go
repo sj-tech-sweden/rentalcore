@@ -509,7 +509,7 @@ func GetAppDomains(c *gin.Context) (string, string) {
 	storageCoreDomain := ""
 	rentalCoreDomain := ""
 
-	if val, exists := c.Get("StorageCoreDomain"); exists {
+	if val, exists := c.Get("WarehouseCoreDomain"); exists {
 		if domain, ok := val.(string); ok {
 			storageCoreDomain = domain
 		}

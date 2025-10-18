@@ -141,9 +141,9 @@ docker-compose logs -f rentalcore
 open http://localhost:8080
 ```
 
-### 🔄 Integrated Deployment with StorageCore
+### 🔄 Integrated Deployment with WarehouseCore
 
-For integrated deployment of both RentalCore and StorageCore together, use the root docker-compose configuration:
+For integrated deployment of both RentalCore and WarehouseCore together, use the root docker-compose configuration:
 
 ```bash
 # Navigate to the parent directory (NOT a git repo)
@@ -160,15 +160,15 @@ docker compose ps
 
 # View logs
 docker compose logs -f rentalcore
-docker compose logs -f storagecore
+docker compose logs -f warehousecore
 ```
 
 **Access the applications:**
 - **RentalCore**: http://localhost:8081
-- **StorageCore**: http://localhost:8082
+- **WarehouseCore**: http://localhost:8082
 
 **Cross-navigation:**
-Both applications feature navbar links to seamlessly switch between RentalCore and StorageCore with a single click.
+Both applications feature navbar links to seamlessly switch between RentalCore and WarehouseCore with a single click.
 
 **Note:** The images use `:latest` tags. Pull periodically to get the newest versions:
 ```bash
@@ -478,16 +478,16 @@ All documentation is organized in the `docs/` folder for easy access:
 - ✅ **Desktop Collapse Working**: Chevron toggle for expanding/collapsing sidebar
 - ✅ **JavaScript Integration**: Sidebar toggle script embedded in navbar.html
 - ✅ **Consistent UX**: All 67 templates now have unified sidebar navigation
-- ✅ **Storage Cross-Link**: Dynamic StorageCore URL detection for seamless switching
+- ✅ **Storage Cross-Link**: Dynamic WarehouseCore URL detection for seamless switching
 
 ### **v2.4** - Left Sidebar Navigation Redesign (base.html only)
-- ✅ **Professional Left Sidebar**: Implemented StorageCore-style left sidebar navigation
+- ✅ **Professional Left Sidebar**: Implemented WarehouseCore-style left sidebar navigation
 - ✅ **Collapsible Sidebar**: Desktop sidebar collapses to icon-only mode (w-64 expanded, w-20 collapsed)
 - ✅ **Mobile Overlay Drawer**: Mobile devices use overlay drawer with backdrop and hamburger menu
 - ✅ **Chevron Toggle Icons**: Desktop shows chevron-left (collapse) and chevron-right (expand) indicators
 - ✅ **Responsive Header**: Header position adjusts dynamically based on sidebar state
 - ✅ **Dynamic Content Margins**: Main content adapts margins automatically (16rem, 5rem, or 0)
-- ✅ **Cross-Navigation**: Integrated StorageCore cross-link in sidebar for seamless app switching
+- ✅ **Cross-Navigation**: Integrated WarehouseCore cross-link in sidebar for seamless app switching
 - ✅ **User Profile Section**: User info with email displayed in sidebar footer
 - ✅ **Settings Menu**: Profile, Company, Users, and Security links in sidebar footer
 - ✅ **Glassmorphism Design**: Modern glass-effect design matching overall aesthetic
@@ -535,7 +535,7 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ### **v2.0** - White Text & Login Fix
 - ✅ **All Text White**: Changed all text colors to pure white (#FFFFFF)
-- ✅ **Fixed Login Page**: Replaced old color variables with StorageCore red
+- ✅ **Fixed Login Page**: Replaced old color variables with WarehouseCore red
 - ✅ **Login Button Red**: Login button now uses #D0021B background
 - ✅ **Red Input Focus**: Login inputs show red focus border
 - ✅ **Fixed Broken Colors**: Removed all references to deleted accent-electric/purple variables
@@ -543,25 +543,25 @@ All documentation is organized in the `docs/` folder for easy access:
 - ✅ **Light Muted Text**: text-muted now very light gray for better readability
 - ✅ **Login Functional**: All login colors fixed and working
 
-### **v1.9** - StorageCore Color Pattern Implementation
-- ✅ **Red Primary Buttons**: All primary buttons now use #D0021B (StorageCore red)
+### **v1.9** - WarehouseCore Color Pattern Implementation
+- ✅ **Red Primary Buttons**: All primary buttons now use #D0021B (WarehouseCore red)
 - ✅ **Red Active Navigation**: Active nav items highlighted with red background + shadow
-- ✅ **Red Input Focus**: Input fields show red border on focus (like StorageCore)
+- ✅ **Red Input Focus**: Input fields show red border on focus (like WarehouseCore)
 - ✅ **Semantic Colors Restored**: Green (success), Yellow (warning), Blue (info), Red (error)
 - ✅ **Button Hover Effects**: Red shadow effects on hover for primary actions
 - ✅ **Active Dropdown Items**: Red background for active selections
 - ✅ **Removed Gray-Only Limitation**: Now uses proper color semantics
-- ✅ **Visual Consistency**: Matches StorageCore's color usage pattern
+- ✅ **Visual Consistency**: Matches WarehouseCore's color usage pattern
 
-### **v1.8** - StorageCore Color Scheme Match
-- ✅ **Complete Color Overhaul**: Matched StorageCore's exact color palette
-- ✅ **StorageCore Red**: Changed accent from #dc2626 to #D0021B (StorageCore red)
+### **v1.8** - WarehouseCore Color Scheme Match
+- ✅ **Complete Color Overhaul**: Matched WarehouseCore's exact color palette
+- ✅ **WarehouseCore Red**: Changed accent from #dc2626 to #D0021B (WarehouseCore red)
 - ✅ **Pure Grayscale Palette**: #0B0B0B, #111111, #161616, #1F1F1F, #2A2A2A backgrounds
 - ✅ **Removed ALL Color Tints**: Eliminated cyan, blue, green, orange rgba values
 - ✅ **Solid Backgrounds**: Replaced gradients with solid colors
 - ✅ **Pure White Text**: #FFFFFF on dark backgrounds, #111111 on light backgrounds
 - ✅ **Gray Neutrals**: All semantic colors (success/warning/info) now use gray tones
-- ✅ **Brand Consistency**: 100% alignment with StorageCore design language
+- ✅ **Brand Consistency**: 100% alignment with WarehouseCore design language
 
 ### **v1.7** - Pure Grayscale Color Correction
 - ✅ **Complete Bluish Tone Removal**: Eliminated all remaining blue/bluish tints
@@ -586,11 +586,11 @@ All documentation is organized in the `docs/` folder for easy access:
 ### **v1.3** - WebAuthn/Passkey SSO Fix
 - ✅ **Fixed WebAuthn Login**: Passkey login now properly sets shared cookie domain
 - ✅ **Complete SSO Support**: Both username/password and passkey login work with SSO
-- ✅ **Seamless Cross-App Authentication**: Login persists across RentalCore and StorageCore
+- ✅ **Seamless Cross-App Authentication**: Login persists across RentalCore and WarehouseCore
 - ✅ **Production Ready**: Full SSO support for all authentication methods
 
-### **v1.2** - SSO Support with StorageCore
-- ✅ **Single Sign-On (SSO)**: Shared session cookies across RentalCore and StorageCore
+### **v1.2** - SSO Support with WarehouseCore
+- ✅ **Single Sign-On (SSO)**: Shared session cookies across RentalCore and WarehouseCore
 - ✅ **Shared Cookie Domain**: Automatic cookie domain detection for subdomain SSO
 - ✅ **Enhanced Session Management**: Cookie domain support for cross-app authentication
 - ✅ **Seamless Navigation**: Users stay logged in when switching between apps

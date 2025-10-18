@@ -5,7 +5,7 @@
 
 /* Custom Properties */
 :root {
-    /* Core Brand Colors - StorageCore Style */
+    /* Core Brand Colors - WarehouseCore Style */
     --primary-900: #111111;  /* Dark background */
     --primary-800: #161616;
     --primary-700: #1F1F1F;
@@ -16,8 +16,8 @@
     --primary-200: #CCCCCC;
     --primary-100: #EAEAEA;
 
-    /* Accent Colors - StorageCore Red */
-    --accent-red: #D0021B;          /* StorageCore red for important actions */
+    /* Accent Colors - WarehouseCore Red */
+    --accent-red: #D0021B;          /* WarehouseCore red for important actions */
     --accent-red-hover: #A00115;    /* Darker red for hover states */
 
     /* Extended Grayscale for UI elements */
@@ -35,14 +35,14 @@
     /* White for text on dark backgrounds */
     --white: #FFFFFF;
 
-    /* Semantic Colors - StorageCore Style (Green, Yellow, Blue, Red) */
+    /* Semantic Colors - WarehouseCore Style (Green, Yellow, Blue, Red) */
     --success: #22c55e;      /* Green for success/available */
     --warning: #eab308;      /* Yellow for warnings/defective */
     --error: var(--accent-red);
     --info: #60a5fa;         /* Blue for info/repair */
 
-    /* Surface Colors - StorageCore Dark Grays */
-    --surface-0: #0B0B0B;    /* StorageCore dark background */
+    /* Surface Colors - WarehouseCore Dark Grays */
+    --surface-0: #0B0B0B;    /* WarehouseCore dark background */
     --surface-1: #111111;    /* Dark gray */
     --surface-2: #161616;    /* Medium-dark gray */
     --surface-3: #1F1F1F;    /* Medium gray */
@@ -140,7 +140,7 @@
 
 /* Light Theme Override */
 [data-theme="light"] {
-    /* Surface Colors - Light Mode (StorageCore Style) */
+    /* Surface Colors - Light Mode (WarehouseCore Style) */
     --surface-0: #FFFFFF;
     --surface-1: #F5F5F5;
     --surface-2: #EAEAEA;
@@ -153,8 +153,8 @@
     --text-muted: #888888;
     --text-inverse: #FFFFFF;
 
-    /* Accent Colors - Light Mode (StorageCore Red) */
-    --accent-red: #D0021B;          /* StorageCore red */
+    /* Accent Colors - Light Mode (WarehouseCore Red) */
+    --accent-red: #D0021B;          /* WarehouseCore red */
     --accent-red-hover: #A00115;    /* Darker red for hover states */
 
     /* Light mode grayscale adjustments */
@@ -169,7 +169,7 @@
     --gray-800: #1F1F1F;
     --gray-900: #111111;
 
-    /* Semantic Colors - Light Mode (StorageCore Style) */
+    /* Semantic Colors - Light Mode (WarehouseCore Style) */
     --success: #22c55e;      /* Green for success/available */
     --warning: #eab308;      /* Yellow for warnings/defective */
     --error: var(--accent-red);
@@ -3148,7 +3148,7 @@ label,
 }
 
 /* ============================================================================
-   SIDEBAR NAVIGATION (StorageCore-Style)
+   SIDEBAR NAVIGATION (WarehouseCore-Style)
    ============================================================================ */
 
 /* Utility Classes */
