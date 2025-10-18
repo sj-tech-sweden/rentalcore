@@ -54,8 +54,8 @@
                 var port = window.location.port;
 
                 if (hostname.startsWith('rent.') || hostname.startsWith('rental.')) {
-                    var storageHost = hostname.replace(/^rent(al)?\./, 'storage.');
-                    targetUrl = protocol + '//' + storageHost;
+                    var warehouseHost = hostname.replace(/^rent(al)?\./, 'warehouse.');
+                    targetUrl = protocol + '//' + warehouseHost;
                 } else if (port === '8081') {
                     targetUrl = protocol + '//' + hostname + ':8082';
                 } else if (port === '') {
