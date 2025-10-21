@@ -2,8 +2,8 @@ package repository
 
 import (
 	"fmt"
-	"strings"
 	"go-barcode-webapp/internal/models"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -47,7 +47,7 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 		fmt.Printf("🔧 DEBUG JobRepo.GetByID: Error loading job %d: %v\n", id, err)
 		return nil, err
 	}
-	
+
 	// Manually load Customer
 	if job.CustomerID > 0 {
 		var customer models.Customer
@@ -55,7 +55,7 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 			fmt.Printf("🔧 DEBUG JobRepo.GetByID: Failed to load customer %d: %v\n", job.CustomerID, err)
 		} else {
 			job.Customer = customer
-			fmt.Printf("🔧 DEBUG JobRepo.GetByID: Loaded customer %d: %s\n", customer.CustomerID, 
+			fmt.Printf("🔧 DEBUG JobRepo.GetByID: Loaded customer %d: %s\n", customer.CustomerID,
 				func() string {
 					if customer.CompanyName != nil && *customer.CompanyName != "" {
 						return *customer.CompanyName
@@ -67,7 +67,7 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 				}())
 		}
 	}
-	
+
 	// Manually load Status
 	if job.StatusID > 0 {
 		var status models.Status
@@ -78,24 +78,24 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 			fmt.Printf("🔧 DEBUG JobRepo.GetByID: Loaded status %d: %s\n", status.StatusID, status.Status)
 		}
 	}
-	
+
 	// Add device count
 	var deviceCount int64
 	if err := r.db.DB.Table("jobdevices").Where("jobID = ?", job.JobID).Count(&deviceCount).Error; err != nil {
 		deviceCount = 0
 	}
 	job.DeviceCount = int(deviceCount)
-	
+
 	// Manually load products for each device
 	r.loadProductsForJobDevices(job.JobDevices)
-	
+
 	fmt.Printf("🔧 DEBUG JobRepo.GetByID: Loaded job %d with description: '%s'\n", id, func() string {
 		if job.Description == nil {
 			return "<nil>"
 		}
 		return *job.Description
 	}())
-	
+
 	return &job, nil
 }
 
@@ -106,28 +106,28 @@ func (r *JobRepository) Update(job *models.Job) error {
 		}
 		return *job.Description
 	}())
-	
+
 	// Use Updates instead of Save to ensure all fields are updated
 	result := r.db.Model(job).Where("jobID = ?", job.JobID).Updates(map[string]interface{}{
-		"customerID":     job.CustomerID,
-		"statusID":       job.StatusID,
-		"description":    job.Description,
-		"startDate":      job.StartDate,
-		"endDate":        job.EndDate,
-		"revenue":        job.Revenue,
-		"discount":       job.Discount,
-		"discount_type":  job.DiscountType,
-		"jobcategoryID":  job.JobCategoryID,
-		"final_revenue":  job.FinalRevenue,
+		"customerID":    job.CustomerID,
+		"statusID":      job.StatusID,
+		"description":   job.Description,
+		"startDate":     job.StartDate,
+		"endDate":       job.EndDate,
+		"revenue":       job.Revenue,
+		"discount":      job.Discount,
+		"discount_type": job.DiscountType,
+		"jobcategoryID": job.JobCategoryID,
+		"final_revenue": job.FinalRevenue,
 	})
-	
+
 	if result.Error != nil {
 		fmt.Printf("🔧 DEBUG JobRepo.Update: Error: %v\n", result.Error)
 		return result.Error
 	}
-	
+
 	fmt.Printf("🔧 DEBUG JobRepo.Update: Success! Rows affected: %d\n", result.RowsAffected)
-	
+
 	// Verify the update by reading the job back from DB
 	var verifyJob models.Job
 	verifyResult := r.db.Where("jobID = ?", job.JobID).First(&verifyJob)
@@ -141,7 +141,7 @@ func (r *JobRepository) Update(job *models.Job) error {
 	} else {
 		fmt.Printf("🔧 DEBUG JobRepo.Update: Verification failed: %v\n", verifyResult.Error)
 	}
-	
+
 	return nil
 }
 
@@ -156,25 +156,25 @@ func (r *JobRepository) Delete(id uint) error {
 	if tx.Error != nil {
 		return tx.Error
 	}
-	
+
 	// First, remove all devices from the job to avoid foreign key constraint issues
 	if err := tx.Where("jobID = ?", id).Delete(&models.JobDevice{}).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to remove devices from job: %v", err)
 	}
-	
+
 	// Second, remove all employee-job assignments
 	if err := tx.Exec("DELETE FROM employeejob WHERE jobID = ?", id).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to remove employee assignments from job: %v", err)
 	}
-	
+
 	// Then delete the job itself
 	if err := tx.Delete(&models.Job{}, id).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
-	
+
 	// Commit the transaction
 	return tx.Commit().Error
 }
@@ -185,7 +185,7 @@ func (r *JobRepository) List(params *models.FilterParams) ([]models.JobWithDetai
 	var sqlQuery string
 	var args []interface{}
 
-	sqlQuery = `SELECT j.jobID, j.customerID, j.statusID, 
+	sqlQuery = `SELECT j.jobID, j.job_code, j.customerID, j.statusID, 
 			j.description, j.startDate, j.endDate, 
 			j.revenue, j.final_revenue,
 			CONCAT(COALESCE(c.companyname, ''), ' ', COALESCE(c.firstname, ''), ' ', COALESCE(c.lastname, '')) as customer_name, 
@@ -235,7 +235,7 @@ func (r *JobRepository) List(params *models.FilterParams) ([]models.JobWithDetai
 		sqlQuery += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	sqlQuery += " GROUP BY j.jobID, j.customerID, j.statusID, j.description, j.startDate, j.endDate, j.revenue, j.final_revenue, customer_name, s.status"
+	sqlQuery += " GROUP BY j.jobID, j.job_code, j.customerID, j.statusID, j.description, j.startDate, j.endDate, j.revenue, j.final_revenue, customer_name, s.status"
 
 	// Add ORDER BY
 	sqlQuery += " ORDER BY j.jobID DESC"
@@ -254,25 +254,25 @@ func (r *JobRepository) List(params *models.FilterParams) ([]models.JobWithDetai
 
 func (r *JobRepository) GetJobDevices(jobID uint) ([]models.JobDevice, error) {
 	var jobDevices []models.JobDevice
-	
+
 	// Load JobDevices with Device, then manually preload Products
 	err := r.db.Where("jobID = ?", jobID).
 		Preload("Device").
 		Find(&jobDevices).Error
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Manually load products for each device to ensure they're loaded correctly
 	r.loadProductsForJobDevices(jobDevices)
-	
+
 	return jobDevices, err
 }
 
 func (r *JobRepository) AssignDevice(jobID uint, deviceID string, price float64) error {
 	fmt.Printf("🚨 DEBUG: NEW AssignDevice called! jobID=%d, deviceID=%s\n", jobID, deviceID)
-	
+
 	// Get the job to check its date range
 	var job models.Job
 	err := r.db.First(&job, jobID).Error
@@ -284,7 +284,7 @@ func (r *JobRepository) AssignDevice(jobID uint, deviceID string, price float64)
 
 	// Check if device is available for this job's date range
 	// Implement the date-based availability check directly
-	
+
 	// Check if device is already assigned to this specific job
 	var existingAssignment models.JobDevice
 	err = r.db.Where("deviceID = ? AND jobID = ?", deviceID, jobID).First(&existingAssignment).Error
@@ -304,14 +304,14 @@ func (r *JobRepository) AssignDevice(jobID uint, deviceID string, price float64)
 					SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 				)`, deviceID, jobID, job.EndDate, job.StartDate).
 			First(&conflictingJob).Error
-		
+
 		if err == nil {
 			// Get conflicting job details for error message
 			var conflictJob models.Job
 			r.db.Where("jobID = ?", conflictingJob.JobID).First(&conflictJob)
-			return fmt.Errorf("device is already assigned to job %d (dates: %s to %s)", 
-				conflictJob.JobID, 
-				conflictJob.StartDate.Format("2006-01-02"), 
+			return fmt.Errorf("device is already assigned to job %d (dates: %s to %s)",
+				conflictJob.JobID,
+				conflictJob.StartDate.Format("2006-01-02"),
 				conflictJob.EndDate.Format("2006-01-02"))
 		}
 		if err != gorm.ErrRecordNotFound {
@@ -365,13 +365,13 @@ func (r *JobRepository) UnassignDevice(jobID uint, deviceID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to unassign device %s from job %d: %v", deviceID, jobID, err)
 	}
-	
+
 	// Update device status to free
 	err = r.db.Model(&models.Device{}).Where("deviceID = ?", deviceID).Update("status", "free").Error
 	if err != nil {
 		return fmt.Errorf("failed to update device status: %v", err)
 	}
-	
+
 	// Recalculate and update job revenue
 	return r.CalculateAndUpdateRevenue(jobID)
 }
@@ -446,13 +446,13 @@ func (r *JobRepository) assignDeviceWithoutRevenue(jobID uint, deviceID string, 
 					SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 				)`, deviceID, jobID, job.EndDate, job.StartDate).
 			First(&conflictingJob).Error
-		
+
 		if err == nil {
 			var conflictJob models.Job
 			r.db.Where("jobID = ?", conflictingJob.JobID).First(&conflictJob)
-			return fmt.Errorf("device is already assigned to job %d (dates: %s to %s)", 
-				conflictJob.JobID, 
-				conflictJob.StartDate.Format("2006-01-02"), 
+			return fmt.Errorf("device is already assigned to job %d (dates: %s to %s)",
+				conflictJob.JobID,
+				conflictJob.StartDate.Format("2006-01-02"),
 				conflictJob.EndDate.Format("2006-01-02"))
 		}
 		if err != gorm.ErrRecordNotFound {
@@ -518,7 +518,7 @@ func (r *JobRepository) CalculateAndUpdateRevenue(jobID uint) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Manually load products for each device
 	r.loadProductsForJobDevices(jobDevices)
 
@@ -534,7 +534,7 @@ func (r *JobRepository) CalculateAndUpdateRevenue(jobID uint) error {
 
 	// Update the job revenue
 	job.Revenue = totalRevenue
-	
+
 	// Calculate final revenue after discount
 	var finalRevenue float64
 	if job.DiscountType == "percent" {
@@ -548,7 +548,7 @@ func (r *JobRepository) CalculateAndUpdateRevenue(jobID uint) error {
 		}
 	}
 	job.FinalRevenue = &finalRevenue
-	
+
 	return r.db.Save(&job).Error
 }
 
@@ -573,31 +573,31 @@ func (r *JobRepository) UpdateFinalRevenue(jobID uint) error {
 		}
 	}
 	job.FinalRevenue = &finalRevenue
-	
+
 	return r.db.Save(&job).Error
 }
 
 func (r *JobRepository) UpdateDevicePrice(jobID uint, deviceID string, price float64) error {
 	fmt.Printf("🔧 DEBUG UpdateDevicePrice: JobID=%d, DeviceID=%s, Price=%.2f\n", jobID, deviceID, price)
-	
+
 	// Update the custom_price for the specific job-device relationship
 	// Fix: column name is 'deviceID' not 'device_id'
 	result := r.db.Model(&models.JobDevice{}).
 		Where("jobID = ? AND deviceID = ?", jobID, deviceID).
 		Update("custom_price", price)
-	
+
 	fmt.Printf("🔧 DEBUG UpdateDevicePrice: SQL result - Error=%v, RowsAffected=%d\n", result.Error, result.RowsAffected)
-	
+
 	if result.Error != nil {
 		fmt.Printf("🔧 DEBUG UpdateDevicePrice: Database error: %v\n", result.Error)
 		return result.Error
 	}
-	
+
 	if result.RowsAffected == 0 {
 		fmt.Printf("🔧 DEBUG UpdateDevicePrice: No rows affected - device not found\n")
 		return fmt.Errorf("device %s not found in job %d", deviceID, jobID)
 	}
-	
+
 	// Recalculate job revenue after price update
 	fmt.Printf("🔧 DEBUG UpdateDevicePrice: Recalculating revenue for job %d\n", jobID)
 	err := r.CalculateAndUpdateRevenue(jobID)
@@ -605,7 +605,7 @@ func (r *JobRepository) UpdateDevicePrice(jobID uint, deviceID string, price flo
 		fmt.Printf("🔧 DEBUG UpdateDevicePrice: Revenue calculation error: %v\n", err)
 		return err
 	}
-	
+
 	fmt.Printf("🔧 DEBUG UpdateDevicePrice: Success!\n")
 	return nil
 }

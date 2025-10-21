@@ -61,6 +61,7 @@ A comprehensive, enterprise-grade equipment rental management system built with 
 ### 👥 **Customer & Job Management**
 - **Customer Database**: Comprehensive customer information with rental history
 - **Job Lifecycle**: Complete job management from creation to completion
+- **Automatic Job Codes**: Consistent `JOB000123` style identifiers generated for every job
 - **Enhanced Job Modals**: Revenue and device count display with detailed overview
 - **Device Assignment**: Bulk scanning and assignment to rental jobs
 - **Device Price Management**: Real-time price adjustment per job with API integration
