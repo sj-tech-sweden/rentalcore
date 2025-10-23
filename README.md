@@ -385,7 +385,19 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.24** (Latest) - Jobs Table Filtering and Sorting
+### **v2.25** (Latest) - Smart Product/Amount Selection
+- ✅ **Quick Add Button**: New "Quick Add by Product" button in device selection
+- ✅ **Product Dropdown**: Auto-populated with all available products from device tree
+- ✅ **Quantity Input**: Specify how many devices to add
+- ✅ **Smart Auto-Selection**: System automatically selects available devices
+- ✅ **Availability Check**: Shows warning if not enough devices available
+- ✅ **Duplicate Prevention**: Skips already selected devices
+- ✅ **Status Feedback**: Real-time feedback on success/warnings
+- ✅ **Auto-Close Modal**: Modal closes automatically after successful add
+- ✅ **Date Validation**: Requires start/end dates before opening
+- ✅ **Fixes GitLab Issue #7**: Smart product/amount selection with auto-assignment
+
+### **v2.24** - Jobs Table Filtering and Sorting
 - ✅ **Column Sorting**: Click column headers to sort ascending/descending
 - ✅ **Sort Indicators**: Dynamic arrow icons show current sort state
 - ✅ **Customer Filter**: Real-time text search for customer names
