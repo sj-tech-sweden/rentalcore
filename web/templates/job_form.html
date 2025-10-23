@@ -664,7 +664,28 @@
             
             // Refresh button
             document.getElementById('refreshDeviceTree').addEventListener('click', loadDeviceTree);
-            
+
+            // Toggle Tree View button
+            document.getElementById('toggleTreeView').addEventListener('click', function() {
+                const treeContainer = document.getElementById('deviceTreeContainer');
+                const loadingDiv = document.getElementById('loadingDevices');
+                const startDate = document.querySelector('input[name="start_date"]').value;
+                const endDate = document.querySelector('input[name="end_date"]').value;
+
+                // If tree container is hidden and we have dates, load and show it
+                if (treeContainer.style.display === 'none' || treeContainer.style.display === '') {
+                    if (startDate && endDate) {
+                        loadDeviceTree();
+                    } else {
+                        alert('Please select start and end dates first to load available devices.');
+                    }
+                } else {
+                    // Toggle visibility
+                    treeContainer.style.display = 'none';
+                    loadingDiv.style.display = 'flex';
+                }
+            });
+
             // Initially load devices if dates are set (for edit mode)
             if (startDateInput.value && endDateInput.value) {
                 console.log('DEBUG: Loading device tree for edit mode with dates:', startDateInput.value, 'to', endDateInput.value);

@@ -385,7 +385,15 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.22** (Latest) - Job Creation Fix
+### **v2.23** (Latest) - Device Tree View Button Fix
+- ✅ **Tree View Button Works**: Fixed unresponsive "Tree View" button in job creation form
+- ✅ **Event Handler Added**: Added click event handler for toggleTreeView button
+- ✅ **Smart Date Validation**: Prompts user to select dates before loading device tree
+- ✅ **Toggle Functionality**: Button now properly shows/hides device tree
+- ✅ **User-Friendly**: Clear alert message when dates are missing
+- ✅ **Fixes GitLab Issue #5**: Device selection tree button now fully functional
+
+### **v2.22** - Job Creation Fix
 - ✅ **Fixed HTTP 500 Error**: Fixed job creation failure caused by missing job_code
 - ✅ **BeforeCreate Hook**: Added BeforeCreate hook to set temporary job_code before INSERT
 - ✅ **Database Constraint Fix**: Satisfies NOT NULL constraint on job_code column
