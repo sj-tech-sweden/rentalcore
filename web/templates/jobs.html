@@ -855,12 +855,10 @@
             
             // Add refresh button listener
             document.getElementById('refreshEditDeviceTree').addEventListener('click', () => loadEditDeviceTree(jobID));
-            
-            // Load device tree if dates are available
-            if (startDateInput.value && endDateInput.value) {
-                loadEditDeviceTree(jobID);
-            }
-            
+
+            // Always load device tree immediately (dates optional)
+            loadEditDeviceTree(jobID);
+
             // Update selected devices display immediately
             updateEditSelectedDevicesDisplay();
 
