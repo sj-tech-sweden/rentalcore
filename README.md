@@ -385,7 +385,15 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.31** (Latest) - Quick Add by Product/Quantity
+### **v2.32** (Latest) - UI Theme Consistency
+- ✅ **Global Scrollbar Styling**: Consistent dark theme scrollbars across all elements
+- ✅ **Dropdown Options**: Select options now have dark background matching theme
+- ✅ **WebKit Scrollbars**: Styled for Chrome, Safari, Edge with gray thumb
+- ✅ **Firefox Scrollbars**: Thin scrollbar with matching colors
+- ✅ **Hover States**: Accent color on hover/checked states for dropdowns
+- ✅ **Better UX**: All UI elements now follow RentalCore dark theme
+
+### **v2.31** - Quick Add by Product/Quantity
 - ✅ **Quick Add Interface** (Issue #7): New Quick Add section in job edit modal
 - ✅ **Product Dropdown**: Auto-populated with all available products and device counts
 - ✅ **Quantity Selection**: Specify how many devices to add in one click
