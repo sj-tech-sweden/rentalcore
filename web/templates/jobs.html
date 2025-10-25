@@ -84,6 +84,12 @@
                             <option value="{{.StatusID}}">{{.Status}}</option>
                             {{end}}
                         </select>
+                        <select id="filterCategory" class="rc-select" style="max-width: 150px;">
+                            <option value="">All Categories</option>
+                            {{range .jobcategories}}
+                            <option value="{{.JobCategoryID}}">{{.Name}}</option>
+                            {{end}}
+                        </select>
                         <input type="number" id="filterMinDevices" placeholder="Min devices" class="rc-input" style="max-width: 120px;" min="0">
                         <button type="button" class="rc-btn rc-btn-outline rc-btn-sm" onclick="clearFilters()">
                             <i class="bi bi-x-circle"></i> Clear Filters
@@ -127,6 +133,7 @@
                                     data-customer="{{.CustomerName}}"
                                     data-status-id="{{.StatusID}}"
                                     data-status-name="{{.StatusName}}"
+                                    data-category-id="{{if .JobCategoryID}}{{.JobCategoryID}}{{else}}0{{end}}"
                                     data-device-count="{{.DeviceCount}}"
                                     data-revenue="{{.TotalRevenue}}"
                                     data-start-date="{{if .StartDate}}{{.StartDate.Format "2006-01-02"}}{{else}}{{end}}"
@@ -3428,6 +3435,7 @@
     function filterTable() {
         const customerFilter = document.getElementById('filterCustomer').value.toLowerCase();
         const statusFilter = document.getElementById('filterStatus').value;
+        const categoryFilter = document.getElementById('filterCategory').value;
         const minDevices = parseInt(document.getElementById('filterMinDevices').value) || 0;
 
         const table = document.getElementById('jobsTable');
@@ -3436,13 +3444,15 @@
         rows.forEach(row => {
             const customer = (row.dataset.customer || '').toLowerCase();
             const statusId = row.dataset.statusId;
+            const categoryId = row.dataset.categoryId;
             const deviceCount = parseInt(row.dataset.deviceCount);
 
             const customerMatch = !customerFilter || customer.includes(customerFilter);
             const statusMatch = !statusFilter || statusId === statusFilter;
+            const categoryMatch = !categoryFilter || categoryId === categoryFilter;
             const devicesMatch = deviceCount >= minDevices;
 
-            if (customerMatch && statusMatch && devicesMatch) {
+            if (customerMatch && statusMatch && categoryMatch && devicesMatch) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';
@@ -3453,6 +3463,7 @@
     function clearFilters() {
         document.getElementById('filterCustomer').value = '';
         document.getElementById('filterStatus').value = '';
+        document.getElementById('filterCategory').value = '';
         document.getElementById('filterMinDevices').value = '';
         filterTable();
     }
@@ -3461,6 +3472,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('filterCustomer')?.addEventListener('input', filterTable);
         document.getElementById('filterStatus')?.addEventListener('change', filterTable);
+        document.getElementById('filterCategory')?.addEventListener('change', filterTable);
         document.getElementById('filterMinDevices')?.addEventListener('input', filterTable);
     });
 

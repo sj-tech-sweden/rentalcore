@@ -56,22 +56,23 @@ func (Status) TableName() string {
 }
 
 type Job struct {
-	JobID         uint        `json:"jobID" gorm:"primaryKey;column:jobID"`
-	JobCode       string      `json:"job_code" gorm:"column:job_code"`
-	CustomerID    uint        `json:"customerID" gorm:"not null;column:customerID"`
-	Customer      Customer    `json:"customer,omitempty" gorm:"foreignKey:CustomerID"`
-	StatusID      uint        `json:"statusID" gorm:"not null;column:statusID"`
-	Status        Status      `json:"status,omitempty" gorm:"foreignKey:StatusID"`
-	JobCategoryID *uint       `json:"jobcategoryID" gorm:"column:jobcategoryID"`
-	Description   *string     `json:"description" gorm:"column:description"`
-	Discount      float64     `json:"discount" gorm:"column:discount;default:0"`
-	DiscountType  string      `json:"discount_type" gorm:"column:discount_type;default:amount"`
-	Revenue       float64     `json:"revenue" gorm:"column:revenue;default:0"`
-	FinalRevenue  *float64    `json:"final_revenue" gorm:"column:final_revenue"`
-	StartDate     *time.Time  `json:"startDate" gorm:"column:startDate;type:date"`
-	EndDate       *time.Time  `json:"endDate" gorm:"column:endDate;type:date"`
-	JobDevices    []JobDevice `json:"job_devices,omitempty" gorm:"foreignKey:JobID"`
-	DeviceCount   int         `json:"device_count" gorm:"-:all"`
+	JobID         uint         `json:"jobID" gorm:"primaryKey;column:jobID"`
+	JobCode       string       `json:"job_code" gorm:"column:job_code"`
+	CustomerID    uint         `json:"customerID" gorm:"not null;column:customerID"`
+	Customer      Customer     `json:"customer,omitempty" gorm:"foreignKey:CustomerID"`
+	StatusID      uint         `json:"statusID" gorm:"not null;column:statusID"`
+	Status        Status       `json:"status,omitempty" gorm:"foreignKey:StatusID"`
+	JobCategoryID *uint        `json:"jobcategoryID" gorm:"column:jobcategoryID"`
+	JobCategory   *JobCategory `json:"job_category,omitempty" gorm:"foreignKey:JobCategoryID"`
+	Description   *string      `json:"description" gorm:"column:description"`
+	Discount      float64      `json:"discount" gorm:"column:discount;default:0"`
+	DiscountType  string       `json:"discount_type" gorm:"column:discount_type;default:amount"`
+	Revenue       float64      `json:"revenue" gorm:"column:revenue;default:0"`
+	FinalRevenue  *float64     `json:"final_revenue" gorm:"column:final_revenue"`
+	StartDate     *time.Time   `json:"startDate" gorm:"column:startDate;type:date"`
+	EndDate       *time.Time   `json:"endDate" gorm:"column:endDate;type:date"`
+	JobDevices    []JobDevice  `json:"job_devices,omitempty" gorm:"foreignKey:JobID"`
+	DeviceCount   int          `json:"device_count" gorm:"-:all"`
 }
 
 func (Job) TableName() string {
@@ -194,19 +195,21 @@ func (JobDevice) TableName() string {
 
 // JobWithDetails represents a job with aggregated information
 type JobWithDetails struct {
-	JobID        uint       `json:"jobID" gorm:"column:jobID"`
-	JobCode      string     `json:"job_code" gorm:"column:job_code"`
-	CustomerID   uint       `json:"customerID" gorm:"column:customerID"`
-	StatusID     uint       `json:"statusID" gorm:"column:statusID"`
-	Description  *string    `json:"description" gorm:"column:description"`
-	StartDate    *time.Time `json:"startDate" gorm:"column:startDate"`
-	EndDate      *time.Time `json:"endDate" gorm:"column:endDate"`
-	Revenue      float64    `json:"revenue" gorm:"column:revenue"`
-	FinalRevenue *float64   `json:"final_revenue" gorm:"column:final_revenue"`
-	CustomerName string     `json:"customer_name" gorm:"column:customer_name"`
-	StatusName   string     `json:"status_name" gorm:"column:status_name"`
-	DeviceCount  int        `json:"device_count" gorm:"column:device_count"`
-	TotalRevenue float64    `json:"total_revenue" gorm:"column:total_revenue"`
+	JobID          uint       `json:"jobID" gorm:"column:jobID"`
+	JobCode        string     `json:"job_code" gorm:"column:job_code"`
+	CustomerID     uint       `json:"customerID" gorm:"column:customerID"`
+	StatusID       uint       `json:"statusID" gorm:"column:statusID"`
+	JobCategoryID  *uint      `json:"jobcategoryID" gorm:"column:jobcategoryID"`
+	Description    *string    `json:"description" gorm:"column:description"`
+	StartDate      *time.Time `json:"startDate" gorm:"column:startDate"`
+	EndDate        *time.Time `json:"endDate" gorm:"column:endDate"`
+	Revenue        float64    `json:"revenue" gorm:"column:revenue"`
+	FinalRevenue   *float64   `json:"final_revenue" gorm:"column:final_revenue"`
+	CustomerName   string     `json:"customer_name" gorm:"column:customer_name"`
+	StatusName     string     `json:"status_name" gorm:"column:status_name"`
+	CategoryName   *string    `json:"category_name" gorm:"column:category_name"`
+	DeviceCount    int        `json:"device_count" gorm:"column:device_count"`
+	TotalRevenue   float64    `json:"total_revenue" gorm:"column:total_revenue"`
 }
 
 // DeviceWithJobInfo represents a device with its current job assignment

@@ -185,16 +185,18 @@ func (r *JobRepository) List(params *models.FilterParams) ([]models.JobWithDetai
 	var sqlQuery string
 	var args []interface{}
 
-	sqlQuery = `SELECT j.jobID, j.job_code, j.customerID, j.statusID, 
-			j.description, j.startDate, j.endDate, 
+	sqlQuery = `SELECT j.jobID, j.job_code, j.customerID, j.statusID, j.jobcategoryID,
+			j.description, j.startDate, j.endDate,
 			j.revenue, j.final_revenue,
-			CONCAT(COALESCE(c.companyname, ''), ' ', COALESCE(c.firstname, ''), ' ', COALESCE(c.lastname, '')) as customer_name, 
+			CONCAT(COALESCE(c.companyname, ''), ' ', COALESCE(c.firstname, ''), ' ', COALESCE(c.lastname, '')) as customer_name,
 			s.status as status_name,
+			jc.name as category_name,
 			COUNT(DISTINCT jd.deviceID) as device_count,
 			COALESCE(j.final_revenue, j.revenue) as total_revenue
-		FROM jobs j 
+		FROM jobs j
 		LEFT JOIN customers c ON j.customerID = c.customerID
 		LEFT JOIN status s ON j.statusID = s.statusID
+		LEFT JOIN jobCategory jc ON j.jobcategoryID = jc.jobcategoryID
 		LEFT JOIN jobdevices jd ON j.jobID = jd.jobID`
 
 	// Build WHERE conditions
@@ -235,7 +237,7 @@ func (r *JobRepository) List(params *models.FilterParams) ([]models.JobWithDetai
 		sqlQuery += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	sqlQuery += " GROUP BY j.jobID, j.job_code, j.customerID, j.statusID, j.description, j.startDate, j.endDate, j.revenue, j.final_revenue, customer_name, s.status"
+	sqlQuery += " GROUP BY j.jobID, j.job_code, j.customerID, j.statusID, j.jobcategoryID, j.description, j.startDate, j.endDate, j.revenue, j.final_revenue, customer_name, s.status, category_name"
 
 	// Add ORDER BY
 	sqlQuery += " ORDER BY j.jobID DESC"

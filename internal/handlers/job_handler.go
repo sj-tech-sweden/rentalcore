@@ -76,13 +76,21 @@ func (h *JobHandler) ListJobs(c *gin.Context) {
 		fmt.Printf("DEBUG: First job: %+v\n", jobs[0])
 	}
 
+	// Get job categories for filter
+	jobCategories, _ := h.jobCategoryRepo.List()
+
+	// Get statuses for filter
+	statuses, _ := h.statusRepo.List()
+
 	c.HTML(http.StatusOK, "jobs.html", gin.H{
-		"title":       "Jobs",
-		"jobs":        jobs,
-		"params":      params,
-		"user":        user,
-		"currentPage": "jobs",
-		"timestamp":   "20250820153900", // Force cache refresh
+		"title":        "Jobs",
+		"jobs":         jobs,
+		"params":       params,
+		"user":         user,
+		"currentPage":  "jobs",
+		"jobcategories": jobCategories,
+		"statuses":     statuses,
+		"timestamp":    "20250820153900", // Force cache refresh
 	})
 }
 
