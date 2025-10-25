@@ -1146,18 +1146,17 @@
     function loadEditDeviceTree(jobID) {
         const startDate = document.querySelector('#editJobForm input[name="startDate"]').value;
         const endDate = document.querySelector('#editJobForm input[name="endDate"]').value;
-        
-        if (!startDate || !endDate) {
-            document.getElementById('loadingEditDevices').innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Please select start and end dates to load available devices';
-            document.getElementById('editDeviceTreeContainer').style.display = 'none';
-            return;
-        }
-        
+
+        // Always load device tree, even without dates
         document.getElementById('loadingEditDevices').innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available devices...';
         document.getElementById('editDeviceTreeContainer').style.display = 'none';
-        
-        const url = `/api/v1/devices/tree/availability?start_date=${startDate}&end_date=${endDate}&job_id=${jobID}`;
-        
+
+        // Build URL with dates if available, otherwise load all devices
+        let url = `/api/v1/devices/tree/availability?job_id=${jobID}`;
+        if (startDate && endDate) {
+            url += `&start_date=${startDate}&end_date=${endDate}`;
+        }
+
         fetch(url, {
             credentials: 'include'
         })

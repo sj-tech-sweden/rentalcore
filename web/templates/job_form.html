@@ -730,23 +730,18 @@
                 }
             });
 
-            // Initially load devices if dates are set (for edit mode)
-            if (startDateInput.value && endDateInput.value) {
-                console.log('DEBUG: Loading device tree for edit mode with dates:', startDateInput.value, 'to', endDateInput.value);
-                loadDeviceTree();
-            } else {
-                console.log('DEBUG: Not loading device tree - missing dates:', startDateInput.value, endDateInput.value);
-            }
-            
-            // Also try setting default dates and loading after a short delay in case of timing issues
+            // Always load device tree immediately on page load
+            console.log('DEBUG: Loading device tree on page load');
+            loadDeviceTree();
+
+            // Also load after a delay to handle any dynamic form loading
             setTimeout(function() {
-                // Try setting default dates again in case the form was loaded dynamically
+                // Set default dates if not already set
                 setDefaultDates();
-                
-                const startDate = document.querySelector('input[name="start_date"]').value;
-                const endDate = document.querySelector('input[name="end_date"]').value;
-                if (startDate && endDate && (!deviceTreeData || deviceTreeData.length === 0)) {
-                    console.log('DEBUG: Delayed loading device tree with dates:', startDate, 'to', endDate);
+
+                // Reload tree if it hasn't loaded yet
+                if (!deviceTreeData || deviceTreeData.length === 0) {
+                    console.log('DEBUG: Delayed device tree reload');
                     loadDeviceTree();
                 }
             }, 500);
@@ -764,21 +759,23 @@
         function loadDeviceTree() {
             const startDate = document.querySelector('input[name="start_date"]').value;
             const endDate = document.querySelector('input[name="end_date"]').value;
-            
-            if (!startDate || !endDate) {
-                document.getElementById('loadingDevices').innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Please select start and end dates to load available devices';
-                document.getElementById('deviceTreeContainer').style.display = 'none';
-                return;
-            }
-            
+
+            // Always load device tree, even without dates
             document.getElementById('loadingDevices').innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available devices...';
             document.getElementById('deviceTreeContainer').style.display = 'none';
-            
+
             // Get job ID for exclusion (if editing)
             const jobId = getJobIdFromUrl();
-            
-            const url = `/api/v1/devices/tree/availability?start_date=${startDate}&end_date=${endDate}${jobId ? '&job_id=' + jobId : ''}`;
-            
+
+            // Build URL with dates if available, otherwise load all devices
+            let url = `/api/v1/devices/tree/availability?`;
+            if (jobId) {
+                url += `job_id=${jobId}`;
+            }
+            if (startDate && endDate) {
+                url += `${jobId ? '&' : ''}start_date=${startDate}&end_date=${endDate}`;
+            }
+
             fetch(url, {
                 credentials: 'include'
             })
