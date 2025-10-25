@@ -385,7 +385,15 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.32** (Latest) - UI Theme Consistency
+### **v2.33** (Latest) - Device Tree Auto-Load
+- ✅ **Always Load Device Tree**: Removes date dependency for loading device tree
+- ✅ **Automatic Loading**: Tree loads immediately on page load/modal open
+- ✅ **Optional Date Filtering**: If dates provided, they filter availability
+- ✅ **All Devices Available**: Without dates, all devices shown as available
+- ✅ **Better UX**: No more waiting or clicking to load device tree
+- ✅ **New Job Creation**: Tree now loads automatically when creating jobs
+
+### **v2.32** - UI Theme Consistency
 - ✅ **Global Scrollbar Styling**: Consistent dark theme scrollbars across all elements
 - ✅ **Dropdown Options**: Select options now have dark background matching theme
 - ✅ **WebKit Scrollbars**: Styled for Chrome, Safari, Edge with gray thumb
