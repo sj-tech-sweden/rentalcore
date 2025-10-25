@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: mysql
--- Erstellungszeit: 03. Sep 2025 um 16:04
+-- Erstellungszeit: 25. Okt 2025 um 21:57
 -- Server-Version: 9.2.0
 -- PHP-Version: 8.2.27
 
@@ -36,6 +36,21 @@ CREATE TABLE `analytics_cache` (
   `metadata` json DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `app_settings`
+--
+
+CREATE TABLE `app_settings` (
+  `id` int NOT NULL,
+  `scope` enum('global','warehousecore') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'warehousecore' COMMENT 'Setting scope',
+  `k` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Setting key',
+  `v` json NOT NULL COMMENT 'Setting value (JSON)',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Application configuration settings';
 
 -- --------------------------------------------------------
 
@@ -273,7 +288,11 @@ CREATE TABLE `cases` (
   `height` decimal(10,2) DEFAULT NULL,
   `depth` decimal(10,2) DEFAULT NULL,
   `weight` decimal(10,2) DEFAULT NULL,
-  `status` enum('free','rented','maintance','') NOT NULL
+  `status` enum('free','rented','maintance','') NOT NULL,
+  `zone_id` int DEFAULT NULL,
+  `barcode` varchar(255) DEFAULT NULL,
+  `rfid_tag` varchar(255) DEFAULT NULL,
+  `label_path` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -438,6 +457,31 @@ CREATE TABLE `data_subject_requests` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `defect_reports`
+--
+
+CREATE TABLE `defect_reports` (
+  `defect_id` bigint NOT NULL,
+  `device_id` varchar(50) NOT NULL,
+  `severity` enum('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+  `status` enum('open','in_progress','repaired','closed') NOT NULL DEFAULT 'open',
+  `title` varchar(200) NOT NULL,
+  `description` text NOT NULL,
+  `reported_by` bigint DEFAULT NULL COMMENT 'User who reported',
+  `reported_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `assigned_to` bigint DEFAULT NULL COMMENT 'Technician assigned',
+  `repaired_by` bigint DEFAULT NULL COMMENT 'Technician who repaired',
+  `repaired_at` timestamp NULL DEFAULT NULL,
+  `repair_cost` decimal(10,2) DEFAULT NULL,
+  `repair_notes` text,
+  `closed_at` timestamp NULL DEFAULT NULL,
+  `images` json DEFAULT NULL COMMENT 'Array of image URLs',
+  `metadata` json DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `devices`
 --
 
@@ -453,6 +497,7 @@ CREATE TABLE `devices` (
   `insuranceID` int DEFAULT NULL,
   `qr_code` varchar(255) DEFAULT NULL,
   `current_location` varchar(100) DEFAULT NULL,
+  `zone_id` int DEFAULT NULL,
   `gps_latitude` decimal(10,8) DEFAULT NULL,
   `gps_longitude` decimal(11,8) DEFAULT NULL,
   `condition_rating` decimal(3,1) DEFAULT '5.0',
@@ -460,7 +505,8 @@ CREATE TABLE `devices` (
   `total_revenue` decimal(12,2) DEFAULT '0.00',
   `last_maintenance_cost` decimal(10,2) DEFAULT NULL,
   `notes` text,
-  `barcode` varchar(255) DEFAULT NULL
+  `barcode` varchar(255) DEFAULT NULL,
+  `label_path` varchar(512) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -539,6 +585,27 @@ CREATE TABLE `device_earnings_summary` (
 ,`numJobs` bigint
 ,`totalEarnings` decimal(51,2)
 );
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `device_movements`
+--
+
+CREATE TABLE `device_movements` (
+  `movement_id` bigint NOT NULL,
+  `device_id` varchar(50) NOT NULL,
+  `action` enum('intake','outtake','transfer','return','move') NOT NULL,
+  `from_zone_id` int DEFAULT NULL COMMENT 'Origin zone',
+  `to_zone_id` int DEFAULT NULL COMMENT 'Destination zone',
+  `from_job_id` bigint DEFAULT NULL COMMENT 'Job device came from',
+  `to_job_id` bigint DEFAULT NULL COMMENT 'Job device went to',
+  `barcode` varchar(255) DEFAULT NULL COMMENT 'Scanned barcode/QR code',
+  `user_id` bigint DEFAULT NULL COMMENT 'User who performed the movement',
+  `notes` text,
+  `metadata` json DEFAULT NULL COMMENT 'Additional context',
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -769,6 +836,26 @@ CREATE TABLE `gobd_records` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `inspection_schedules`
+--
+
+CREATE TABLE `inspection_schedules` (
+  `schedule_id` bigint NOT NULL,
+  `device_id` varchar(50) DEFAULT NULL COMMENT 'Specific device',
+  `product_id` int DEFAULT NULL COMMENT 'Product type',
+  `inspection_type` varchar(100) NOT NULL COMMENT 'Safety, electrical, visual, etc.',
+  `interval_days` int NOT NULL COMMENT 'Days between inspections',
+  `last_inspection` timestamp NULL DEFAULT NULL,
+  `next_inspection` timestamp NULL DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `notes` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `insuranceprovider`
 --
 
@@ -926,7 +1013,9 @@ CREATE TABLE `jobCategory` (
 CREATE TABLE `jobdevices` (
   `jobID` int NOT NULL,
   `deviceID` varchar(50) NOT NULL,
-  `custom_price` decimal(10,2) DEFAULT NULL
+  `custom_price` decimal(10,2) DEFAULT NULL,
+  `pack_status` enum('pending','packed','issued','returned') NOT NULL DEFAULT 'pending',
+  `pack_ts` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -955,7 +1044,8 @@ CREATE TABLE `jobs` (
   `profit_margin` decimal(5,2) DEFAULT NULL,
   `contract_signed` tinyint(1) DEFAULT '0',
   `contract_documentID` int DEFAULT NULL,
-  `completion_percentage` int DEFAULT '0'
+  `completion_percentage` int DEFAULT '0',
+  `job_code` varchar(16) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
@@ -995,6 +1085,112 @@ CREATE TRIGGER `jobs_before_update` BEFORE UPDATE ON `jobs` FOR EACH ROW BEGIN
 END
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `job_attachments`
+--
+
+CREATE TABLE `job_attachments` (
+  `attachment_id` bigint UNSIGNED NOT NULL,
+  `job_id` int NOT NULL,
+  `filename` varchar(255) NOT NULL,
+  `original_filename` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_size` bigint NOT NULL,
+  `mime_type` varchar(100) NOT NULL,
+  `uploaded_by` bigint UNSIGNED DEFAULT NULL,
+  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `description` text,
+  `is_active` tinyint(1) DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `job_device_events`
+--
+
+CREATE TABLE `job_device_events` (
+  `id` bigint UNSIGNED NOT NULL,
+  `jobID` int NOT NULL,
+  `deviceID` varchar(50) NOT NULL,
+  `event_type` enum('scanned','packed','issued','returned','unpacked') NOT NULL,
+  `actor` varchar(100) DEFAULT NULL COMMENT 'User who performed the action',
+  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `metadata` json DEFAULT NULL COMMENT 'Additional event data'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `job_rental_equipment`
+--
+
+CREATE TABLE `job_rental_equipment` (
+  `job_id` int NOT NULL,
+  `equipment_id` int UNSIGNED NOT NULL,
+  `quantity` int UNSIGNED NOT NULL DEFAULT '1',
+  `days_used` int UNSIGNED NOT NULL DEFAULT '1',
+  `total_cost` decimal(12,2) NOT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `label_templates`
+--
+
+CREATE TABLE `label_templates` (
+  `id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `width` decimal(10,2) NOT NULL COMMENT 'Width in millimeters',
+  `height` decimal(10,2) NOT NULL COMMENT 'Height in millimeters',
+  `template_json` longtext COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'JSON array of label elements',
+  `is_default` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `led_controllers`
+--
+
+CREATE TABLE `led_controllers` (
+  `id` int NOT NULL,
+  `controller_id` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `display_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `topic_suffix` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `last_seen` datetime DEFAULT NULL,
+  `ip_address` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hostname` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `firmware_version` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mac_address` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `metadata` json DEFAULT NULL,
+  `status_data` json DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `led_controller_zone_types`
+--
+
+CREATE TABLE `led_controller_zone_types` (
+  `controller_id` int NOT NULL,
+  `zone_type_id` int NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1124,6 +1320,26 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `product_images`
+--
+
+CREATE TABLE `product_images` (
+  `imageID` bigint UNSIGNED NOT NULL,
+  `productID` int NOT NULL,
+  `filename` varchar(255) NOT NULL,
+  `original_name` varchar(255) DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_size` bigint UNSIGNED DEFAULT NULL,
+  `mime_type` varchar(100) DEFAULT NULL,
+  `is_primary` tinyint(1) DEFAULT '0',
+  `alt_text` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Stellvertreter-Struktur des Views `product_revenue`
 -- (Siehe unten für die tatsächliche Ansicht)
 --
@@ -1149,6 +1365,26 @@ CREATE TABLE `push_subscriptions` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `last_used` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `is_active` tinyint(1) DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `rental_equipment`
+--
+
+CREATE TABLE `rental_equipment` (
+  `equipment_id` int UNSIGNED NOT NULL,
+  `product_name` varchar(200) NOT NULL,
+  `supplier_name` varchar(100) NOT NULL,
+  `rental_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `category` varchar(50) DEFAULT NULL,
+  `description` varchar(1000) DEFAULT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_by` int UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -1212,6 +1448,29 @@ CREATE TABLE `saved_searches` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `scan_events`
+--
+
+CREATE TABLE `scan_events` (
+  `scan_id` bigint NOT NULL,
+  `scan_code` varchar(255) NOT NULL COMMENT 'The scanned barcode/QR code',
+  `scan_type` enum('barcode','qr_code','rfid') NOT NULL DEFAULT 'barcode',
+  `device_id` varchar(50) DEFAULT NULL COMMENT 'Resolved device ID',
+  `action` enum('intake','outtake','check','transfer') DEFAULT NULL,
+  `job_id` bigint DEFAULT NULL COMMENT 'Associated job',
+  `zone_id` int DEFAULT NULL COMMENT 'Associated zone',
+  `user_id` bigint DEFAULT NULL COMMENT 'User who scanned',
+  `success` tinyint(1) NOT NULL DEFAULT '1',
+  `error_message` text COMMENT 'Error if scan failed',
+  `metadata` json DEFAULT NULL COMMENT 'Additional data',
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `search_history`
 --
 
@@ -1249,6 +1508,28 @@ CREATE TABLE `status` (
   `statusID` int NOT NULL,
   `status` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `storage_zones`
+--
+
+CREATE TABLE `storage_zones` (
+  `zone_id` int NOT NULL,
+  `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Short code: SHELF-A1, RACK-B2, VAN-01',
+  `barcode` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('warehouse','rack','gitterbox','shelf','vehicle','stage','case','other') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'other',
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `parent_zone_id` int DEFAULT NULL COMMENT 'For hierarchical zones (e.g., shelf inside warehouse)',
+  `capacity` int DEFAULT NULL COMMENT 'Maximum items this zone can hold',
+  `location` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Physical location description',
+  `metadata` json DEFAULT NULL COMMENT 'Flexible attributes (GPS, dimensions, etc.)',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1426,6 +1707,22 @@ CREATE TABLE `user_preferences` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `user_profiles`
+--
+
+CREATE TABLE `user_profiles` (
+  `id` int NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL COMMENT 'FK to users.userID',
+  `display_name` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Custom display name',
+  `avatar_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Avatar image URL',
+  `prefs` json DEFAULT NULL COMMENT 'UI preferences (dark mode, table density, etc.)',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='WarehouseCore-specific user profiles';
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `user_roles`
 --
 
@@ -1437,6 +1734,19 @@ CREATE TABLE `user_roles` (
   `expires_at` timestamp NULL DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `user_roles_wh`
+--
+
+CREATE TABLE `user_roles_wh` (
+  `id` int NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL COMMENT 'FK to users.userID',
+  `role_id` int NOT NULL COMMENT 'FK to roles.roleID',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='WarehouseCore user-to-role assignments';
 
 -- --------------------------------------------------------
 
@@ -1489,6 +1799,19 @@ CREATE TABLE `vw_device_availability` (
 `deviceID` varchar(50)
 ,`product_name` varchar(50)
 ,`status_today` varchar(6)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stellvertreter-Struktur des Views `vw_device_earnings_paid`
+-- (Siehe unten für die tatsächliche Ansicht)
+--
+CREATE TABLE `vw_device_earnings_paid` (
+`deviceID` varchar(50)
+,`numJobs` bigint
+,`productName` varchar(50)
+,`totalEarnings` decimal(42,2)
 );
 
 -- --------------------------------------------------------
@@ -1566,6 +1889,23 @@ CREATE TABLE `vw_package_summary` (
 -- --------------------------------------------------------
 
 --
+-- Stellvertreter-Struktur des Views `v_job_pack_progress`
+-- (Siehe unten für die tatsächliche Ansicht)
+--
+CREATE TABLE `v_job_pack_progress` (
+`issued_devices` bigint
+,`job_description` varchar(50)
+,`jobID` int
+,`pack_progress_percent` decimal(26,2)
+,`packed_devices` bigint
+,`pending_devices` bigint
+,`returned_devices` bigint
+,`total_devices` bigint
+);
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `webauthn_sessions`
 --
 
@@ -1579,6 +1919,24 @@ CREATE TABLE `webauthn_sessions` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `zone_types`
+--
+
+CREATE TABLE `zone_types` (
+  `id` int NOT NULL,
+  `key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Machine-readable key: shelf, bin, eurobox, etc.',
+  `label` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Display name',
+  `description` text COLLATE utf8mb4_unicode_ci COMMENT 'Detailed description',
+  `default_led_pattern` enum('solid','breathe','blink') COLLATE utf8mb4_unicode_ci DEFAULT 'breathe',
+  `default_led_color` varchar(9) COLLATE utf8mb4_unicode_ci DEFAULT '#FF7A00',
+  `default_intensity` tinyint UNSIGNED DEFAULT '180',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Configurable zone types with LED defaults';
+
 --
 -- Indizes der exportierten Tabellen
 --
@@ -1590,6 +1948,14 @@ ALTER TABLE `analytics_cache`
   ADD PRIMARY KEY (`cacheID`),
   ADD UNIQUE KEY `unique_metric` (`metric_name`,`period_type`,`period_date`),
   ADD KEY `idx_metric_period` (`metric_name`,`period_type`);
+
+--
+-- Indizes für die Tabelle `app_settings`
+--
+ALTER TABLE `app_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_scope_key` (`scope`,`k`),
+  ADD KEY `idx_setting_key` (`k`);
 
 --
 -- Indizes für die Tabelle `archived_documents`
@@ -1678,7 +2044,8 @@ ALTER TABLE `cable_types`
 -- Indizes für die Tabelle `cases`
 --
 ALTER TABLE `cases`
-  ADD PRIMARY KEY (`caseID`);
+  ADD PRIMARY KEY (`caseID`),
+  ADD KEY `idx_case_zone` (`zone_id`);
 
 --
 -- Indizes für die Tabelle `categories`
@@ -1736,6 +2103,16 @@ ALTER TABLE `data_subject_requests`
   ADD KEY `idx_data_subject_requested` (`requested_at`);
 
 --
+-- Indizes für die Tabelle `defect_reports`
+--
+ALTER TABLE `defect_reports`
+  ADD PRIMARY KEY (`defect_id`),
+  ADD KEY `idx_defect_device` (`device_id`),
+  ADD KEY `idx_defect_status` (`status`),
+  ADD KEY `idx_defect_severity` (`severity`),
+  ADD KEY `idx_defect_reported` (`reported_at`);
+
+--
 -- Indizes für die Tabelle `devices`
 --
 ALTER TABLE `devices`
@@ -1747,7 +2124,9 @@ ALTER TABLE `devices`
   ADD KEY `idx_devices_qr` (`qr_code`),
   ADD KEY `idx_devices_status` (`status`),
   ADD KEY `idx_devices_search` (`deviceID`,`serialnumber`),
-  ADD KEY `idx_devices_product_status` (`productID`,`status`);
+  ADD KEY `idx_devices_product_status` (`productID`,`status`),
+  ADD KEY `idx_device_zone` (`zone_id`),
+  ADD KEY `idx_devices_label_path` (`label_path`);
 
 --
 -- Indizes für die Tabelle `devicescases`
@@ -1762,6 +2141,18 @@ ALTER TABLE `devicescases`
 ALTER TABLE `devicestatushistory`
   ADD PRIMARY KEY (`statushistoryID`),
   ADD KEY `idx_devicestatushistory_deviceID` (`deviceID`);
+
+--
+-- Indizes für die Tabelle `device_movements`
+--
+ALTER TABLE `device_movements`
+  ADD PRIMARY KEY (`movement_id`),
+  ADD KEY `idx_movement_device` (`device_id`),
+  ADD KEY `idx_movement_action` (`action`),
+  ADD KEY `idx_movement_timestamp` (`timestamp`),
+  ADD KEY `idx_movement_from_zone` (`from_zone_id`),
+  ADD KEY `idx_movement_to_zone` (`to_zone_id`),
+  ADD KEY `idx_movement_job` (`to_job_id`);
 
 --
 -- Indizes für die Tabelle `digital_signatures`
@@ -1874,6 +2265,16 @@ ALTER TABLE `gobd_records`
   ADD KEY `idx_gobd_records_document_id` (`document_id`);
 
 --
+-- Indizes für die Tabelle `inspection_schedules`
+--
+ALTER TABLE `inspection_schedules`
+  ADD PRIMARY KEY (`schedule_id`),
+  ADD KEY `idx_inspection_device` (`device_id`),
+  ADD KEY `idx_inspection_product` (`product_id`),
+  ADD KEY `idx_inspection_next` (`next_inspection`),
+  ADD KEY `idx_inspection_active` (`is_active`);
+
+--
 -- Indizes für die Tabelle `insuranceprovider`
 --
 ALTER TABLE `insuranceprovider`
@@ -1954,13 +2355,16 @@ ALTER TABLE `jobdevices`
   ADD KEY `idx_jobdevices_jobid` (`jobID`),
   ADD KEY `idx_jobdevices_composite` (`deviceID`,`jobID`),
   ADD KEY `idx_jobdevices_job` (`jobID`),
-  ADD KEY `idx_jobdevices_device` (`deviceID`);
+  ADD KEY `idx_jobdevices_device` (`deviceID`),
+  ADD KEY `idx_jobdevices_pack_status` (`pack_status`),
+  ADD KEY `idx_jobdevices_job_pack` (`jobID`,`pack_status`);
 
 --
 -- Indizes für die Tabelle `jobs`
 --
 ALTER TABLE `jobs`
   ADD PRIMARY KEY (`jobID`),
+  ADD UNIQUE KEY `ux_jobs_job_code` (`job_code`),
   ADD KEY `idx_jobs_customerID` (`customerID`),
   ADD KEY `idx_jobs_jobcategoryID` (`jobcategoryID`),
   ADD KEY `statusID` (`statusID`),
@@ -1969,6 +2373,57 @@ ALTER TABLE `jobs`
   ADD KEY `idx_jobs_dates` (`startDate`,`endDate`),
   ADD KEY `idx_jobs_status` (`statusID`);
 ALTER TABLE `jobs` ADD FULLTEXT KEY `idx_jobs_search` (`description`,`internal_notes`,`customer_notes`);
+
+--
+-- Indizes für die Tabelle `job_attachments`
+--
+ALTER TABLE `job_attachments`
+  ADD PRIMARY KEY (`attachment_id`),
+  ADD KEY `uploaded_by` (`uploaded_by`),
+  ADD KEY `idx_job_attachments_job_id` (`job_id`),
+  ADD KEY `idx_job_attachments_uploaded_at` (`uploaded_at`);
+
+--
+-- Indizes für die Tabelle `job_device_events`
+--
+ALTER TABLE `job_device_events`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_job_device_events_job` (`jobID`),
+  ADD KEY `idx_job_device_events_device` (`deviceID`),
+  ADD KEY `idx_job_device_events_type` (`event_type`),
+  ADD KEY `idx_job_device_events_timestamp` (`timestamp`);
+
+--
+-- Indizes für die Tabelle `job_rental_equipment`
+--
+ALTER TABLE `job_rental_equipment`
+  ADD PRIMARY KEY (`job_id`,`equipment_id`),
+  ADD KEY `idx_job_id` (`job_id`),
+  ADD KEY `idx_equipment_id` (`equipment_id`),
+  ADD KEY `idx_created_at` (`created_at`);
+
+--
+-- Indizes für die Tabelle `label_templates`
+--
+ALTER TABLE `label_templates`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_is_default` (`is_default`),
+  ADD KEY `idx_name` (`name`);
+
+--
+-- Indizes für die Tabelle `led_controllers`
+--
+ALTER TABLE `led_controllers`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `controller_id` (`controller_id`),
+  ADD KEY `idx_led_controllers_last_seen` (`last_seen`);
+
+--
+-- Indizes für die Tabelle `led_controller_zone_types`
+--
+ALTER TABLE `led_controller_zone_types`
+  ADD PRIMARY KEY (`controller_id`,`zone_type_id`),
+  ADD KEY `fk_led_controller_zone_types_zone_type` (`zone_type_id`);
 
 --
 -- Indizes für die Tabelle `maintenanceLogs`
@@ -2023,12 +2478,30 @@ ALTER TABLE `products`
   ADD KEY `idx_products_subbiercategoryID` (`subbiercategoryID`);
 
 --
+-- Indizes für die Tabelle `product_images`
+--
+ALTER TABLE `product_images`
+  ADD PRIMARY KEY (`imageID`),
+  ADD KEY `idx_product_images_product` (`productID`),
+  ADD KEY `idx_product_images_primary` (`productID`,`is_primary`);
+
+--
 -- Indizes für die Tabelle `push_subscriptions`
 --
 ALTER TABLE `push_subscriptions`
   ADD PRIMARY KEY (`subscriptionID`),
   ADD KEY `idx_user_active` (`userID`,`is_active`),
   ADD KEY `idx_last_used` (`last_used`);
+
+--
+-- Indizes für die Tabelle `rental_equipment`
+--
+ALTER TABLE `rental_equipment`
+  ADD PRIMARY KEY (`equipment_id`),
+  ADD KEY `idx_product_name` (`product_name`),
+  ADD KEY `idx_supplier_name` (`supplier_name`),
+  ADD KEY `idx_category` (`category`),
+  ADD KEY `idx_is_active` (`is_active`);
 
 --
 -- Indizes für die Tabelle `retention_policies`
@@ -2056,6 +2529,17 @@ ALTER TABLE `saved_searches`
   ADD KEY `idx_usage_count` (`usage_count` DESC);
 
 --
+-- Indizes für die Tabelle `scan_events`
+--
+ALTER TABLE `scan_events`
+  ADD PRIMARY KEY (`scan_id`),
+  ADD KEY `idx_scan_code` (`scan_code`),
+  ADD KEY `idx_scan_device` (`device_id`),
+  ADD KEY `idx_scan_job` (`job_id`),
+  ADD KEY `idx_scan_timestamp` (`timestamp`),
+  ADD KEY `idx_scan_success` (`success`);
+
+--
 -- Indizes für die Tabelle `search_history`
 --
 ALTER TABLE `search_history`
@@ -2074,6 +2558,17 @@ ALTER TABLE `sessions`
 --
 ALTER TABLE `status`
   ADD PRIMARY KEY (`statusID`);
+
+--
+-- Indizes für die Tabelle `storage_zones`
+--
+ALTER TABLE `storage_zones`
+  ADD PRIMARY KEY (`zone_id`),
+  ADD UNIQUE KEY `code` (`code`),
+  ADD KEY `idx_zone_type` (`type`),
+  ADD KEY `idx_zone_active` (`is_active`),
+  ADD KEY `idx_zone_parent` (`parent_zone_id`),
+  ADD KEY `idx_zone_barcode` (`barcode`);
 
 --
 -- Indizes für die Tabelle `subbiercategories`
@@ -2119,6 +2614,14 @@ ALTER TABLE `user_preferences`
   ADD UNIQUE KEY `user_id` (`user_id`);
 
 --
+-- Indizes für die Tabelle `user_profiles`
+--
+ALTER TABLE `user_profiles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id` (`user_id`),
+  ADD KEY `idx_user_profile_user_id` (`user_id`);
+
+--
 -- Indizes für die Tabelle `user_roles`
 --
 ALTER TABLE `user_roles`
@@ -2126,6 +2629,15 @@ ALTER TABLE `user_roles`
   ADD KEY `assigned_by` (`assigned_by`),
   ADD KEY `idx_user_active` (`userID`,`is_active`),
   ADD KEY `idx_role_active` (`roleID`,`is_active`);
+
+--
+-- Indizes für die Tabelle `user_roles_wh`
+--
+ALTER TABLE `user_roles_wh`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_role_wh` (`user_id`,`role_id`),
+  ADD KEY `idx_user_id_wh` (`user_id`),
+  ADD KEY `idx_role_id_wh` (`role_id`);
 
 --
 -- Indizes für die Tabelle `user_sessions`
@@ -2146,6 +2658,14 @@ ALTER TABLE `webauthn_sessions`
   ADD KEY `idx_session_type` (`session_type`);
 
 --
+-- Indizes für die Tabelle `zone_types`
+--
+ALTER TABLE `zone_types`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `key` (`key`),
+  ADD KEY `idx_zone_type_key` (`key`);
+
+--
 -- AUTO_INCREMENT für exportierte Tabellen
 --
 
@@ -2154,6 +2674,12 @@ ALTER TABLE `webauthn_sessions`
 --
 ALTER TABLE `analytics_cache`
   MODIFY `cacheID` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `app_settings`
+--
+ALTER TABLE `app_settings`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT für Tabelle `archived_documents`
@@ -2252,10 +2778,22 @@ ALTER TABLE `data_subject_requests`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT für Tabelle `defect_reports`
+--
+ALTER TABLE `defect_reports`
+  MODIFY `defect_id` bigint NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT für Tabelle `devicestatushistory`
 --
 ALTER TABLE `devicestatushistory`
   MODIFY `statushistoryID` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `device_movements`
+--
+ALTER TABLE `device_movements`
+  MODIFY `movement_id` bigint NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT für Tabelle `digital_signatures`
@@ -2318,6 +2856,12 @@ ALTER TABLE `gobd_records`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT für Tabelle `inspection_schedules`
+--
+ALTER TABLE `inspection_schedules`
+  MODIFY `schedule_id` bigint NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT für Tabelle `insuranceprovider`
 --
 ALTER TABLE `insuranceprovider`
@@ -2372,6 +2916,30 @@ ALTER TABLE `jobs`
   MODIFY `jobID` int NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT für Tabelle `job_attachments`
+--
+ALTER TABLE `job_attachments`
+  MODIFY `attachment_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `job_device_events`
+--
+ALTER TABLE `job_device_events`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `label_templates`
+--
+ALTER TABLE `label_templates`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `led_controllers`
+--
+ALTER TABLE `led_controllers`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT für Tabelle `maintenanceLogs`
 --
 ALTER TABLE `maintenanceLogs`
@@ -2402,10 +2970,22 @@ ALTER TABLE `products`
   MODIFY `productID` int NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT für Tabelle `product_images`
+--
+ALTER TABLE `product_images`
+  MODIFY `imageID` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT für Tabelle `push_subscriptions`
 --
 ALTER TABLE `push_subscriptions`
   MODIFY `subscriptionID` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `rental_equipment`
+--
+ALTER TABLE `rental_equipment`
+  MODIFY `equipment_id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT für Tabelle `retention_policies`
@@ -2426,6 +3006,12 @@ ALTER TABLE `saved_searches`
   MODIFY `searchID` int NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT für Tabelle `scan_events`
+--
+ALTER TABLE `scan_events`
+  MODIFY `scan_id` bigint NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT für Tabelle `search_history`
 --
 ALTER TABLE `search_history`
@@ -2436,6 +3022,12 @@ ALTER TABLE `search_history`
 --
 ALTER TABLE `status`
   MODIFY `statusID` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `storage_zones`
+--
+ALTER TABLE `storage_zones`
+  MODIFY `zone_id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT für Tabelle `users`
@@ -2460,6 +3052,24 @@ ALTER TABLE `user_passkeys`
 --
 ALTER TABLE `user_preferences`
   MODIFY `preference_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `user_profiles`
+--
+ALTER TABLE `user_profiles`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `user_roles_wh`
+--
+ALTER TABLE `user_roles_wh`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT für Tabelle `zone_types`
+--
+ALTER TABLE `zone_types`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 -- --------------------------------------------------------
 
@@ -2509,6 +3119,15 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`tsweb`@`%` SQL SECURITY DEFINER VIEW `vw_dev
 -- --------------------------------------------------------
 
 --
+-- Struktur des Views `vw_device_earnings_paid`
+--
+DROP TABLE IF EXISTS `vw_device_earnings_paid`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `vw_device_earnings_paid`  AS WITH   `jd_counts` as (select `jd`.`jobID` AS `jobID`,count(0) AS `device_count` from `jobdevices` `jd` group by `jd`.`jobID`), `eligible_jobs` as (select `j`.`jobID` AS `jobID` from (`jobs` `j` left join `status` `s` on((`s`.`statusID` = `j`.`statusID`))) where ((lower(`s`.`status`) in ('completed','abgeschlossen','closed','paid','bezahlt','done','finished')) or exists(select 1 from `invoices` `i` where ((`i`.`job_id` = `j`.`jobID`) and (`i`.`status` = 'paid'))))) select `d`.`deviceID` AS `deviceID`,coalesce(`p`.`name`,`d`.`deviceID`) AS `productName`,count(distinct `jd`.`jobID`) AS `numJobs`,round(coalesce(sum((case when (`j`.`discount_type` = 'percent') then (coalesce(`jd`.`custom_price`,`p`.`itemcostperday`) * (1 - (`j`.`discount` / 100))) when (`j`.`discount_type` = 'amount') then greatest((coalesce(`jd`.`custom_price`,`p`.`itemcostperday`) - (`j`.`discount` / nullif(`jc`.`device_count`,0))),0) else coalesce(`jd`.`custom_price`,`p`.`itemcostperday`) end)),0),2) AS `totalEarnings` from (((((`devices` `d` left join `jobdevices` `jd` on((`d`.`deviceID` = `jd`.`deviceID`))) left join `eligible_jobs` `ej` on((`ej`.`jobID` = `jd`.`jobID`))) left join `jobs` `j` on((`j`.`jobID` = `jd`.`jobID`))) left join `jd_counts` `jc` on((`jc`.`jobID` = `jd`.`jobID`))) left join `products` `p` on((`p`.`productID` = `d`.`productID`))) where (`ej`.`jobID` is not null) group by `d`.`deviceID`,`productName`  ;
+
+-- --------------------------------------------------------
+
+--
 -- Struktur des Views `vw_invoice_summary`
 --
 DROP TABLE IF EXISTS `vw_invoice_summary`;
@@ -2532,6 +3151,15 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `vw_pack
 DROP TABLE IF EXISTS `vw_package_summary`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `vw_package_summary`  AS SELECT `ep`.`packageID` AS `packageID`, `ep`.`name` AS `packageName`, `ep`.`description` AS `description`, `ep`.`package_price` AS `packagePrice`, `ep`.`discount_percent` AS `discountPercent`, `ep`.`min_rental_days` AS `minRentalDays`, `ep`.`is_active` AS `isActive`, `ep`.`usage_count` AS `usageCount`, `pc`.`name` AS `categoryName`, `pc`.`color` AS `categoryColor`, count(`pd`.`deviceID`) AS `deviceCount`, sum(`pd`.`quantity`) AS `totalDevices`, sum((case when (`pd`.`is_required` = 1) then `pd`.`quantity` else 0 end)) AS `requiredDevices`, sum((case when (`pd`.`is_required` = 0) then `pd`.`quantity` else 0 end)) AS `optionalDevices`, `ep`.`created_at` AS `createdAt`, `ep`.`updated_at` AS `updatedAt` FROM ((`equipment_packages` `ep` left join `package_categories` `pc` on((`ep`.`categoryID` = `pc`.`categoryID`))) left join `package_devices` `pd` on((`ep`.`packageID` = `pd`.`packageID`))) GROUP BY `ep`.`packageID`, `ep`.`name`, `ep`.`description`, `ep`.`package_price`, `ep`.`discount_percent`, `ep`.`min_rental_days`, `ep`.`is_active`, `ep`.`usage_count`, `pc`.`name`, `pc`.`color`, `ep`.`created_at`, `ep`.`updated_at` ;
+
+-- --------------------------------------------------------
+
+--
+-- Struktur des Views `v_job_pack_progress`
+--
+DROP TABLE IF EXISTS `v_job_pack_progress`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`tsweb`@`%` SQL SECURITY DEFINER VIEW `v_job_pack_progress`  AS SELECT `j`.`jobID` AS `jobID`, `j`.`description` AS `job_description`, count(`jd`.`deviceID`) AS `total_devices`, count((case when (`jd`.`pack_status` = 'packed') then 1 end)) AS `packed_devices`, count((case when (`jd`.`pack_status` = 'issued') then 1 end)) AS `issued_devices`, count((case when (`jd`.`pack_status` = 'returned') then 1 end)) AS `returned_devices`, count((case when (`jd`.`pack_status` = 'pending') then 1 end)) AS `pending_devices`, (case when (count(`jd`.`deviceID`) = 0) then 100.0 else round(((count((case when (`jd`.`pack_status` = 'packed') then 1 end)) * 100.0) / count(`jd`.`deviceID`)),2) end) AS `pack_progress_percent` FROM (`jobs` `j` left join `jobdevices` `jd` on((`j`.`jobID` = `jd`.`jobID`))) GROUP BY `j`.`jobID`, `j`.`description` ;
 
 --
 -- Constraints der exportierten Tabellen
@@ -2678,6 +3306,34 @@ ALTER TABLE `jobs`
   ADD CONSTRAINT `jobs_ibfk_5` FOREIGN KEY (`contract_documentID`) REFERENCES `documents` (`documentID`) ON DELETE SET NULL;
 
 --
+-- Constraints der Tabelle `job_attachments`
+--
+ALTER TABLE `job_attachments`
+  ADD CONSTRAINT `job_attachments_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `job_attachments_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
+
+--
+-- Constraints der Tabelle `job_device_events`
+--
+ALTER TABLE `job_device_events`
+  ADD CONSTRAINT `fk_job_device_events_device` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_job_device_events_job` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE;
+
+--
+-- Constraints der Tabelle `job_rental_equipment`
+--
+ALTER TABLE `job_rental_equipment`
+  ADD CONSTRAINT `job_rental_equipment_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `job_rental_equipment_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `rental_equipment` (`equipment_id`) ON DELETE CASCADE;
+
+--
+-- Constraints der Tabelle `led_controller_zone_types`
+--
+ALTER TABLE `led_controller_zone_types`
+  ADD CONSTRAINT `fk_led_controller_zone_types_controller` FOREIGN KEY (`controller_id`) REFERENCES `led_controllers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_led_controller_zone_types_zone_type` FOREIGN KEY (`zone_type_id`) REFERENCES `zone_types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Constraints der Tabelle `maintenanceLogs`
 --
 ALTER TABLE `maintenanceLogs`
@@ -2708,6 +3364,12 @@ ALTER TABLE `products`
   ADD CONSTRAINT `products_ibfk_5` FOREIGN KEY (`subcategoryID`) REFERENCES `subcategories` (`subcategoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 --
+-- Constraints der Tabelle `product_images`
+--
+ALTER TABLE `product_images`
+  ADD CONSTRAINT `fk_product_images_product` FOREIGN KEY (`productID`) REFERENCES `products` (`productID`) ON DELETE CASCADE;
+
+--
 -- Constraints der Tabelle `push_subscriptions`
 --
 ALTER TABLE `push_subscriptions`
@@ -2724,6 +3386,12 @@ ALTER TABLE `saved_searches`
 --
 ALTER TABLE `search_history`
   ADD CONSTRAINT `search_history_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
+
+--
+-- Constraints der Tabelle `storage_zones`
+--
+ALTER TABLE `storage_zones`
+  ADD CONSTRAINT `storage_zones_ibfk_1` FOREIGN KEY (`parent_zone_id`) REFERENCES `storage_zones` (`zone_id`) ON DELETE SET NULL;
 
 --
 -- Constraints der Tabelle `subbiercategories`
@@ -2744,12 +3412,25 @@ ALTER TABLE `user_preferences`
   ADD CONSTRAINT `fk_user_preferences_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
+-- Constraints der Tabelle `user_profiles`
+--
+ALTER TABLE `user_profiles`
+  ADD CONSTRAINT `fk_user_profiles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE;
+
+--
 -- Constraints der Tabelle `user_roles`
 --
 ALTER TABLE `user_roles`
   ADD CONSTRAINT `user_roles_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_roles_ibfk_2` FOREIGN KEY (`roleID`) REFERENCES `roles` (`roleID`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_roles_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
+
+--
+-- Constraints der Tabelle `user_roles_wh`
+--
+ALTER TABLE `user_roles_wh`
+  ADD CONSTRAINT `fk_user_roles_wh_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`roleID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_user_roles_wh_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE;
 
 --
 -- Constraints der Tabelle `user_sessions`
