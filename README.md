@@ -105,13 +105,13 @@ A comprehensive, enterprise-grade equipment rental management system built with 
 
 ### 1. Get Configuration Files
 ```bash
-git clone https://github.com/nbt4/RentalCore.git
+git clone https://git.server-nt.de/ntielmann/rentalcore.git
 cd RentalCore
 
 # Or download configuration files directly
-wget https://github.com/nbt4/RentalCore/raw/main/docker-compose.example.yml
-wget https://github.com/nbt4/RentalCore/raw/main/.env.example
-wget https://github.com/nbt4/RentalCore/raw/main/config.json.example
+wget https://git.server-nt.de/ntielmann/rentalcore/raw/main/docker-compose.example.yml
+wget https://git.server-nt.de/ntielmann/rentalcore/raw/main/.env.example
+wget https://git.server-nt.de/ntielmann/rentalcore/raw/main/config.json.example
 ```
 
 ### 2. Configure Environment
@@ -338,7 +338,7 @@ docker run --rm -v rentalcore_uploads:/data -v $(pwd):/backup alpine tar czf /ba
 ### **Local Development Setup**
 ```bash
 # Clone repository
-git clone https://github.com/nbt4/RentalCore.git
+git clone https://git.server-nt.de/ntielmann/rentalcore
 cd RentalCore
 
 # Copy configuration examples
