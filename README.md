@@ -385,7 +385,15 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.35** (Latest) - Edit Modal Device Tree Fix
+### **v2.36** (Latest) - New Job Modal Device Tree Fix
+- ✅ **New Job Modal Fixed**: Device tree now loads automatically when creating new job
+- ✅ **Dynamic Form Loading**: Fixed DOMContentLoaded issue with dynamically injected forms
+- ✅ **Manual Initialization**: Added manual trigger for tree loading after form injection
+- ✅ **Fallback Strategy**: Programmatic refresh button click as additional safeguard
+- ✅ **Complete Auto-Load**: All scenarios now covered (standalone, edit, new job)
+- ✅ **Debug Logging**: Added console logging for troubleshooting modal injection
+
+### **v2.35** - Edit Modal Device Tree Fix
 - ✅ **Edit Modal Fixed**: Device tree now loads automatically in edit job modal
 - ✅ **Removed Date Check**: No longer checks for dates before loading tree
 - ✅ **Immediate Loading**: Tree appears instantly when opening edit modal
