@@ -385,7 +385,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.37** (Latest) - Scanner Completely Disabled
+### **v2.38** (Latest) - Clickable Job Rows
+- ✅ **Entire Row Clickable**: Click anywhere on a job row to open job details
+- ✅ **Better UX**: No need to find and click the specific eye icon
+- ✅ **Visual Feedback**: Cursor changes to pointer when hovering over job rows
+- ✅ **Action Buttons Protected**: Edit and Delete buttons still work independently
+- ✅ **Event Handling**: Actions column uses stopPropagation to prevent double-triggers
+
+### **v2.37** - Scanner Completely Disabled
 - ✅ **Scanner Fully Removed**: All scan buttons and links removed from UI
 - ✅ **Home Page Updated**: Replaced "Start Scanning" with "Manage Jobs" button
 - ✅ **Quick Actions Cleaned**: Removed "Scan QR Code" from quick actions menu
