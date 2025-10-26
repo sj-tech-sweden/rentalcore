@@ -13,16 +13,19 @@ import (
 )
 
 type ProfileHandler struct {
-	db           *gorm.DB
-	config       *config.Config
+	db              *gorm.DB
+	config          *config.Config
 	webauthnHandler *WebAuthnHandler
 }
 
-func NewProfileHandler(db *gorm.DB, cfg *config.Config) *ProfileHandler {
+func NewProfileHandler(db *gorm.DB, cfg *config.Config, webauthnHandler *WebAuthnHandler) *ProfileHandler {
+	if webauthnHandler == nil {
+		webauthnHandler = NewWebAuthnHandler(db, cfg)
+	}
 	return &ProfileHandler{
-		db:           db,
-		config:       cfg,
-		webauthnHandler: NewWebAuthnHandler(db, cfg),
+		db:              db,
+		config:          cfg,
+		webauthnHandler: webauthnHandler,
 	}
 }
 
@@ -79,7 +82,7 @@ func (h *ProfileHandler) ProfileSettingsForm(c *gin.Context) {
 	// Get passkeys
 	var passkeys []models.UserPasskey
 	h.db.Where("user_id = ? AND is_active = ?", currentUser.UserID, true).Find(&passkeys)
-	
+
 	// Remove sensitive data from passkeys before sending to template
 	for i := range passkeys {
 		passkeys[i].PublicKey = nil
@@ -93,13 +96,13 @@ func (h *ProfileHandler) ProfileSettingsForm(c *gin.Context) {
 		Find(&recentAttempts)
 
 	c.HTML(http.StatusOK, "profile_settings_standalone.html", gin.H{
-		"title":           "Profile Settings",
-		"user":            currentUser,
-		"preferences":     preferences,
-		"twoFAEnabled":    twoFAEnabled,
-		"passkeys":        passkeys,
-		"recentAttempts":  recentAttempts,
-		"currentPage":     "profile",
+		"title":          "Profile Settings",
+		"user":           currentUser,
+		"preferences":    preferences,
+		"twoFAEnabled":   twoFAEnabled,
+		"passkeys":       passkeys,
+		"recentAttempts": recentAttempts,
+		"currentPage":    "profile",
 	})
 }
 
@@ -126,15 +129,18 @@ func (h *ProfileHandler) UpdateProfileSettings(c *gin.Context) {
 
 // updatePersonalInfo updates user's personal information
 func (h *ProfileHandler) updatePersonalInfo(c *gin.Context, currentUser *models.User) {
-	firstName := c.PostForm("first_name")
-	lastName := c.PostForm("last_name")
-	email := c.PostForm("email")
 	password := c.PostForm("password")
 
-	// Update user fields
-	currentUser.FirstName = firstName
-	currentUser.LastName = lastName
-	currentUser.Email = email
+	// Update user fields only if present to avoid clearing values (e.g. password-only updates)
+	if firstName, exists := c.GetPostForm("first_name"); exists {
+		currentUser.FirstName = firstName
+	}
+	if lastName, exists := c.GetPostForm("last_name"); exists {
+		currentUser.LastName = lastName
+	}
+	if email, exists := c.GetPostForm("email"); exists {
+		currentUser.Email = email
+	}
 	currentUser.UpdatedAt = time.Now()
 
 	// Update password if provided
@@ -170,7 +176,7 @@ func (h *ProfileHandler) updatePreferences(c *gin.Context, currentUser *models.U
 	preferences.TimeZone = c.PostForm("time_zone")
 	preferences.DateFormat = c.PostForm("date_format")
 	preferences.TimeFormat = c.PostForm("time_format")
-	
+
 	// Parse boolean values
 	preferences.EmailNotifications = c.PostForm("email_notifications") == "on"
 	preferences.SystemNotifications = c.PostForm("system_notifications") == "on"
@@ -178,12 +184,12 @@ func (h *ProfileHandler) updatePreferences(c *gin.Context, currentUser *models.U
 	preferences.DeviceAlertNotifications = c.PostForm("device_alert_notifications") == "on"
 	preferences.ShowAdvancedOptions = c.PostForm("show_advanced_options") == "on"
 	preferences.AutoSaveEnabled = c.PostForm("auto_save_enabled") == "on"
-	
+
 	// Parse integer values
 	if itemsPerPage, err := strconv.Atoi(c.PostForm("items_per_page")); err == nil && itemsPerPage > 0 {
 		preferences.ItemsPerPage = itemsPerPage
 	}
-	
+
 	preferences.DefaultView = c.PostForm("default_view")
 	preferences.UpdatedAt = time.Now()
 
@@ -261,4 +267,3 @@ func (h *ProfileHandler) SecurityStatus(c *gin.Context) {
 // ================================================================
 // HELPER FUNCTIONS
 // ================================================================
-

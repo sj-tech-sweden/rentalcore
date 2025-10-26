@@ -191,8 +191,23 @@ The admin user is **automatically created** on first database initialization:
 - **Username:** `admin`
 - **Password:** `admin`
 - **Email:** `admin@localhost`
+- **Roles:** `super_admin`, `admin`, `warehouse_admin`
 
-**⚠️ IMPORTANT:** Change the default password immediately after first login for security!
+**⚠️ IMPORTANT:** The default admin is now forced to change the password on the very first login before the dashboard can be accessed.
+
+**Default roles provisioned by the schema:**
+
+| Role | Scope | Description |
+|------|-------|-------------|
+| `super_admin` | Global | Full access across RentalCore + WarehouseCore |
+| `admin` | RentalCore | Complete RentalCore administration |
+| `manager` | RentalCore | Jobs, customers, devices management |
+| `operator` | RentalCore | Operational flows incl. scanning |
+| `viewer` | RentalCore | Read-only |
+| `warehouse_admin` | Warehouse | Full warehouse administration |
+| `warehouse_manager` | Warehouse | Warehouse operations + reporting |
+| `warehouse_worker` | Warehouse | Day-to-day warehouse scanning/tasks |
+| `warehouse_viewer` | Warehouse | Read-only warehouse access |
 
 ### 🔄 Integrated Deployment with WarehouseCore
 

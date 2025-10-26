@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go-barcode-webapp/internal/cache"
+	"go-barcode-webapp/internal/compliance"
 	"go-barcode-webapp/internal/config"
 	"go-barcode-webapp/internal/handlers"
 	"go-barcode-webapp/internal/logger"
@@ -22,7 +23,6 @@ import (
 	"go-barcode-webapp/internal/repository"
 	"go-barcode-webapp/internal/routes"
 	"go-barcode-webapp/internal/services"
-	"go-barcode-webapp/internal/compliance"
 
 	"github.com/gin-gonic/gin"
 )
@@ -75,7 +75,7 @@ func main() {
 	if os.Getenv("GIN_MODE") == "release" {
 		environment = "production"
 	}
-	
+
 	loggerConfig := logger.LoggerConfig{
 		Level:        logger.INFO,
 		Service:      "go-barcode-webapp",
@@ -84,25 +84,25 @@ func main() {
 		OutputPath:   "", // stdout
 		EnableCaller: true,
 	}
-	
+
 	if err := logger.InitializeLogger(loggerConfig); err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 	defer logger.GlobalLogger.Close()
-	
+
 	// Initialize error tracker
 	monitoring.InitializeErrorTracker(1000, 7*24*time.Hour) // 1000 errors, 7 days retention
-	
+
 	// Initialize cache manager
 	cacheManager := cache.NewCacheManager()
-	
+
 	// Initialize performance monitor
 	perfMonitor := middleware.NewPerformanceMonitor(500 * time.Millisecond) // 500ms slow threshold
-	
+
 	// Initialize compliance system
 	complianceMiddleware, err := compliance.NewComplianceMiddleware(
-		db.DB, 
-		"./archives", 
+		db.DB,
+		"./archives",
 		cfg.Security.EncryptionKey,
 	)
 	if err != nil {
@@ -115,7 +115,7 @@ func main() {
 			log.Printf("Warning: Failed to initialize compliance system: %v", err)
 		}
 	}
-	
+
 	// Start compliance background tasks
 	if complianceMiddleware != nil {
 		go complianceMiddleware.PeriodicComplianceCheck(context.Background())
@@ -153,12 +153,12 @@ func main() {
 	// scanBoardHandler := handlers.NewScanBoardHandler(jobRepo, deviceRepo, db)
 	authHandler := handlers.NewAuthHandler(db.DB, cfg)
 	webauthnHandler := handlers.NewWebAuthnHandler(db.DB, cfg)
-	// profileHandler := handlers.NewProfileHandler(db.DB, cfg) // Commented out - using webauthnHandler instead
+	profileHandler := handlers.NewProfileHandler(db.DB, cfg, webauthnHandler)
 	homeHandler := handlers.NewHomeHandler(jobRepo, deviceRepo, customerRepo, caseRepo, db.DB)
-	
+
 	// Start session cleanup background process
 	authHandler.StartSessionCleanup()
-	
+
 	caseHandler := handlers.NewCaseHandler(caseRepo, deviceRepo)
 	analyticsHandler := handlers.NewAnalyticsHandler(db.DB)
 	searchHandler := handlers.NewSearchHandler(db.DB)
@@ -195,13 +195,12 @@ func main() {
 
 	// Setup Gin router with error handling
 	r := gin.New()
-	
+
 	// Add monitoring, logging and compliance middleware
 	r.Use(logger.GlobalLogger.LoggingMiddleware())
 	r.Use(monitoring.GlobalErrorTracker.ErrorTrackingMiddleware())
 	r.Use(perfMonitor.PerformanceMiddleware())
 	r.Use(middleware.TemplateGlobalsMiddleware()) // Inject cross-navigation URLs
-
 
 	if complianceMiddleware != nil {
 		r.Use(complianceMiddleware.AuditMiddleware())
@@ -439,12 +438,12 @@ func main() {
 	}
 	r.SetFuncMap(funcMap)
 	r.LoadHTMLGlob("web/templates/*")
-	
+
 	// Simple health check endpoint for Docker
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok", "service": "RentalCore"})
 	})
-	
+
 	// Add caching for static files
 	r.StaticFS("/static", http.Dir("web/static"))
 	r.StaticFS("/uploads", http.Dir("uploads"))
@@ -461,7 +460,7 @@ func main() {
 		c.Set("scanner_enabled", cfg.Features.ScannerEnabled)
 		c.Next()
 	})
-	
+
 	// PWA Service Worker route
 	r.GET("/sw.js", func(c *gin.Context) {
 		c.Header("Cache-Control", "no-cache")
@@ -472,14 +471,12 @@ func main() {
 	r.GET("/manifest.json", func(c *gin.Context) {
 		c.File("web/static/manifest.json")
 	})
-	
+
 	// Favicon route
 	r.GET("/favicon.ico", func(c *gin.Context) {
 		c.Header("Cache-Control", "public, max-age=86400") // Cache for 24 hours
 		c.File("web/static/images/icon-180.png")
 	})
-	
-
 
 	// Initialize default roles
 	if err := securityHandler.InitializeDefaultRoles(); err != nil {
@@ -487,7 +484,7 @@ func main() {
 	}
 
 	// Routes
-	setupRoutes(r, cfg, jobHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, barcodeHandler, scannerHandler, authHandler, webauthnHandler, homeHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, rbacMiddleware, complianceMiddleware)
+	setupRoutes(r, cfg, jobHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, barcodeHandler, scannerHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, rbacMiddleware, complianceMiddleware)
 
 	// Setup scan fallback routes (with rate limiting) - only if scanner is enabled
 	if cfg.Features.ScannerEnabled {
@@ -500,8 +497,8 @@ func main() {
 	if os.Getenv("GIN_MODE") != "release" && cfg.Features.ScannerEnabled {
 		r.GET("/dev/scanner-demo", func(c *gin.Context) {
 			c.HTML(http.StatusOK, "professional_scanner.html", gin.H{
-				"title": "Professional Scanner Demo",
-				"jobID": "demo",
+				"title":   "Professional Scanner Demo",
+				"jobID":   "demo",
 				"jobName": "Demo Job",
 			})
 		})
@@ -519,16 +516,16 @@ func main() {
 		log.Printf("Professional scanner demo available at /dev/scanner-demo")
 		log.Printf("Legacy scanner demo available at /dev/scanner-legacy")
 	}
-	
+
 	// Add dedicated error route
 	r.GET("/error", func(c *gin.Context) {
 		code := c.DefaultQuery("code", "500")
 		message := c.DefaultQuery("message", "Internal Server Error")
 		details := c.DefaultQuery("details", "Something went wrong on the server")
-		
+
 		// Convert code to integer for template comparison
 		codeInt, _ := strconv.Atoi(code)
-		
+
 		c.HTML(http.StatusOK, "error_page.html", gin.H{
 			"error_code":    codeInt,
 			"error_message": message,
@@ -538,7 +535,7 @@ func main() {
 			"user":          nil,
 		})
 	})
-	
+
 	// Add 404 handler as the last route
 	r.NoRoute(handlers.NotFoundHandler())
 
@@ -550,10 +547,10 @@ func main() {
 		if req.Method == "POST" {
 			contentType := req.Header.Get("Content-Type")
 			log.Printf("POST request to %s with Content-Type: '%s'", req.URL.Path, contentType)
-			
-			if contentType == "application/x-www-form-urlencoded" || 
-			   strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
-				
+
+			if contentType == "application/x-www-form-urlencoded" ||
+				strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
+
 				if err := req.ParseForm(); err == nil {
 					methodParam := req.FormValue("_method")
 					log.Printf("Form _method parameter: '%s'", methodParam)
@@ -585,6 +582,7 @@ func setupRoutes(r *gin.Engine,
 	authHandler *handlers.AuthHandler,
 	webauthnHandler *handlers.WebAuthnHandler,
 	homeHandler *handlers.HomeHandler,
+	profileHandler *handlers.ProfileHandler,
 	caseHandler *handlers.CaseHandler,
 	analyticsHandler *handlers.AnalyticsHandler,
 	searchHandler *handlers.SearchHandler,
@@ -638,11 +636,6 @@ func setupRoutes(r *gin.Engine,
 			passkey.POST("/complete-authentication", webauthnHandler.CompletePasskeyAuthentication)
 		}
 	}
-	
-	
-	
-	
-	
 
 	// Protected routes - require authentication
 	protected := r.Group("/")
@@ -708,7 +701,6 @@ func setupRoutes(r *gin.Engine,
 			cables.POST("", cableHandler.CreateCable)
 		}
 
-
 		// Customer routes
 		customers := protected.Group("/customers")
 		{
@@ -753,11 +745,11 @@ func setupRoutes(r *gin.Engine,
 		if cfg.Features.ScannerEnabled {
 			scan := protected.Group("/scan")
 			{
-				scan.GET("", scannerHandler.ScanJobSelection)  // Direct /scan route
+				scan.GET("", scannerHandler.ScanJobSelection) // Direct /scan route
 				scan.GET("/select", scannerHandler.ScanJobSelection)
 				scan.GET("/:jobId", scannerHandler.ScanJob)
 				scan.GET("/:jobId/groups/ajax", scannerHandler.GetJobDeviceGroupsAJAX) // AJAX endpoint for device groups
-				scan.GET("/:jobId/devices/ajax", scannerHandler.GetJobDevicesAJAX) // AJAX endpoint for lazy loading
+				scan.GET("/:jobId/devices/ajax", scannerHandler.GetJobDevicesAJAX)     // AJAX endpoint for lazy loading
 				scan.POST("/:jobId/assign", scannerHandler.ScanDevice)
 				scan.DELETE("/:jobId/devices/:deviceId", scannerHandler.RemoveDevice)
 			}
@@ -863,7 +855,7 @@ func setupRoutes(r *gin.Engine,
 			financial.GET("/reports", financialHandler.FinancialReports)
 			financial.GET("/api/revenue-report", financialHandler.GetRevenueReport)
 			financial.GET("/api/payment-report", financialHandler.GetPaymentReport)
-			
+
 			// Export routes
 			financial.GET("/api/export/transactions", financialHandler.ExportTransactions)
 			financial.GET("/api/export/revenue", financialHandler.ExportRevenue)
@@ -916,7 +908,7 @@ func setupRoutes(r *gin.Engine,
 			settings.PUT("/company/api", companyHandler.UpdateCompanySettings)
 			settings.POST("/company/logo", companyHandler.UploadCompanyLogo)
 			settings.DELETE("/company/logo", companyHandler.DeleteCompanyLogo)
-			
+
 		}
 
 		// Security & Admin routes (PROTECTED - Admin only)
@@ -1045,62 +1037,28 @@ func setupRoutes(r *gin.Engine,
 		// Profile Settings routes (moved to end to avoid potential conflicts)
 		profile := protected.Group("/profile")
 		{
-			// Profile settings route with full functionality
-			profile.GET("/settings", func(c *gin.Context) {
-				currentUser, exists := handlers.GetCurrentUser(c)
-				if !exists || currentUser == nil {
-					c.Redirect(http.StatusSeeOther, "/login")
-					return
-				}
-				
-				// Use webauthnHandler's database connection
-				webauthnDB := webauthnHandler.GetDB()
-				
-				// Load user's passkeys
-				var passkeys []models.UserPasskey
-				webauthnDB.Where("user_id = ? AND is_active = ?", currentUser.UserID, true).Find(&passkeys)
-				
-				// Load 2FA status using the correct query
-				var twoFAEnabled bool
-				webauthnDB.Raw("SELECT COALESCE(is_enabled, false) FROM user_2fa WHERE user_id = ?", currentUser.UserID).Scan(&twoFAEnabled)
-				
-				// Load recent authentication attempts
-				var recentAttempts []models.AuthenticationAttempt
-				webauthnDB.Where("user_id = ?", currentUser.UserID).Order("attempted_at DESC").Limit(10).Find(&recentAttempts)
-				
-				c.HTML(http.StatusOK, "profile_settings_standalone.html", gin.H{
-					"title": "Profile Settings",
-					"user": currentUser,
-					"preferences": nil,
-					"twoFAEnabled": twoFAEnabled,
-					"passkeys": passkeys,
-					"recentAttempts": recentAttempts,
-					"currentPage": "profile",
-				})
-			})
-			
-			// Security status endpoint
-			profile.GET("/security-status", webauthnHandler.SecurityStatus)
-			
+			profile.GET("/settings", profileHandler.ProfileSettingsForm)
+			profile.POST("/settings", profileHandler.UpdateProfileSettings)
+			profile.GET("/security-status", profileHandler.SecurityStatus)
+
 			// WebAuthn (Passkey) routes
 			passkeys := profile.Group("/passkeys")
 			{
-				passkeys.POST("/start-registration", webauthnHandler.StartPasskeyRegistration)
-				passkeys.POST("/complete-registration", webauthnHandler.CompletePasskeyRegistration)
-				passkeys.GET("", webauthnHandler.ListUserPasskeys)
-				passkeys.DELETE("/:id", webauthnHandler.DeletePasskey)
+				passkeys.POST("/start-registration", profileHandler.StartPasskeyRegistration)
+				passkeys.POST("/complete-registration", profileHandler.CompletePasskeyRegistration)
+				passkeys.GET("", profileHandler.ListUserPasskeys)
+				passkeys.DELETE("/:id", profileHandler.DeletePasskey)
 			}
-			
+
 			// 2FA routes
 			twoFA := profile.Group("/2fa")
 			{
-				twoFA.POST("/setup", webauthnHandler.Setup2FA)
-				twoFA.POST("/verify", webauthnHandler.Verify2FA)
-				twoFA.POST("/disable", webauthnHandler.Disable2FA)
-				twoFA.GET("/status", webauthnHandler.Get2FAStatus)
+				twoFA.POST("/setup", profileHandler.Setup2FA)
+				twoFA.POST("/verify", profileHandler.Verify2FA)
+				twoFA.POST("/disable", profileHandler.Disable2FA)
+				twoFA.GET("/status", profileHandler.Get2FAStatus)
 			}
 		}
-		
 
 		// User Management (PROTECTED - Admin/Manager only)
 		userManagement := protected.Group("")
@@ -1201,7 +1159,6 @@ func setupRoutes(r *gin.Engine,
 				apiCables.GET("/types", cableHandler.GetCableTypesAPI)
 				apiCables.GET("/connectors", cableHandler.GetCableConnectorsAPI)
 			}
-
 
 			// Customer API
 			apiCustomers := api.Group("/customers")
@@ -1345,13 +1302,13 @@ func setupRoutes(r *gin.Engine,
 				jobAttachmentsAPI.DELETE("/attachments/:id", jobAttachmentHandler.DeleteAttachment)
 				jobAttachmentsAPI.PUT("/attachments/:id/description", jobAttachmentHandler.UpdateAttachmentDescription)
 			}
-			
+
 			// Company settings API - NOW ACTIVE
 			legacyAPI.GET("/company-settings", companyHandler.GetCompanySettings)
 			legacyAPI.PUT("/company-settings", companyHandler.UpdateCompanySettings)
 			legacyAPI.POST("/company-settings/logo", companyHandler.UploadCompanyLogo)
 			legacyAPI.DELETE("/company-settings/logo", companyHandler.DeleteCompanyLogo)
-			
+
 			// SMTP Configuration API
 			settingsAPI := legacyAPI.Group("/settings")
 			{
@@ -1359,12 +1316,12 @@ func setupRoutes(r *gin.Engine,
 				settingsAPI.POST("/smtp", companyHandler.UpdateSMTPConfig)
 				settingsAPI.POST("/smtp/test", companyHandler.TestSMTPConnection)
 			}
-			
+
 			// TODO: Invoice settings API - temporarily disabled
-			// Will be re-implemented in new system when needed  
+			// Will be re-implemented in new system when needed
 			// legacyAPI.GET("/invoice-settings", invoiceHandler.InvoiceSettingsForm)
 			// legacyAPI.PUT("/invoice-settings", invoiceHandler.UpdateInvoiceSettings)
-			
+
 			// TODO: Email API - temporarily disabled
 			// Will be re-implemented in new system when needed
 			// legacyAPI.POST("/test-email", invoiceHandler.TestEmailSettings)
@@ -1415,7 +1372,7 @@ func createDefaultTemplate(templateHandler *handlers.InvoiceTemplateHandler, rep
 	// Create a default German standard template
 	description := "Standard German invoice template compliant with DIN 5008"
 	cssStyles := `{"templateType":"german-din","primaryFont":"Arial","headerFontSize":"18","bodyFontSize":"12","primaryColor":"#2563eb","textColor":"#000000","backgroundColor":"#ffffff","pageMargins":"20","elementSpacing":"15","borderStyle":"solid"}`
-	
+
 	defaultTemplate := &models.InvoiceTemplate{
 		Name:         "German Standard (DIN 5008)",
 		Description:  &description,
