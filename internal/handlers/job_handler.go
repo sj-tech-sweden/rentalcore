@@ -14,6 +14,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const jobDebugLogsEnabled = false
+
+func jobDebugLog(format string, args ...interface{}) {
+	if !jobDebugLogsEnabled {
+		return
+	}
+	fmt.Printf(format, args...)
+}
+
 type JobHandler struct {
 	jobRepo         *repository.JobRepository
 	deviceRepo      *repository.DeviceRepository
@@ -35,7 +44,7 @@ func NewJobHandler(jobRepo *repository.JobRepository, deviceRepo *repository.Dev
 // Web interface handlers
 func (h *JobHandler) ListJobs(c *gin.Context) {
 	user, _ := GetCurrentUser(c)
-	
+
 	params := &models.FilterParams{}
 	if err := c.ShouldBindQuery(params); err != nil {
 		c.HTML(http.StatusBadRequest, "error.html", gin.H{"error": err.Error(), "user": user})
@@ -43,37 +52,37 @@ func (h *JobHandler) ListJobs(c *gin.Context) {
 	}
 
 	// DEBUG: Log all query parameters
-	fmt.Printf("DEBUG Job Handler: All query params: %+v\n", c.Request.URL.Query())
-	
+	jobDebugLog("DEBUG Job Handler: All query params: %+v\n", c.Request.URL.Query())
+
 	// Manual parameter extraction to ensure search works
 	searchParam := c.Query("search")
-	fmt.Printf("DEBUG Job Handler: Raw search parameter: '%s'\n", searchParam)
+	jobDebugLog("DEBUG Job Handler: Raw search parameter: '%s'\n", searchParam)
 	if searchParam != "" {
 		params.SearchTerm = searchParam
-		fmt.Printf("DEBUG Job Handler: Search parameter SET to: '%s'\n", searchParam)
+		jobDebugLog("DEBUG Job Handler: Search parameter SET to: '%s'\n", searchParam)
 	}
-	
+
 	// DEBUG: Log params after binding
-	fmt.Printf("DEBUG Job Handler: Final params: SearchTerm='%s', StartDate=%v, EndDate=%v\n", params.SearchTerm, params.StartDate, params.EndDate)
+	jobDebugLog("DEBUG Job Handler: Final params: SearchTerm='%s', StartDate=%v, EndDate=%v\n", params.SearchTerm, params.StartDate, params.EndDate)
 
 	// For /scan page, only show open jobs - for /jobs page, show all
 	// Check if this is called from scan page
 	if c.Request.URL.Path == "/scan" || c.Request.URL.Path == "/scan/" {
 		params.Status = "Open"
 	}
-	
+
 	jobs, err := h.jobRepo.List(params)
 	if err != nil {
 		// Log the error for debugging
-		fmt.Printf("DEBUG: Error loading jobs: %v\n", err)
+		jobDebugLog("DEBUG: Error loading jobs: %v\n", err)
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": err.Error(), "user": user})
 		return
 	}
 
 	// Debug: Log how many jobs were found
-	fmt.Printf("DEBUG: Found %d jobs with search term '%s'\n", len(jobs), params.SearchTerm)
+	jobDebugLog("DEBUG: Found %d jobs with search term '%s'\n", len(jobs), params.SearchTerm)
 	if len(jobs) > 0 {
-		fmt.Printf("DEBUG: First job: %+v\n", jobs[0])
+		jobDebugLog("DEBUG: First job: %+v\n", jobs[0])
 	}
 
 	// Get job categories for filter
@@ -83,14 +92,14 @@ func (h *JobHandler) ListJobs(c *gin.Context) {
 	statuses, _ := h.statusRepo.List()
 
 	c.HTML(http.StatusOK, "jobs.html", gin.H{
-		"title":        "Jobs",
-		"jobs":         jobs,
-		"params":       params,
-		"user":         user,
-		"currentPage":  "jobs",
+		"title":         "Jobs",
+		"jobs":          jobs,
+		"params":        params,
+		"user":          user,
+		"currentPage":   "jobs",
 		"jobcategories": jobCategories,
-		"statuses":     statuses,
-		"timestamp":    "20250820153900", // Force cache refresh
+		"statuses":      statuses,
+		"timestamp":     "20250820153900", // Force cache refresh
 	})
 }
 
@@ -107,9 +116,9 @@ func (h *JobHandler) NewJobForm(c *gin.Context) {
 			return
 		}
 	}
-	
+
 	user, _ := GetCurrentUser(c)
-	
+
 	customers, err := h.customerRepo.List(&models.FilterParams{})
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": err.Error(), "user": user})
@@ -129,12 +138,12 @@ func (h *JobHandler) NewJobForm(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "job_form.html", gin.H{
-		"title":        "New Job",
-		"job":          &models.Job{},
-		"customers":    customers,
-		"statuses":     statuses,
+		"title":         "New Job",
+		"job":           &models.Job{},
+		"customers":     customers,
+		"statuses":      statuses,
 		"jobCategories": jobCategories,
-		"user":         user,
+		"user":          user,
 	})
 }
 
@@ -150,12 +159,12 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
-			"title":        "New Job",
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "New Job",
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        "Start date is required",
-			"user":         user,
+			"error":         "Start date is required",
+			"user":          user,
 		})
 		return
 	}
@@ -169,16 +178,16 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
-			"title":        "New Job",
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "New Job",
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        "Invalid start date format",
-			"user":         user,
+			"error":         "Invalid start date format",
+			"user":          user,
 		})
 		return
 	}
-	
+
 	// Validate required end date
 	endDateStr := c.PostForm("end_date")
 	if endDateStr == "" {
@@ -187,16 +196,16 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
-			"title":        "New Job",
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "New Job",
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        "End date is required",
-			"user":         user,
+			"error":         "End date is required",
+			"user":          user,
 		})
 		return
 	}
-	
+
 	if parsed, err := time.Parse("2006-01-02", endDateStr); err == nil {
 		endDate = &parsed
 	} else {
@@ -205,12 +214,12 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
-			"title":        "New Job",
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "New Job",
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        "Invalid end date format",
-			"user":         user,
+			"error":         "Invalid end date format",
+			"user":          user,
 		})
 		return
 	}
@@ -220,7 +229,7 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 	if discountType == "" {
 		discountType = "amount" // default
 	}
-	
+
 	job := models.Job{
 		CustomerID:   uint(customerID),
 		StatusID:     uint(statusID),
@@ -255,13 +264,13 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusInternalServerError, "job_form.html", gin.H{
-			"title":        "New Job",
-			"job":          &job,
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "New Job",
+			"job":           &job,
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        err.Error(),
-			"user":         user,
+			"error":         err.Error(),
+			"user":          user,
 		})
 		return
 	}
@@ -271,7 +280,7 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 
 func (h *JobHandler) GetJob(c *gin.Context) {
 	user, _ := GetCurrentUser(c)
-	
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.HTML(http.StatusBadRequest, "error.html", gin.H{"error": "Invalid job ID", "user": user})
@@ -339,13 +348,12 @@ func (h *JobHandler) GetJob(c *gin.Context) {
 
 func (h *JobHandler) EditJobForm(c *gin.Context) {
 	user, _ := GetCurrentUser(c)
-	
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.HTML(http.StatusBadRequest, "error.html", gin.H{"error": "Invalid job ID", "user": user})
 		return
 	}
-
 
 	job, err := h.jobRepo.GetByID(uint(id))
 	if err != nil {
@@ -371,26 +379,24 @@ func (h *JobHandler) EditJobForm(c *gin.Context) {
 		return
 	}
 
-
 	c.HTML(http.StatusOK, "job_form.html", gin.H{
-		"title":        "Edit Job",
-		"job":          job,
-		"customers":    customers,
-		"statuses":     statuses,
+		"title":         "Edit Job",
+		"job":           job,
+		"customers":     customers,
+		"statuses":      statuses,
 		"jobCategories": jobCategories,
-		"user":         user,
+		"user":          user,
 	})
 }
 
 func (h *JobHandler) UpdateJob(c *gin.Context) {
 	user, _ := GetCurrentUser(c)
-	
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.HTML(http.StatusBadRequest, "error.html", gin.H{"error": "Invalid job ID", "user": user})
 		return
 	}
-
 
 	// Load existing job first
 	job, err := h.jobRepo.GetByID(uint(id))
@@ -398,7 +404,6 @@ func (h *JobHandler) UpdateJob(c *gin.Context) {
 		c.HTML(http.StatusNotFound, "error.html", gin.H{"error": "Job not found", "user": user})
 		return
 	}
-
 
 	// Update fields from form
 	customerID, _ := strconv.ParseUint(c.PostForm("customer_id"), 10, 32)
@@ -413,13 +418,13 @@ func (h *JobHandler) UpdateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
-			"title":        "Edit Job",
-			"job":          job,
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "Edit Job",
+			"job":           job,
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        "Start date is required",
-			"user":         user,
+			"error":         "Start date is required",
+			"user":          user,
 		})
 		return
 	}
@@ -432,17 +437,17 @@ func (h *JobHandler) UpdateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
-			"title":        "Edit Job",
-			"job":          job,
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "Edit Job",
+			"job":           job,
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        "Invalid start date format",
-			"user":         user,
+			"error":         "Invalid start date format",
+			"user":          user,
 		})
 		return
 	}
-	
+
 	// Validate required end date
 	endDateStr := c.PostForm("end_date")
 	if endDateStr == "" {
@@ -450,17 +455,17 @@ func (h *JobHandler) UpdateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
-			"title":        "Edit Job",
-			"job":          job,
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "Edit Job",
+			"job":           job,
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        "End date is required",
-			"user":         user,
+			"error":         "End date is required",
+			"user":          user,
 		})
 		return
 	}
-	
+
 	if parsed, err := time.Parse("2006-01-02", endDateStr); err == nil {
 		endDate = &parsed
 	} else {
@@ -468,13 +473,13 @@ func (h *JobHandler) UpdateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
-			"title":        "Edit Job",
-			"job":          job,
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "Edit Job",
+			"job":           job,
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        "Invalid end date format",
-			"user":         user,
+			"error":         "Invalid end date format",
+			"user":          user,
 		})
 		return
 	}
@@ -483,7 +488,7 @@ func (h *JobHandler) UpdateJob(c *gin.Context) {
 
 	description := c.PostForm("description")
 	job.Description = &description
-	
+
 	discountType := c.PostForm("discount_type")
 	if discountType == "" {
 		discountType = "amount" // default
@@ -514,13 +519,13 @@ func (h *JobHandler) UpdateJob(c *gin.Context) {
 		statuses, _ := h.statusRepo.List()
 		jobCategories, _ := h.jobCategoryRepo.List()
 		c.HTML(http.StatusInternalServerError, "job_form.html", gin.H{
-			"title":        "Edit Job",
-			"job":          job,
-			"customers":    customers,
-			"statuses":     statuses,
+			"title":         "Edit Job",
+			"job":           job,
+			"customers":     customers,
+			"statuses":      statuses,
 			"jobCategories": jobCategories,
-			"error":        err.Error(),
-			"user":         user,
+			"error":         err.Error(),
+			"user":          user,
 		})
 		return
 	}
@@ -566,19 +571,19 @@ func (h *JobHandler) GetJobDevices(c *gin.Context) {
 	}
 
 	// Debug logging for device pricing
-	fmt.Printf("🔧 DEBUG GetJobDevices: Job %d has %d devices\n", id, len(jobDevices))
+	jobDebugLog("🔧 DEBUG GetJobDevices: Job %d has %d devices\n", id, len(jobDevices))
 	for i, device := range jobDevices {
 		customPriceVal := "nil"
 		if device.CustomPrice != nil {
 			customPriceVal = fmt.Sprintf("%.2f", *device.CustomPrice)
 		}
-		
+
 		productPriceVal := "nil"
 		if device.Device.Product != nil && device.Device.Product.ItemCostPerDay != nil {
 			productPriceVal = fmt.Sprintf("%.2f", *device.Device.Product.ItemCostPerDay)
 		}
-		
-		fmt.Printf("🔧 DEBUG GetJobDevices[%d]: DeviceID=%s, CustomPrice=%s, ProductPrice=%s\n", 
+
+		jobDebugLog("🔧 DEBUG GetJobDevices[%d]: DeviceID=%s, CustomPrice=%s, ProductPrice=%s\n",
 			i, device.DeviceID, customPriceVal, productPriceVal)
 	}
 
@@ -738,14 +743,14 @@ func (h *JobHandler) GetJobAPI(c *gin.Context) {
 	}
 
 	// Debug logging to check customer and status data
-	fmt.Printf("🔧 DEBUG GetJobAPI: Job %d - CustomerID: %d, StatusID: %d\n", job.JobID, job.CustomerID, job.StatusID)
-	fmt.Printf("🔧 DEBUG GetJobAPI: Customer loaded - ID: %d, CompanyName: %v, FirstName: %v, LastName: %v\n", 
+	jobDebugLog("🔧 DEBUG GetJobAPI: Job %d - CustomerID: %d, StatusID: %d\n", job.JobID, job.CustomerID, job.StatusID)
+	jobDebugLog("🔧 DEBUG GetJobAPI: Customer loaded - ID: %d, CompanyName: %v, FirstName: %v, LastName: %v\n",
 		job.Customer.CustomerID, job.Customer.CompanyName, job.Customer.FirstName, job.Customer.LastName)
-	fmt.Printf("🔧 DEBUG GetJobAPI: Status loaded - ID: %d, Status: %s\n", job.Status.StatusID, job.Status.Status)
-	
+	jobDebugLog("🔧 DEBUG GetJobAPI: Status loaded - ID: %d, Status: %s\n", job.Status.StatusID, job.Status.Status)
+
 	// Debug: Print full JSON being returned
 	jsonData, _ := json.MarshalIndent(job, "", "  ")
-	fmt.Printf("🔧 DEBUG GetJobAPI: Full JSON response:\n%s\n", string(jsonData))
+	jobDebugLog("🔧 DEBUG GetJobAPI: Full JSON response:\n%s\n", string(jsonData))
 
 	c.JSON(http.StatusOK, job)
 }
@@ -847,27 +852,27 @@ func (h *JobHandler) UpdateJobAPI(c *gin.Context) {
 		if deviceStr, ok := selectedDevicesStr.(string); ok && deviceStr != "" {
 			// Parse selected devices
 			selectedDevices := strings.Split(deviceStr, ",")
-			
+
 			// Get current job devices
 			currentDevices, err := h.jobRepo.GetJobDevices(uint(id))
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current devices"})
 				return
 			}
-			
+
 			// Create sets for comparison
 			currentDeviceIDs := make(map[string]bool)
 			for _, device := range currentDevices {
 				currentDeviceIDs[device.DeviceID] = true
 			}
-			
+
 			newDeviceIDs := make(map[string]bool)
 			for _, deviceID := range selectedDevices {
 				if deviceID != "" {
 					newDeviceIDs[deviceID] = true
 				}
 			}
-			
+
 			// Remove devices that are no longer selected
 			for deviceID := range currentDeviceIDs {
 				if !newDeviceIDs[deviceID] {
@@ -877,7 +882,7 @@ func (h *JobHandler) UpdateJobAPI(c *gin.Context) {
 					}
 				}
 			}
-			
+
 			// Add new devices
 			for deviceID := range newDeviceIDs {
 				if !currentDeviceIDs[deviceID] {
@@ -969,34 +974,34 @@ func (h *JobHandler) BulkScanDevicesAPI(c *gin.Context) {
 func (h *JobHandler) UpdateDevicePriceAPI(c *gin.Context) {
 	jobID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		fmt.Printf("🔧 DEBUG UpdateDevicePriceAPI: Invalid job ID: %v\n", err)
+		jobDebugLog("🔧 DEBUG UpdateDevicePriceAPI: Invalid job ID: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
 		return
 	}
 
 	deviceID := c.Param("deviceId")
-	fmt.Printf("🔧 DEBUG UpdateDevicePriceAPI: JobID=%d, DeviceID=%s\n", jobID, deviceID)
-	
+	jobDebugLog("🔧 DEBUG UpdateDevicePriceAPI: JobID=%d, DeviceID=%s\n", jobID, deviceID)
+
 	var request struct {
 		Price float64 `json:"price"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&request); err != nil {
-		fmt.Printf("🔧 DEBUG UpdateDevicePriceAPI: JSON binding error: %v\n", err)
+		jobDebugLog("🔧 DEBUG UpdateDevicePriceAPI: JSON binding error: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	fmt.Printf("🔧 DEBUG UpdateDevicePriceAPI: Updating price to %.2f\n", request.Price)
+	jobDebugLog("🔧 DEBUG UpdateDevicePriceAPI: Updating price to %.2f\n", request.Price)
 
 	// Update the device price in the job
 	if err := h.jobRepo.UpdateDevicePrice(uint(jobID), deviceID, request.Price); err != nil {
-		fmt.Printf("🔧 DEBUG UpdateDevicePriceAPI: Repository error: %v\n", err)
+		jobDebugLog("🔧 DEBUG UpdateDevicePriceAPI: Repository error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	fmt.Printf("🔧 DEBUG UpdateDevicePriceAPI: Success!\n")
+	jobDebugLog("🔧 DEBUG UpdateDevicePriceAPI: Success!\n")
 	c.JSON(http.StatusOK, gin.H{"message": "Device price updated successfully"})
 }
 

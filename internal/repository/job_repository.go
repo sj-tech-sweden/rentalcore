@@ -3,6 +3,7 @@ package repository
 import (
 	"fmt"
 	"go-barcode-webapp/internal/models"
+	"log"
 	"strings"
 
 	"gorm.io/gorm"
@@ -10,6 +11,15 @@ import (
 
 type JobRepository struct {
 	db *Database
+}
+
+const jobRepoDebugLogsEnabled = false
+
+func jobRepoDebugLog(format string, args ...interface{}) {
+	if !jobRepoDebugLogsEnabled {
+		return
+	}
+	fmt.Printf(format, args...)
 }
 
 func NewJobRepository(db *Database) *JobRepository {
@@ -24,14 +34,48 @@ func (r *JobRepository) GetDB() *Database {
 // loadProductsForJobDevices manually loads products for job devices
 // This is a workaround for GORM nested preloading issues
 func (r *JobRepository) loadProductsForJobDevices(jobDevices []models.JobDevice) {
+	productIDs := make([]uint, 0, len(jobDevices))
+	uniqueIDs := make(map[uint]struct{})
+
+	for i := range jobDevices {
+		productIDPtr := jobDevices[i].Device.ProductID
+		if productIDPtr == nil {
+			continue
+		}
+
+		productID := *productIDPtr
+		if _, exists := uniqueIDs[productID]; exists {
+			continue
+		}
+
+		uniqueIDs[productID] = struct{}{}
+		productIDs = append(productIDs, productID)
+	}
+
+	if len(productIDs) == 0 {
+		return
+	}
+
+	var products []models.Product
+	if err := r.db.Where("productID IN ?", productIDs).Find(&products).Error; err != nil {
+		log.Printf("Warning: failed to preload products for job devices: %v", err)
+		return
+	}
+
+	productMap := make(map[uint]*models.Product, len(products))
+	for i := range products {
+		product := &products[i]
+		productMap[product.ProductID] = product
+	}
+
 	for i := range jobDevices {
 		jd := &jobDevices[i]
-		if jd.Device.ProductID != nil {
-			var product models.Product
-			productErr := r.db.Where("productID = ?", *jd.Device.ProductID).First(&product).Error
-			if productErr == nil {
-				jd.Device.Product = &product
-			}
+		if jd.Device.ProductID == nil {
+			continue
+		}
+
+		if product, ok := productMap[*jd.Device.ProductID]; ok {
+			jd.Device.Product = product
 		}
 	}
 }
@@ -44,7 +88,7 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 	var job models.Job
 	err := r.db.Preload("JobDevices.Device").First(&job, id).Error
 	if err != nil {
-		fmt.Printf("🔧 DEBUG JobRepo.GetByID: Error loading job %d: %v\n", id, err)
+		jobRepoDebugLog("🔧 DEBUG JobRepo.GetByID: Error loading job %d: %v\n", id, err)
 		return nil, err
 	}
 
@@ -52,10 +96,10 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 	if job.CustomerID > 0 {
 		var customer models.Customer
 		if err := r.db.Where("customerID = ?", job.CustomerID).First(&customer).Error; err != nil {
-			fmt.Printf("🔧 DEBUG JobRepo.GetByID: Failed to load customer %d: %v\n", job.CustomerID, err)
+			jobRepoDebugLog("🔧 DEBUG JobRepo.GetByID: Failed to load customer %d: %v\n", job.CustomerID, err)
 		} else {
 			job.Customer = customer
-			fmt.Printf("🔧 DEBUG JobRepo.GetByID: Loaded customer %d: %s\n", customer.CustomerID,
+			jobRepoDebugLog("🔧 DEBUG JobRepo.GetByID: Loaded customer %d: %s\n", customer.CustomerID,
 				func() string {
 					if customer.CompanyName != nil && *customer.CompanyName != "" {
 						return *customer.CompanyName
@@ -72,10 +116,10 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 	if job.StatusID > 0 {
 		var status models.Status
 		if err := r.db.Where("statusID = ?", job.StatusID).First(&status).Error; err != nil {
-			fmt.Printf("🔧 DEBUG JobRepo.GetByID: Failed to load status %d: %v\n", job.StatusID, err)
+			jobRepoDebugLog("🔧 DEBUG JobRepo.GetByID: Failed to load status %d: %v\n", job.StatusID, err)
 		} else {
 			job.Status = status
-			fmt.Printf("🔧 DEBUG JobRepo.GetByID: Loaded status %d: %s\n", status.StatusID, status.Status)
+			jobRepoDebugLog("🔧 DEBUG JobRepo.GetByID: Loaded status %d: %s\n", status.StatusID, status.Status)
 		}
 	}
 
@@ -89,7 +133,7 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 	// Manually load products for each device
 	r.loadProductsForJobDevices(job.JobDevices)
 
-	fmt.Printf("🔧 DEBUG JobRepo.GetByID: Loaded job %d with description: '%s'\n", id, func() string {
+	jobRepoDebugLog("🔧 DEBUG JobRepo.GetByID: Loaded job %d with description: '%s'\n", id, func() string {
 		if job.Description == nil {
 			return "<nil>"
 		}
@@ -100,7 +144,7 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 }
 
 func (r *JobRepository) Update(job *models.Job) error {
-	fmt.Printf("🔧 DEBUG JobRepo.Update: Saving job ID %d with description: '%s'\n", job.JobID, func() string {
+	jobRepoDebugLog("🔧 DEBUG JobRepo.Update: Saving job ID %d with description: '%s'\n", job.JobID, func() string {
 		if job.Description == nil {
 			return "<nil>"
 		}
@@ -122,24 +166,24 @@ func (r *JobRepository) Update(job *models.Job) error {
 	})
 
 	if result.Error != nil {
-		fmt.Printf("🔧 DEBUG JobRepo.Update: Error: %v\n", result.Error)
+		jobRepoDebugLog("🔧 DEBUG JobRepo.Update: Error: %v\n", result.Error)
 		return result.Error
 	}
 
-	fmt.Printf("🔧 DEBUG JobRepo.Update: Success! Rows affected: %d\n", result.RowsAffected)
+	jobRepoDebugLog("🔧 DEBUG JobRepo.Update: Success! Rows affected: %d\n", result.RowsAffected)
 
 	// Verify the update by reading the job back from DB
 	var verifyJob models.Job
 	verifyResult := r.db.Where("jobID = ?", job.JobID).First(&verifyJob)
 	if verifyResult.Error == nil {
-		fmt.Printf("🔧 DEBUG JobRepo.Update: Verification - DB now has description: '%s'\n", func() string {
+		jobRepoDebugLog("🔧 DEBUG JobRepo.Update: Verification - DB now has description: '%s'\n", func() string {
 			if verifyJob.Description == nil {
 				return "<nil>"
 			}
 			return *verifyJob.Description
 		}())
 	} else {
-		fmt.Printf("🔧 DEBUG JobRepo.Update: Verification failed: %v\n", verifyResult.Error)
+		jobRepoDebugLog("🔧 DEBUG JobRepo.Update: Verification failed: %v\n", verifyResult.Error)
 	}
 
 	return nil
@@ -273,7 +317,7 @@ func (r *JobRepository) GetJobDevices(jobID uint) ([]models.JobDevice, error) {
 }
 
 func (r *JobRepository) AssignDevice(jobID uint, deviceID string, price float64) error {
-	fmt.Printf("🚨 DEBUG: NEW AssignDevice called! jobID=%d, deviceID=%s\n", jobID, deviceID)
+	jobRepoDebugLog("🚨 DEBUG: NEW AssignDevice called! jobID=%d, deviceID=%s\n", jobID, deviceID)
 
 	// Get the job to check its date range
 	var job models.Job
@@ -282,7 +326,7 @@ func (r *JobRepository) AssignDevice(jobID uint, deviceID string, price float64)
 		return fmt.Errorf("job not found: %v", err)
 	}
 
-	fmt.Printf("🚨 DEBUG: Job %d dates: %v to %v\n", jobID, job.StartDate, job.EndDate)
+	jobRepoDebugLog("🚨 DEBUG: Job %d dates: %v to %v\n", jobID, job.StartDate, job.EndDate)
 
 	// Check if device is available for this job's date range
 	// Implement the date-based availability check directly
@@ -580,7 +624,7 @@ func (r *JobRepository) UpdateFinalRevenue(jobID uint) error {
 }
 
 func (r *JobRepository) UpdateDevicePrice(jobID uint, deviceID string, price float64) error {
-	fmt.Printf("🔧 DEBUG UpdateDevicePrice: JobID=%d, DeviceID=%s, Price=%.2f\n", jobID, deviceID, price)
+	jobRepoDebugLog("🔧 DEBUG UpdateDevicePrice: JobID=%d, DeviceID=%s, Price=%.2f\n", jobID, deviceID, price)
 
 	// Update the custom_price for the specific job-device relationship
 	// Fix: column name is 'deviceID' not 'device_id'
@@ -588,27 +632,27 @@ func (r *JobRepository) UpdateDevicePrice(jobID uint, deviceID string, price flo
 		Where("jobID = ? AND deviceID = ?", jobID, deviceID).
 		Update("custom_price", price)
 
-	fmt.Printf("🔧 DEBUG UpdateDevicePrice: SQL result - Error=%v, RowsAffected=%d\n", result.Error, result.RowsAffected)
+	jobRepoDebugLog("🔧 DEBUG UpdateDevicePrice: SQL result - Error=%v, RowsAffected=%d\n", result.Error, result.RowsAffected)
 
 	if result.Error != nil {
-		fmt.Printf("🔧 DEBUG UpdateDevicePrice: Database error: %v\n", result.Error)
+		jobRepoDebugLog("🔧 DEBUG UpdateDevicePrice: Database error: %v\n", result.Error)
 		return result.Error
 	}
 
 	if result.RowsAffected == 0 {
-		fmt.Printf("🔧 DEBUG UpdateDevicePrice: No rows affected - device not found\n")
+		jobRepoDebugLog("🔧 DEBUG UpdateDevicePrice: No rows affected - device not found\n")
 		return fmt.Errorf("device %s not found in job %d", deviceID, jobID)
 	}
 
 	// Recalculate job revenue after price update
-	fmt.Printf("🔧 DEBUG UpdateDevicePrice: Recalculating revenue for job %d\n", jobID)
+	jobRepoDebugLog("🔧 DEBUG UpdateDevicePrice: Recalculating revenue for job %d\n", jobID)
 	err := r.CalculateAndUpdateRevenue(jobID)
 	if err != nil {
-		fmt.Printf("🔧 DEBUG UpdateDevicePrice: Revenue calculation error: %v\n", err)
+		jobRepoDebugLog("🔧 DEBUG UpdateDevicePrice: Revenue calculation error: %v\n", err)
 		return err
 	}
 
-	fmt.Printf("🔧 DEBUG UpdateDevicePrice: Success!\n")
+	jobRepoDebugLog("🔧 DEBUG UpdateDevicePrice: Success!\n")
 	return nil
 }
 

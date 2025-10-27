@@ -65,10 +65,14 @@ func main() {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
 
-	// Apply performance indexes for optimal database performance (commented out for faster startup)
-	// if err := config.ApplyPerformanceIndexes(db.DB); err != nil {
-	//	log.Printf("Warning: Failed to apply performance indexes: %v", err)
-	// }
+	// Apply performance indexes for optimal database performance
+	go func() {
+		if err := config.ApplyPerformanceIndexes(db.DB); err != nil {
+			log.Printf("Warning: Failed to apply performance indexes: %v", err)
+		} else {
+			log.Printf("Performance indexes applied successfully")
+		}
+	}()
 
 	// Initialize structured logger
 	environment := "development"

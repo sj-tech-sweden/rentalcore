@@ -28,10 +28,10 @@ func NewDatabase(cfg *config.DatabaseConfig) (*Database, error) {
 	)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-		DisableAutomaticPing: true,
+		Logger: logger.Default.LogMode(logger.Warn),
+		PrepareStmt: true,
 		SkipDefaultTransaction: true,
-		CreateBatchSize: 1000,
+		CreateBatchSize: 500,
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
@@ -45,10 +45,15 @@ func NewDatabase(cfg *config.DatabaseConfig) (*Database, error) {
 		return nil, fmt.Errorf("failed to get sql.DB: %w", err)
 	}
 
-	sqlDB.SetMaxIdleConns(cfg.PoolSize / 2)
-	sqlDB.SetMaxOpenConns(cfg.PoolSize)
+	// Optimized connection pool settings for production
+	poolSize := cfg.PoolSize
+	if poolSize < 25 {
+		poolSize = 50 // Increased default for better performance
+	}
+	sqlDB.SetMaxOpenConns(poolSize)
+	sqlDB.SetMaxIdleConns(poolSize / 5)
 	sqlDB.SetConnMaxLifetime(30 * time.Minute)
-	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 
 	// Basic database connection setup only - no schema operations
 	

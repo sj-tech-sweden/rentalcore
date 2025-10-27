@@ -809,31 +809,46 @@ func (h *DeviceHandler) GetDeviceTreeWithAvailability(c *gin.Context) {
 
 // Hierarchical tree data structures
 type TreeCategory struct {
-	ID            uint              `json:"id"`
-	Name          string            `json:"name"`
-	DeviceCount   int               `json:"device_count"`
-	DirectDevices []TreeDevice      `json:"direct_devices"`    // Devices directly in category
-	Subcategories []TreeSubcategory `json:"subcategories"`
+	ID             uint              `json:"id"`
+	Name           string            `json:"name"`
+	DeviceCount    int               `json:"device_count"`
+	AvailableCount int               `json:"available_count"`
+	DirectDevices  []TreeDevice      `json:"direct_devices"` // Devices directly in category
+	Products       []TreeProduct     `json:"products"`
+	Subcategories  []TreeSubcategory `json:"subcategories"`
 }
 
 type TreeSubcategory struct {
-	ID                string                   `json:"id"`
-	Name              string                   `json:"name"`
-	DeviceCount       int                      `json:"device_count"`
-	DirectDevices     []TreeDevice             `json:"direct_devices"`    // Devices directly in subcategory
-	Subbiercategories []TreeSubbiercategory    `json:"subbiercategories"`
+	ID             string                `json:"id"`
+	Name           string                `json:"name"`
+	DeviceCount    int                   `json:"device_count"`
+	AvailableCount int                   `json:"available_count"`
+	DirectDevices  []TreeDevice          `json:"direct_devices"` // Devices directly in subcategory
+	Products       []TreeProduct         `json:"products"`
+	Subbiercategories []TreeSubbiercategory `json:"subbiercategories"`
 }
 
 type TreeSubbiercategory struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name"`
-	DeviceCount int          `json:"device_count"`
-	Devices     []TreeDevice `json:"devices"`
+	ID             string        `json:"id"`
+	Name           string        `json:"name"`
+	DeviceCount    int           `json:"device_count"`
+	AvailableCount int           `json:"available_count"`
+	Devices        []TreeDevice  `json:"devices"`
+	Products       []TreeProduct `json:"products"`
+}
+
+type TreeProduct struct {
+	ID             uint        `json:"id"`
+	Name           string      `json:"name"`
+	DeviceCount    int         `json:"device_count"`
+	AvailableCount int         `json:"available_count"`
+	Devices        []TreeDevice `json:"devices"`
 }
 
 type TreeDevice struct {
 	DeviceID     string `json:"device_id"`
 	ProductName  string `json:"product_name"`
+	ProductID    uint   `json:"product_id,omitempty"`
 	SerialNumber string `json:"serial_number"`
 	Status       string `json:"status"`
 	Available    bool   `json:"available,omitempty"`    // Only included in availability checks
