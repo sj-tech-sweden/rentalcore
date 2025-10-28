@@ -1329,14 +1329,19 @@
     // Edit Modal Device Tree Functions
     let editSelectedDevices = new Set();
     let editDeviceTreeData = null;
+    let editExpandedNodes = new Set();
+    let editDeviceProductsIndex = new Map();
+    let editTreeAutoExpanded = false;
 
     function loadEditDeviceTree(jobID) {
         const startDate = document.querySelector('#editJobForm input[name="startDate"]').value;
         const endDate = document.querySelector('#editJobForm input[name="endDate"]').value;
-
+        
         // Always load device tree, even without dates
         document.getElementById('loadingEditDevices').innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available devices...';
         document.getElementById('editDeviceTreeContainer').style.display = 'none';
+        editTreeAutoExpanded = false;
+        editExpandedNodes = new Set();
 
         // Build URL with dates if available, otherwise load all devices
         let url = `/api/v1/devices/tree/availability?job_id=${jobID}`;
@@ -1366,14 +1371,126 @@
         });
     }
 
+    function hasEditDevices(list) {
+        return Array.isArray(list) && list.length > 0;
+    }
+
+    function editSubbiercategoryHasDevices(subbiercategory) {
+        if (!subbiercategory) return false;
+        return hasEditDevices(subbiercategory.devices);
+    }
+
+    function editSubcategoryHasDevices(subcategory) {
+        if (!subcategory) return false;
+        if (hasEditDevices(subcategory.direct_devices)) return true;
+        if (Array.isArray(subcategory.subbiercategories)) {
+            return subcategory.subbiercategories.some(editSubbiercategoryHasDevices);
+        }
+        return false;
+    }
+
+    function editCategoryHasDevices(category) {
+        if (!category) return false;
+        if (hasEditDevices(category.direct_devices)) return true;
+        if (Array.isArray(category.subcategories)) {
+            return category.subcategories.some(editSubcategoryHasDevices);
+        }
+        return false;
+    }
+
+    function ensureEditInitialExpansion(treeData) {
+        if (editTreeAutoExpanded || !Array.isArray(treeData)) {
+            return;
+        }
+
+        const firstCategory = treeData.find(editCategoryHasDevices);
+        if (firstCategory) {
+            editExpandedNodes.add(`edit-category-${firstCategory.id}`);
+            if (Array.isArray(firstCategory.subcategories)) {
+                const firstSubcategory = firstCategory.subcategories.find(editSubcategoryHasDevices);
+                if (firstSubcategory) {
+                    editExpandedNodes.add(`edit-subcategory-${firstSubcategory.id}`);
+                    if (Array.isArray(firstSubcategory.subbiercategories)) {
+                        const firstSubbiercategory = firstSubcategory.subbiercategories.find(editSubbiercategoryHasDevices);
+                        if (firstSubbiercategory) {
+                            editExpandedNodes.add(`edit-subbiercategory-${firstSubbiercategory.id}`);
+                        }
+                    }
+                }
+            }
+        }
+
+        editTreeAutoExpanded = true;
+    }
+
+    function addEditDeviceToProductIndex(device) {
+        if (!device || !device.device_id) {
+            return;
+        }
+
+        const productName = device.product_name || 'Unknown Product';
+        const alreadySelected = editSelectedDevices.has(device.device_id);
+        const isAvailable = device.available !== false && !alreadySelected;
+
+        let entry = editDeviceProductsIndex.get(productName);
+        if (!entry) {
+            entry = { devices: [], available: 0, total: 0 };
+            editDeviceProductsIndex.set(productName, entry);
+        }
+
+        entry.devices.push(device);
+        entry.total += 1;
+        if (isAvailable) {
+            entry.available += 1;
+        }
+    }
+
+    function buildEditDeviceProductIndex(treeData) {
+        editDeviceProductsIndex = new Map();
+
+        if (!Array.isArray(treeData)) {
+            return;
+        }
+
+        treeData.forEach(category => {
+            if (Array.isArray(category.direct_devices)) {
+                category.direct_devices.forEach(addEditDeviceToProductIndex);
+            }
+            if (Array.isArray(category.subcategories)) {
+                category.subcategories.forEach(subcategory => {
+                    if (Array.isArray(subcategory.direct_devices)) {
+                        subcategory.direct_devices.forEach(addEditDeviceToProductIndex);
+                    }
+                    if (Array.isArray(subcategory.subbiercategories)) {
+                        subcategory.subbiercategories.forEach(subbiercategory => {
+                            if (Array.isArray(subbiercategory.devices)) {
+                                subbiercategory.devices.forEach(addEditDeviceToProductIndex);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    function getEditAvailableDevicesForProduct(productName) {
+        const entry = editDeviceProductsIndex.get(productName);
+        if (!entry) return [];
+
+        return entry.devices.filter(device => device.available !== false && !editSelectedDevices.has(device.device_id));
+    }
+
     function renderEditDeviceTree(treeData) {
         const container = document.getElementById('editDeviceTreeContainer');
         
         if (!treeData || treeData.length === 0) {
             container.innerHTML = '<div style="text-align: center; padding: var(--space-xl); color: var(--text-muted);">No devices found</div>';
+            editDeviceProductsIndex = new Map();
             return;
         }
         
+        ensureEditInitialExpansion(treeData);
+        buildEditDeviceProductIndex(treeData);
         let html = '<div class="device-tree-container">';
         
         treeData.forEach(category => {
@@ -1384,53 +1501,27 @@
         container.innerHTML = html;
 
         // Populate product dropdown for quick add
-        populateQuickAddProducts(treeData);
+        populateQuickAddProducts();
     }
 
-    function populateQuickAddProducts(treeData) {
+    function populateQuickAddProducts() {
         const select = document.getElementById('quickAddProductSelect');
-        if (!select || !treeData) return;
+        if (!select) return;
 
         // Clear existing options except first
         select.innerHTML = '<option value="">-- Select a product --</option>';
 
-        // Collect all unique products from the tree
-        const products = new Map(); // productName -> array of devices
+        const products = Array.from(editDeviceProductsIndex.entries())
+            .filter(([, info]) => info.available > 0)
+            .sort((a, b) => a[0].localeCompare(b[0]));
 
-        function collectProducts(devices) {
-            if (!devices) return;
-            devices.forEach(device => {
-                if (device.product_name && device.available) {
-                    if (!products.has(device.product_name)) {
-                        products.set(device.product_name, []);
-                    }
-                    products.get(device.product_name).push(device);
-                }
-            });
-        }
-
-        // Traverse tree to collect all devices
-        treeData.forEach(category => {
-            collectProducts(category.direct_devices);
-            if (category.subcategories) {
-                category.subcategories.forEach(sub => {
-                    collectProducts(sub.direct_devices);
-                    if (sub.subbiercategories) {
-                        sub.subbiercategories.forEach(subsub => {
-                            collectProducts(subsub.devices);
-                        });
-                    }
-                });
-            }
-        });
-
-        // Sort products alphabetically and add to dropdown
-        const sortedProducts = Array.from(products.keys()).sort();
-        sortedProducts.forEach(productName => {
-            const deviceCount = products.get(productName).length;
+        products.forEach(([productName, info]) => {
             const option = document.createElement('option');
             option.value = productName;
-            option.textContent = `${productName} (${deviceCount} available)`;
+            const availabilityLabel = info.available === info.total
+                ? `${info.available}`
+                : `${info.available}/${info.total}`;
+            option.textContent = `${productName} (${availabilityLabel} available)`;
             select.appendChild(option);
         });
     }
@@ -1454,36 +1545,7 @@
             return;
         }
 
-        // Find all available devices for this product
-        const availableDevices = [];
-
-        function findDevicesByProduct(devices) {
-            if (!devices) return;
-            devices.forEach(device => {
-                if (device.product_name === productName &&
-                    device.available &&
-                    !editSelectedDevices.has(device.device_id)) {
-                    availableDevices.push(device);
-                }
-            });
-        }
-
-        // Traverse tree to find matching devices
-        if (editDeviceTreeData) {
-            editDeviceTreeData.forEach(category => {
-                findDevicesByProduct(category.direct_devices);
-                if (category.subcategories) {
-                    category.subcategories.forEach(sub => {
-                        findDevicesByProduct(sub.direct_devices);
-                        if (sub.subbiercategories) {
-                            sub.subbiercategories.forEach(subsub => {
-                                findDevicesByProduct(subsub.devices);
-                            });
-                        }
-                    });
-                }
-            });
-        }
+        const availableDevices = getEditAvailableDevicesForProduct(productName);
 
         if (availableDevices.length === 0) {
             feedback.innerHTML = '<span style="color: var(--error);"><i class="bi bi-x-circle"></i> No available devices found for this product</span>';
@@ -1521,15 +1583,20 @@
     }
 
     function renderEditCategoryHtml(category) {
+        const nodeId = `edit-category-${category.id}`;
+        const isExpanded = editExpandedNodes.has(nodeId);
+        const displayStyle = isExpanded ? 'block' : 'none';
+        const chevronClass = isExpanded ? 'bi bi-chevron-right tree-chevron expanded' : 'bi bi-chevron-right tree-chevron';
+
         let html = `
             <div class="tree-category">
-                <div class="tree-category-header" onclick="toggleEditTreeNode('edit-category-${category.id}')">
-                    <i class="bi bi-chevron-right tree-chevron" id="chevron-edit-category-${category.id}"></i>
+                <div class="tree-category-header" onclick="toggleEditTreeNode('${nodeId}')">
+                    <i class="${chevronClass}" id="chevron-${nodeId}"></i>
                     <i class="bi bi-folder2 tree-icon category-icon"></i>
                     <span class="tree-title">${category.name}</span>
                     <span class="tree-count">${category.device_count} devices</span>
                 </div>
-                <div class="tree-content" id="edit-category-${category.id}" style="display: none;">
+                <div class="tree-content" id="${nodeId}" style="display: ${displayStyle};">
         `;
         
         if (category.direct_devices && category.direct_devices.length > 0) {
@@ -1549,15 +1616,20 @@
     }
 
     function renderEditSubcategoryHtml(subcategory) {
+        const nodeId = `edit-subcategory-${subcategory.id}`;
+        const isExpanded = editExpandedNodes.has(nodeId);
+        const displayStyle = isExpanded ? 'block' : 'none';
+        const chevronClass = isExpanded ? 'bi bi-chevron-right tree-chevron expanded' : 'bi bi-chevron-right tree-chevron';
+
         let html = `
             <div class="tree-subcategory">
-                <div class="tree-subcategory-header" onclick="toggleEditTreeNode('edit-subcategory-${subcategory.id}')">
-                    <i class="bi bi-chevron-right tree-chevron" id="chevron-edit-subcategory-${subcategory.id}"></i>
+                <div class="tree-subcategory-header" onclick="toggleEditTreeNode('${nodeId}')">
+                    <i class="${chevronClass}" id="chevron-${nodeId}"></i>
                     <i class="bi bi-folder tree-icon subcategory-icon"></i>
                     <span class="tree-title">${subcategory.name}</span>
                     <span class="tree-count">${subcategory.device_count} devices</span>
                 </div>
-                <div class="tree-content" id="edit-subcategory-${subcategory.id}" style="display: none;">
+                <div class="tree-content" id="${nodeId}" style="display: ${displayStyle};">
         `;
         
         if (subcategory.direct_devices && subcategory.direct_devices.length > 0) {
@@ -1577,15 +1649,20 @@
     }
 
     function renderEditSubbiercategoryHtml(subbiercategory) {
+        const nodeId = `edit-subbiercategory-${subbiercategory.id}`;
+        const isExpanded = editExpandedNodes.has(nodeId);
+        const displayStyle = isExpanded ? 'block' : 'none';
+        const chevronClass = isExpanded ? 'bi bi-chevron-right tree-chevron expanded' : 'bi bi-chevron-right tree-chevron';
+
         let html = `
             <div class="tree-subbiercategory">
-                <div class="tree-subbiercategory-header" onclick="toggleEditTreeNode('edit-subbiercategory-${subbiercategory.id}')">
-                    <i class="bi bi-chevron-right tree-chevron" id="chevron-edit-subbiercategory-${subbiercategory.id}"></i>
+                <div class="tree-subbiercategory-header" onclick="toggleEditTreeNode('${nodeId}')">
+                    <i class="${chevronClass}" id="chevron-${nodeId}"></i>
                     <i class="bi bi-folder-fill tree-icon subbiercategory-icon"></i>
                     <span class="tree-title">${subbiercategory.name}</span>
                     <span class="tree-count">${subbiercategory.device_count} devices</span>
                 </div>
-                <div class="tree-content" id="edit-subbiercategory-${subbiercategory.id}" style="display: none;">
+                <div class="tree-content" id="${nodeId}" style="display: ${displayStyle};">
         `;
         
         if (subbiercategory.devices && subbiercategory.devices.length > 0) {
@@ -1635,9 +1712,11 @@
             if (contentDiv.style.display === 'none') {
                 contentDiv.style.display = 'block';
                 chevron.classList.add('expanded');
+                editExpandedNodes.add(nodeId);
             } else {
                 contentDiv.style.display = 'none';
                 chevron.classList.remove('expanded');
+                editExpandedNodes.delete(nodeId);
             }
         }
     }
@@ -2888,6 +2967,7 @@
 
         collapsedNodes.forEach(node => {
             node.style.display = 'block';
+            editExpandedNodes.add(node.id);
         });
 
         collapsedChevrons.forEach(chevron => {
@@ -2902,18 +2982,19 @@
         if (!treeContainer) return;
 
         // Find all tree content divs that are expanded
-        const expandedNodes = treeContainer.querySelectorAll('.tree-content[style*="display: block"], .tree-content:not([style*="display: none"])');
+        const expandedContentNodes = treeContainer.querySelectorAll('.tree-content[style*="display: block"], .tree-content:not([style*="display: none"])');
         const expandedChevrons = treeContainer.querySelectorAll('.tree-chevron.expanded');
 
-        expandedNodes.forEach(node => {
+        expandedContentNodes.forEach(node => {
             node.style.display = 'none';
+            editExpandedNodes.delete(node.id);
         });
 
         expandedChevrons.forEach(chevron => {
             chevron.classList.remove('expanded');
         });
 
-        console.log(`Collapsed ${expandedNodes.length} device tree nodes`);
+        console.log(`Collapsed ${expandedContentNodes.length} device tree nodes`);
     }
 
     // Job Details Attachments Functions

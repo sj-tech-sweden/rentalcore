@@ -887,6 +887,9 @@
         let selectedDevices = new Set();
         let deviceTreeData = null;
         let expandedNodes = new Set(); // Track expanded tree nodes
+        let deviceProductIndex = new Map();
+        let treeAutoExpanded = false;
+        let treeVisible = false;
 
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof window.setupCustomerInlineCreation === 'function') {
@@ -953,29 +956,33 @@
                 endDateInput.addEventListener('change', loadDeviceTree);
             }
             
-            // Refresh button
-            document.getElementById('refreshDeviceTree').addEventListener('click', loadDeviceTree);
+            const refreshButton = document.getElementById('refreshDeviceTree');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', loadDeviceTree);
+            }
 
-            // Toggle Tree View button
-            document.getElementById('toggleTreeView').addEventListener('click', function() {
-                const treeContainer = document.getElementById('deviceTreeContainer');
-                const loadingDiv = document.getElementById('loadingDevices');
-                const startDate = document.querySelector('input[name="start_date"]').value;
-                const endDate = document.querySelector('input[name="end_date"]').value;
+            const toggleTreeButton = document.getElementById('toggleTreeView');
+            if (toggleTreeButton) {
+                toggleTreeButton.addEventListener('click', function() {
+                    const startDate = document.querySelector('input[name="start_date"]').value;
+                    const endDate = document.querySelector('input[name="end_date"]').value;
 
-                // If tree container is hidden and we have dates, load and show it
-                if (treeContainer.style.display === 'none' || treeContainer.style.display === '') {
-                    if (startDate && endDate) {
-                        loadDeviceTree();
+                    if (!treeVisible) {
+                        if (!startDate || !endDate) {
+                            alert('Please select start and end dates first to load available devices.');
+                            return;
+                        }
+
+                        if (!deviceTreeData) {
+                            loadDeviceTree();
+                        } else {
+                            showDeviceTree();
+                        }
                     } else {
-                        alert('Please select start and end dates first to load available devices.');
+                        hideDeviceTree('<i class="bi bi-diagram-3"></i> Device tree hidden. Click "Show Tree" to view available devices.');
                     }
-                } else {
-                    // Toggle visibility
-                    treeContainer.style.display = 'none';
-                    loadingDiv.style.display = 'flex';
-                }
-            });
+                });
+            }
 
             // Always load device tree immediately on page load
             console.log('DEBUG: Loading device tree on page load');
@@ -1006,13 +1013,19 @@
         function loadDeviceTree() {
             const startDate = document.querySelector('input[name="start_date"]').value;
             const endDate = document.querySelector('input[name="end_date"]').value;
+            const quickAddButton = document.getElementById('quickAddButton');
 
-            // Always load device tree, even without dates
-            document.getElementById('loadingDevices').innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available devices...';
-            document.getElementById('deviceTreeContainer').style.display = 'none';
+            if (quickAddButton) {
+                quickAddButton.disabled = true;
+            }
+
+            const loadingMessage = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available devices...';
+            hideDeviceTree(loadingMessage);
 
             // Get job ID for exclusion (if editing)
             const jobId = getJobIdFromUrl();
+            treeAutoExpanded = false;
+            expandedNodes = new Set();
 
             // Build URL with dates if available, otherwise load all devices
             let url = `/api/v1/devices/tree/availability?`;
@@ -1033,15 +1046,25 @@
                 return response.json();
             })
             .then(data => {
-                deviceTreeData = data.treeData;
+                deviceTreeData = Array.isArray(data.treeData) ? data.treeData : [];
                 renderDeviceTree(deviceTreeData);
-                document.getElementById('loadingDevices').style.display = 'none';
-                document.getElementById('deviceTreeContainer').style.display = 'block';
+
+                if (deviceTreeData.length === 0) {
+                    hideDeviceTree('<div style="color: var(--text-muted);"><i class="bi bi-info-circle"></i> No devices found for the selected dates.</div>');
+                } else {
+                    showDeviceTree();
+                }
+
+                if (quickAddButton && deviceProductIndex.size > 0) {
+                    quickAddButton.disabled = false;
+                }
             })
             .catch(error => {
                 console.error('Error loading device tree:', error);
-                document.getElementById('loadingDevices').innerHTML = '<div style="color: var(--error);"><i class="bi bi-exclamation-triangle"></i> Error loading devices: ' + error.message + '</div>';
-                document.getElementById('deviceTreeContainer').style.display = 'none';
+                hideDeviceTree('<div style="color: var(--error);"><i class="bi bi-exclamation-triangle"></i> Error loading devices: ' + error.message + '</div>');
+                if (quickAddButton) {
+                    quickAddButton.disabled = true;
+                }
             });
         }
         
@@ -1050,14 +1073,168 @@
             const matches = path.match(/\/jobs\/([^\/]+)\/edit/);
             return matches ? matches[1] : null;
         }
+
+        function showDeviceTree() {
+            const treeContainer = document.getElementById('deviceTreeContainer');
+            const loadingDiv = document.getElementById('loadingDevices');
+            const toggleBtn = document.getElementById('toggleTreeView');
+
+            if (treeContainer) {
+                treeContainer.style.display = 'block';
+            }
+            if (loadingDiv) {
+                loadingDiv.style.display = 'none';
+            }
+            if (toggleBtn) {
+                toggleBtn.innerHTML = '<i class="bi bi-eye-slash"></i> Hide Tree';
+                toggleBtn.setAttribute('aria-pressed', 'true');
+            }
+            treeVisible = true;
+        }
+
+        function hideDeviceTree(message) {
+            const treeContainer = document.getElementById('deviceTreeContainer');
+            const loadingDiv = document.getElementById('loadingDevices');
+            const toggleBtn = document.getElementById('toggleTreeView');
+
+            if (treeContainer) {
+                treeContainer.style.display = 'none';
+            }
+            if (loadingDiv) {
+                loadingDiv.style.display = 'flex';
+                loadingDiv.innerHTML = message || '<i class="bi bi-diagram-3"></i> Device tree hidden. Click "Show Tree" to view available devices.';
+            }
+            if (toggleBtn) {
+                toggleBtn.innerHTML = '<i class="bi bi-diagram-3"></i> Show Tree';
+                toggleBtn.setAttribute('aria-pressed', 'false');
+            }
+            treeVisible = false;
+        }
+
+        function hasDevices(list) {
+            return Array.isArray(list) && list.length > 0;
+        }
+
+        function subbiercategoryHasDevices(subbiercategory) {
+            if (!subbiercategory) return false;
+            return hasDevices(subbiercategory.devices);
+        }
+
+        function subcategoryHasDevices(subcategory) {
+            if (!subcategory) return false;
+            if (hasDevices(subcategory.direct_devices)) return true;
+            if (Array.isArray(subcategory.subbiercategories)) {
+                return subcategory.subbiercategories.some(subbiercategoryHasDevices);
+            }
+            return false;
+        }
+
+        function categoryHasDevices(category) {
+            if (!category) return false;
+            if (hasDevices(category.direct_devices)) return true;
+            if (Array.isArray(category.subcategories)) {
+                return category.subcategories.some(subcategoryHasDevices);
+            }
+            return false;
+        }
+
+        function ensureInitialExpansion(treeData) {
+            if (treeAutoExpanded || !Array.isArray(treeData)) {
+                return;
+            }
+
+            const firstCategory = treeData.find(categoryHasDevices);
+            if (firstCategory) {
+                expandedNodes.add(`category-${firstCategory.id}`);
+                if (Array.isArray(firstCategory.subcategories)) {
+                    const firstSubcategory = firstCategory.subcategories.find(subcategoryHasDevices);
+                    if (firstSubcategory) {
+                        expandedNodes.add(`subcategory-${firstSubcategory.id}`);
+                        if (Array.isArray(firstSubcategory.subbiercategories)) {
+                            const firstSubbiercategory = firstSubcategory.subbiercategories.find(subbiercategoryHasDevices);
+                            if (firstSubbiercategory) {
+                                expandedNodes.add(`subbiercategory-${firstSubbiercategory.id}`);
+                            }
+                        }
+                    }
+                }
+            }
+
+            treeAutoExpanded = true;
+        }
+
+        function addDeviceToProductIndex(device) {
+            if (!device || !device.device_id) {
+                return;
+            }
+
+            const productName = device.product_name || 'Unknown Product';
+            const alreadySelected = selectedDevices.has(device.device_id);
+            const isAvailable = device.available !== false && !alreadySelected;
+
+            let entry = deviceProductIndex.get(productName);
+            if (!entry) {
+                entry = { devices: [], available: 0, total: 0 };
+                deviceProductIndex.set(productName, entry);
+            }
+
+            entry.devices.push(device);
+            entry.total += 1;
+            if (isAvailable) {
+                entry.available += 1;
+            }
+        }
+
+        function buildDeviceProductIndex(treeData) {
+            deviceProductIndex = new Map();
+
+            if (!Array.isArray(treeData)) {
+                return;
+            }
+
+            treeData.forEach(category => {
+                if (Array.isArray(category.direct_devices)) {
+                    category.direct_devices.forEach(addDeviceToProductIndex);
+                }
+                if (Array.isArray(category.subcategories)) {
+                    category.subcategories.forEach(subcategory => {
+                        if (Array.isArray(subcategory.direct_devices)) {
+                            subcategory.direct_devices.forEach(addDeviceToProductIndex);
+                        }
+                        if (Array.isArray(subcategory.subbiercategories)) {
+                            subcategory.subbiercategories.forEach(subbiercategory => {
+                                if (Array.isArray(subbiercategory.devices)) {
+                                    subbiercategory.devices.forEach(addDeviceToProductIndex);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        function getAvailableDevicesForProduct(productName) {
+            const entry = deviceProductIndex.get(productName);
+            if (!entry) return [];
+
+            return entry.devices.filter(device => device.available !== false && !selectedDevices.has(device.device_id));
+        }
         
         function renderDeviceTree(treeData) {
             const container = document.getElementById('deviceTreeContainer');
             
             if (!treeData || treeData.length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: var(--space-xl); color: var(--text-muted);">No devices found</div>';
+                deviceProductIndex = new Map();
+                const quickAddButton = document.getElementById('quickAddButton');
+                if (quickAddButton) {
+                    quickAddButton.disabled = true;
+                }
                 return;
             }
+
+            ensureInitialExpansion(treeData);
+            buildDeviceProductIndex(treeData);
             
             let html = '<div class="device-tree-container">';
             
@@ -1067,6 +1244,12 @@
             
             html += '</div>';
             container.innerHTML = html;
+
+            const quickAddButton = document.getElementById('quickAddButton');
+            if (quickAddButton) {
+                const hasAvailableProducts = Array.from(deviceProductIndex.values()).some(entry => entry.available > 0);
+                quickAddButton.disabled = !hasAvailableProducts;
+            }
         }
         
         function renderCategoryHtml(category) {
@@ -1223,6 +1406,12 @@
             updateSelectedDevicesDisplay();
             updateSelectedDevicesInput();
             updateDeviceTreeDisplay();
+        }
+
+        function selectDevice(deviceId) {
+            if (!selectedDevices.has(deviceId)) {
+                selectedDevices.add(deviceId);
+            }
         }
         
         function updateSelectedDevicesDisplay() {
@@ -1497,34 +1686,32 @@
                 return;
             }
 
-            // Populate products dropdown from device tree
+            if (!deviceTreeData) {
+                alert('Device availability is still loading. Please try again in a moment.');
+                return;
+            }
+
             const productSelect = document.getElementById('quickAddProduct');
             productSelect.innerHTML = '<option value="">Select a product...</option>';
 
-            if (deviceTreeData && deviceTreeData.length > 0) {
-                const products = new Set();
+            const availableProducts = Array.from(deviceProductIndex.entries())
+                .filter(([, info]) => info.available > 0)
+                .sort((a, b) => a[0].localeCompare(b[0]));
 
-                deviceTreeData.forEach(category => {
-                    if (category.subcategories) {
-                        category.subcategories.forEach(subcategory => {
-                            if (subcategory.subbiercategories) {
-                                subcategory.subbiercategories.forEach(group => {
-                                    if (group.devices && group.devices.length > 0) {
-                                        products.add(group.name);
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-
-                Array.from(products).sort().forEach(product => {
-                    const option = document.createElement('option');
-                    option.value = product;
-                    option.textContent = product;
-                    productSelect.appendChild(option);
-                });
+            if (availableProducts.length === 0) {
+                alert('No available devices found for the selected dates.');
+                return;
             }
+
+            availableProducts.forEach(([productName, info]) => {
+                const option = document.createElement('option');
+                const availabilityLabel = info.available === info.total
+                    ? `${info.available}`
+                    : `${info.available}/${info.total}`;
+                option.value = productName;
+                option.textContent = `${productName} (${availabilityLabel} available)`;
+                productSelect.appendChild(option);
+            });
 
             document.getElementById('quickAddModal').style.display = 'flex';
         }
@@ -1538,55 +1725,45 @@
 
         function performQuickAdd() {
             const productName = document.getElementById('quickAddProduct').value;
-            const quantity = parseInt(document.getElementById('quickAddQuantity').value);
+            const quantity = parseInt(document.getElementById('quickAddQuantity').value, 10);
 
             if (!productName || !quantity || quantity < 1) {
-                alert('Please select a product and enter a valid quantity.');
+                showQuickAddStatus('Please select a product and enter a valid quantity.', 'warning');
                 return;
             }
 
-            // Find available devices for this product
-            const availableDevices = [];
-
-            deviceTreeData.forEach(category => {
-                if (category.subcategories) {
-                    category.subcategories.forEach(subcategory => {
-                        if (subcategory.subbiercategories) {
-                            subcategory.subbiercategories.forEach(group => {
-                                if (group.name === productName && group.devices) {
-                                    group.devices.forEach(device => {
-                                        if (!selectedDevices.has(device.device_id)) {
-                                            availableDevices.push(device);
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
-            });
+            const availableDevices = getAvailableDevicesForProduct(productName);
 
             if (availableDevices.length === 0) {
                 showQuickAddStatus(`No available devices found for ${productName}`, 'warning');
                 return;
             }
 
-            if (availableDevices.length < quantity) {
-                showQuickAddStatus(`Only ${availableDevices.length} devices available (requested: ${quantity})`, 'warning');
+            const toSelect = Math.min(quantity, availableDevices.length);
+            let added = 0;
+
+            for (let i = 0; i < toSelect; i++) {
+                const deviceId = availableDevices[i].device_id;
+                if (!selectedDevices.has(deviceId)) {
+                    selectDevice(deviceId);
+                    added++;
+                }
             }
 
-            // Select the requested number of devices
-            const devicesToAdd = availableDevices.slice(0, quantity);
-            devicesToAdd.forEach(device => {
-                selectDevice(device.device_id);
-            });
+            if (added > 0) {
+                updateSelectedDevicesDisplay();
+                updateSelectedDevicesInput();
+                updateDeviceTreeDisplay();
+            }
 
-            showQuickAddStatus(`Added ${devicesToAdd.length} device(s) of ${productName}`, 'success');
-
-            // Close modal after 1.5 seconds
-            setTimeout(() => {
-                closeQuickAddModal();
-            }, 1500);
+            if (added === quantity) {
+                showQuickAddStatus(`Added ${added} device(s) of ${productName}`, 'success');
+                setTimeout(() => closeQuickAddModal(), 1200);
+            } else if (added > 0) {
+                showQuickAddStatus(`Only ${added} of ${quantity} requested device(s) were available`, 'warning');
+            } else {
+                showQuickAddStatus(`Devices for ${productName} are already selected or unavailable`, 'warning');
+            }
         }
 
         function showQuickAddStatus(message, type) {
