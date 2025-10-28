@@ -152,6 +152,7 @@ func main() {
 	statusHandler := handlers.NewStatusHandler(statusRepo)
 	productHandler := handlers.NewProductHandler(productRepo)
 	cableHandler := handlers.NewCableHandler(cableRepo)
+	infoHandler := handlers.NewInfoHandler()
 	barcodeHandler := handlers.NewBarcodeHandler(barcodeService, deviceRepo)
 	scannerHandler := handlers.NewScannerHandler(jobRepo, deviceRepo, customerRepo, caseRepo, rentalEquipmentRepo)
 	// scanBoardHandler := handlers.NewScanBoardHandler(jobRepo, deviceRepo, db)
@@ -488,7 +489,7 @@ func main() {
 	}
 
 	// Routes
-	setupRoutes(r, cfg, jobHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, barcodeHandler, scannerHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, rbacMiddleware, complianceMiddleware)
+	setupRoutes(r, cfg, jobHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, infoHandler, barcodeHandler, scannerHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, rbacMiddleware, complianceMiddleware)
 
 	// Setup scan fallback routes (with rate limiting) - only if scanner is enabled
 	if cfg.Features.ScannerEnabled {
@@ -581,6 +582,7 @@ func setupRoutes(r *gin.Engine,
 	statusHandler *handlers.StatusHandler,
 	productHandler *handlers.ProductHandler,
 	cableHandler *handlers.CableHandler,
+	infoHandler *handlers.InfoHandler,
 	barcodeHandler *handlers.BarcodeHandler,
 	scannerHandler *handlers.ScannerHandler,
 	authHandler *handlers.AuthHandler,
@@ -647,6 +649,9 @@ func setupRoutes(r *gin.Engine,
 	{
 		// Web interface routes
 		protected.GET("/dashboard", homeHandler.Dashboard)
+		protected.GET("/help", infoHandler.Help)
+		protected.GET("/about", infoHandler.About)
+		protected.GET("/contact", infoHandler.Contact)
 
 		// Job routes
 		jobs := protected.Group("/jobs")

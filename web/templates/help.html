@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <script>
+        (function() {
+            const t=(localStorage.getItem("rc-theme")||"dark");
+            document.documentElement.setAttribute("data-theme",t);
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}} - RentalCore</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/css/rental-core-design.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="rc-animate-fade-in">
+    {{template "navbar.html" .}}
+
+    <main class="rc-container rc-mt-lg rc-mb-3xl">
+        <div class="rc-hero rc-mb-xl">
+            <h1 class="rc-heading-1"><i class="bi bi-question-circle"></i> Need a hand?</h1>
+            <p class="rc-text-lg rc-text-muted">Quick answers and onboarding resources to get your team moving.</p>
+        </div>
+
+        <section class="rc-grid rc-grid-3 rc-grid-gap-lg rc-mb-2xl">
+            <article class="rc-card rc-card-hover">
+                <div class="rc-card-body">
+                    <h2 class="rc-heading-3 rc-mb-sm"><i class="bi bi-rocket"></i> Getting started</h2>
+                    <p class="rc-text-sm rc-text-muted rc-mb-md">Start with these essentials to configure RentalCore for your organisation.</p>
+                    <ul class="rc-list rc-list-spaced">
+                        <li><strong>Company setup:</strong> review branding, legal info and default templates in <code>Settings → Company</code>.</li>
+                        <li><strong>Users & roles:</strong> grant access via <code>System → Security → Roles</code> and assign least privilege.</li>
+                        <li><strong>Inventory import:</strong> bulk-load devices and cases from CSV using the <em>Bulk Operations</em> tool.</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="rc-card rc-card-hover">
+                <div class="rc-card-body">
+                    <h2 class="rc-heading-3 rc-mb-sm"><i class="bi bi-diagram-3"></i> Daily workflows</h2>
+                    <p class="rc-text-sm rc-text-muted rc-mb-md">Follow these flows to keep jobs, devices and cables in sync.</p>
+                    <ul class="rc-list rc-list-spaced">
+                        <li><strong>Create a job:</strong> <code>Jobs → New</code>, assign customer, schedule dates and select devices.</li>
+                        <li><strong>Track device readiness:</strong> update pack status from the job detail modal or scanner board.</li>
+                        <li><strong>Cable lookup:</strong> filter by plug type, length and cross-section in the enhanced cable view.</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="rc-card rc-card-hover">
+                <div class="rc-card-body">
+                    <h2 class="rc-heading-3 rc-mb-sm"><i class="bi bi-shield-check"></i> Troubleshooting</h2>
+                    <p class="rc-text-sm rc-text-muted rc-mb-md">Resolve common issues with these quick checks.</p>
+                    <ul class="rc-list rc-list-spaced">
+                        <li><strong>Missing device:</strong> verify it isn’t assigned to an overlapping job via <code>Devices → Availability</code>.</li>
+                        <li><strong>Scanner offline:</strong> restart the dedicated service with <code>./restart-dev.sh</code> on the host.</li>
+                        <li><strong>Export fails:</strong> confirm the archive directory is writable and retry the export from Analytics.</li>
+                    </ul>
+                </div>
+            </article>
+        </section>
+
+        <section class="rc-card rc-mb-2xl">
+            <div class="rc-card-header">
+                <h2 class="rc-card-title"><i class="bi bi-collection"></i> Knowledge base highlights</h2>
+            </div>
+            <div class="rc-card-body">
+                <div class="rc-grid rc-grid-2 rc-grid-gap-lg">
+                    <div>
+                        <h3 class="rc-heading-5 rc-mb-sm">Operations</h3>
+                        <ul class="rc-list rc-list-inline rc-text-sm">
+                            <li><i class="bi bi-link-45deg"></i> Scan board quick reference</li>
+                            <li><i class="bi bi-link-45deg"></i> Rental equipment reconciliation</li>
+                            <li><i class="bi bi-link-45deg"></i> Cable maintenance checklist</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="rc-heading-5 rc-mb-sm">Admin & reporting</h3>
+                        <ul class="rc-list rc-list-inline rc-text-sm">
+                            <li><i class="bi bi-link-45deg"></i> Advanced analytics filters</li>
+                            <li><i class="bi bi-link-45deg"></i> Financial statement exports</li>
+                            <li><i class="bi bi-link-45deg"></i> Security & compliance review</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="rc-card rc-card-accent">
+            <div class="rc-card-body rc-flex rc-flex-between rc-flex-wrap">
+                <div>
+                    <h2 class="rc-heading-3 rc-mb-xs">Still stuck?</h2>
+                    <p class="rc-text-sm rc-text-muted">Reach out to the platform team with a short Loom or screenshot so we can help faster.</p>
+                </div>
+                <div class="rc-flex rc-flex-gap-sm rc-flex-wrap">
+                    <a href="/contact" class="rc-btn rc-btn-primary rc-btn-lg">
+                        <i class="bi bi-envelope"></i> Contact Support
+                    </a>
+                    <a href="/about" class="rc-btn rc-btn-outline rc-btn-lg">
+                        <i class="bi bi-people"></i> Meet the Team
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer style="margin-top: var(--space-3xl); padding: var(--space-xl) 0; border-top: 1px solid var(--surface-3);">
+        <div class="rc-container">
+            <div class="rc-flex rc-flex-between" style="align-items: center;">
+                <div class="rc-text-sm" style="color: var(--text-muted);">
+                    <i class="bi bi-gear-wide-connected"></i>
+                    RentalCore - Advanced Equipment Management System
+                </div>
+                <div class="rc-flex" style="gap: var(--space-lg);">
+                    <a href="/help" class="rc-text-sm" style="color: var(--text-muted); text-decoration: none;">
+                        <i class="bi bi-question-circle"></i> Help
+                    </a>
+                    <a href="/about" class="rc-text-sm" style="color: var(--text-muted); text-decoration: none;">
+                        <i class="bi bi-info-circle"></i> About
+                    </a>
+                    <a href="/contact" class="rc-text-sm" style="color: var(--text-muted); text-decoration: none;">
+                        <i class="bi bi-envelope"></i> Contact
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
