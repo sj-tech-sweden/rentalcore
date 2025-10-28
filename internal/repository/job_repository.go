@@ -22,6 +22,23 @@ func jobRepoDebugLog(format string, args ...interface{}) {
 	fmt.Printf(format, args...)
 }
 
+func computeFinalRevenue(revenue, discount float64, discountType string) float64 {
+	finalRevenue := revenue
+
+	switch strings.ToLower(discountType) {
+	case "percent", "percentage":
+		finalRevenue = revenue * (1 - discount/100)
+	default:
+		finalRevenue = revenue - discount
+	}
+
+	if finalRevenue < 0 {
+		finalRevenue = 0
+	}
+
+	return finalRevenue
+}
+
 func NewJobRepository(db *Database) *JobRepository {
 	return &JobRepository{db: db}
 }
@@ -151,6 +168,9 @@ func (r *JobRepository) Update(job *models.Job) error {
 		return *job.Description
 	}())
 
+	finalRevenue := computeFinalRevenue(job.Revenue, job.Discount, job.DiscountType)
+	job.FinalRevenue = &finalRevenue
+
 	// Use Updates instead of Save to ensure all fields are updated
 	result := r.db.Model(job).Where("jobID = ?", job.JobID).Updates(map[string]interface{}{
 		"customerID":    job.CustomerID,
@@ -162,7 +182,7 @@ func (r *JobRepository) Update(job *models.Job) error {
 		"discount":      job.Discount,
 		"discount_type": job.DiscountType,
 		"jobcategoryID": job.JobCategoryID,
-		"final_revenue": job.FinalRevenue,
+		"final_revenue": finalRevenue,
 	})
 
 	if result.Error != nil {
@@ -582,17 +602,7 @@ func (r *JobRepository) CalculateAndUpdateRevenue(jobID uint) error {
 	job.Revenue = totalRevenue
 
 	// Calculate final revenue after discount
-	var finalRevenue float64
-	if job.DiscountType == "percent" {
-		// Percentage discount
-		finalRevenue = totalRevenue * (1 - job.Discount/100)
-	} else {
-		// Fixed amount discount
-		finalRevenue = totalRevenue - job.Discount
-		if finalRevenue < 0 {
-			finalRevenue = 0 // Cannot be negative
-		}
-	}
+	finalRevenue := computeFinalRevenue(totalRevenue, job.Discount, job.DiscountType)
 	job.FinalRevenue = &finalRevenue
 
 	return r.db.Save(&job).Error
@@ -607,17 +617,7 @@ func (r *JobRepository) UpdateFinalRevenue(jobID uint) error {
 	}
 
 	// Calculate final revenue after discount using existing revenue
-	var finalRevenue float64
-	if job.DiscountType == "percent" {
-		// Percentage discount
-		finalRevenue = job.Revenue * (1 - job.Discount/100)
-	} else {
-		// Fixed amount discount
-		finalRevenue = job.Revenue - job.Discount
-		if finalRevenue < 0 {
-			finalRevenue = 0 // Cannot be negative
-		}
-	}
+	finalRevenue := computeFinalRevenue(job.Revenue, job.Discount, job.DiscountType)
 	job.FinalRevenue = &finalRevenue
 
 	return r.db.Save(&job).Error
