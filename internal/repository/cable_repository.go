@@ -235,21 +235,25 @@ func applyCableFilters(query *gorm.DB, params *models.FilterParams) *gorm.DB {
 	}
 
 	if params.Connector1ID != nil && params.Connector2ID != nil {
+		c1 := int(*params.Connector1ID)
+		c2 := int(*params.Connector2ID)
 		query = query.Where(
 			"(connector1 = ? AND connector2 = ?) OR (connector1 = ? AND connector2 = ?)",
-			*params.Connector1ID,
-			*params.Connector2ID,
-			*params.Connector2ID,
-			*params.Connector1ID,
+			c1,
+			c2,
+			c2,
+			c1,
 		)
 	} else if params.Connector1ID != nil {
-		query = query.Where("(connector1 = ?) OR (connector2 = ?)", *params.Connector1ID, *params.Connector1ID)
+		c1 := int(*params.Connector1ID)
+		query = query.Where("(connector1 = ?) OR (connector2 = ?)", c1, c1)
 	} else if params.Connector2ID != nil {
-		query = query.Where("(connector1 = ?) OR (connector2 = ?)", *params.Connector2ID, *params.Connector2ID)
+		c2 := int(*params.Connector2ID)
+		query = query.Where("(connector1 = ?) OR (connector2 = ?)", c2, c2)
 	}
 
 	if params.CableTypeID != nil {
-		query = query.Where("typ = ?", *params.CableTypeID)
+		query = query.Where("typ = ?", int(*params.CableTypeID))
 	}
 	if params.MinLength != nil {
 		query = query.Where("length >= ?", *params.MinLength)

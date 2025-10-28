@@ -203,8 +203,8 @@
                         </thead>
                         <tbody>
                             {{range .packages}}
-                            <tr data-package-id="{{.PackageID}}">
-                                <td>
+                            <tr data-package-id="{{.PackageID}}" onclick="viewPackage({{.PackageID}})" style="cursor: pointer;">
+                                <td onclick="event.stopPropagation()">
                                     <input type="checkbox" class="rc-checkbox package-checkbox" value="{{.PackageID}}">
                                 </td>
                                 <td>
@@ -256,7 +256,7 @@
                                     <span class="rc-badge rc-badge-secondary">Inactive</span>
                                     {{end}}
                                 </td>
-                                <td class="rc-text-center">
+                                <td class="rc-text-center" onclick="event.stopPropagation()">
                                     <div class="rc-flex rc-gap-sm rc-flex-center">
                                         <button class="rc-btn rc-btn-xs rc-btn-ghost" onclick="viewPackage({{.PackageID}})" 
                                                 title="View Details">

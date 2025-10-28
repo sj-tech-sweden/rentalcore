@@ -101,7 +101,7 @@
                         </thead>
                         <tbody>
                             {{range .customers}}
-                            <tr>
+                            <tr onclick="showCustomerDetails({{.CustomerID}})" style="cursor: pointer;">
                                 <td>
                                     <span class="rc-text-mono rc-badge rc-badge-primary">{{.CustomerID}}</span>
                                 </td>
@@ -143,7 +143,7 @@
                                 <td>
                                     <span class="rc-badge rc-badge-primary">{{.CustomerType}}</span>
                                 </td>
-                                <td style="text-align: center;">
+                                <td style="text-align: center;" onclick="event.stopPropagation()">
                                     <div class="rc-flex rc-flex-center" style="gap: var(--space-xs);">
                                         <button onclick="showCustomerDetails({{.CustomerID}})" class="rc-btn rc-btn-ghost rc-btn-sm" title="View Details">
                                             <i class="bi bi-eye"></i>

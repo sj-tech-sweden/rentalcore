@@ -186,8 +186,8 @@
                         <tbody>
                             {{if .transactions}}
                                 {{range .transactions}}
-                                <tr>
-                                    <td>
+                                <tr onclick="window.location.href='/financial/transactions/{{.TransactionID}}'" style="cursor: pointer;">
+                                    <td onclick="event.stopPropagation()">
                                         <input type="checkbox" class="transaction-checkbox" value="{{.TransactionID}}">
                                     </td>
                                     <td>{{.TransactionDate.Format "2006-01-02"}}</td>
@@ -228,7 +228,7 @@
                                             <span class="text-muted">-</span>
                                         {{end}}
                                     </td>
-                                    <td>
+                                    <td onclick="event.stopPropagation()">
                                         <div class="btn-group btn-group-sm">
                                             <a href="/financial/transactions/{{.TransactionID}}" 
                                                class="btn btn-outline-primary" title="View Details">

@@ -85,13 +85,13 @@
                         </thead>
                         <tbody>
                             {{range .products}}
-                            <tr>
+                            <tr onclick="viewProduct({{.ProductID}})" style="cursor: pointer;">
                                 <td><span class="rc-text-mono">{{.ProductID}}</span></td>
                                 <td><strong>{{.Name}}</strong></td>
                                 <td>{{if .Description}}{{.Description}}{{else}}-{{end}}</td>
                                 <td><span class="rc-badge rc-badge-primary">{{if .Category}}{{.Category.Name}}{{else}}Uncategorized{{end}}</span></td>
                                 <td>{{if .ItemCostPerDay}}€{{printf "%.2f" (derefFloat .ItemCostPerDay)}}{{else}}-{{end}}</td>
-                                <td>
+                                <td onclick="event.stopPropagation()">
                                     <div class="rc-flex rc-flex-gap-xs">
                                         <button onclick="viewProduct({{.ProductID}})" class="rc-btn rc-btn-outline rc-btn-sm" title="View Details">
                                             <i class="bi bi-eye"></i>

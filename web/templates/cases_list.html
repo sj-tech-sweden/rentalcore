@@ -337,7 +337,7 @@
                         </thead>
                         <tbody>
                             {{range .cases}}
-                            <tr data-case-id="{{.CaseID}}">
+                            <tr data-case-id="{{.CaseID}}" onclick="showCaseDetails({{.CaseID}})" style="cursor: pointer;">
                                 <td><code class="rc-code">{{.CaseID}}</code></td>
                                 <td class="rc-text-semibold">{{.Name}}</td>
                                 <td class="rc-text-muted">{{derefString .Description}}</td>
@@ -362,7 +362,7 @@
                                 <td>
                                     <span class="rc-badge rc-badge-info">{{.DeviceCount}} devices</span>
                                 </td>
-                                <td>
+                                <td onclick="event.stopPropagation()">
                                     <div class="rc-flex rc-flex-gap-xs">
                                         <button type="button" class="rc-btn rc-btn-outline rc-btn-sm" title="View Details" onclick="showCaseDetails({{.CaseID}})">
                                             <i class="bi bi-eye"></i>

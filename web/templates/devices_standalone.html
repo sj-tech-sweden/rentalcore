@@ -218,13 +218,13 @@
                             </thead>
                             <tbody>
                                 {{range .devices}}
-                                <tr>
+                                <tr onclick="viewDevice({{.DeviceID}})" style="cursor: pointer;">
                                     <td><span class="rc-text-mono">{{.DeviceID}}</span></td>
                                     <td>{{if .Product}}{{.Product.Name}}{{else}}No Product{{end}}</td>
                                     <td>{{if .Product}}{{if .Product.Description}}{{.Product.Description}}{{else}}-{{end}}{{else}}-{{end}}</td>
                                     <td><span class="rc-badge rc-badge-primary">{{if .Product}}{{if .Product.Category}}{{.Product.Category.Name}}{{else}}Uncategorized{{end}}{{else}}-{{end}}</span></td>
                                     <td><span class="rc-badge {{if eq .Status "free"}}rc-badge-success{{else if eq .Status "assigned"}}rc-badge-warning{{else if eq .Status "maintenance"}}rc-badge-danger{{else}}rc-badge-secondary{{end}}">{{.Status}}</span></td>
-                                    <td>
+                                    <td onclick="event.stopPropagation()">
                                         <div class="rc-flex rc-flex-gap-xs">
                                             <button onclick="viewDevice({{.DeviceID}})" class="rc-btn rc-btn-outline rc-btn-sm" title="View Details">
                                                 <i class="bi bi-eye"></i>

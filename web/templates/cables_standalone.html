@@ -85,19 +85,19 @@
                             </div>
                             <div class="rc-form-group">
                                 <label class="rc-label">Plug 1</label>
-                                <select class="rc-select" name="connector1">
+                                <select class="rc-select" name="connector1" id="connector1Select" data-selected="{{if $.params.Connector1ID}}{{printf "%v" (deref $.params.Connector1ID)}}{{end}}">
                                     <option value="">Any Connector</option>
                                     {{range .connectors}}
-                                    <option value="{{.CableConnectorsID}}" {{if $.params.Connector1ID}}{{if eq (deref $.params.Connector1ID) .CableConnectorsID}}selected{{end}}{{end}}>{{.Name}}</option>
+                                    <option value="{{.CableConnectorsID}}" {{if $.params.Connector1ID}}{{if eq (deref $.params.Connector1ID) .CableConnectorsID}}selected{{end}}{{end}}>{{.Name}}{{if .Gender}} ({{.Gender}}){{end}}</option>
                                     {{end}}
                                 </select>
                             </div>
                             <div class="rc-form-group">
                                 <label class="rc-label">Plug 2</label>
-                                <select class="rc-select" name="connector2">
+                                <select class="rc-select" name="connector2" id="connector2Select" data-selected="{{if $.params.Connector2ID}}{{printf "%v" (deref $.params.Connector2ID)}}{{end}}">
                                     <option value="">Any Connector</option>
                                     {{range .connectors}}
-                                    <option value="{{.CableConnectorsID}}" {{if $.params.Connector2ID}}{{if eq (deref $.params.Connector2ID) .CableConnectorsID}}selected{{end}}{{end}}>{{.Name}}</option>
+                                    <option value="{{.CableConnectorsID}}" {{if $.params.Connector2ID}}{{if eq (deref $.params.Connector2ID) .CableConnectorsID}}selected{{end}}{{end}}>{{.Name}}{{if .Gender}} ({{.Gender}}){{end}}</option>
                                     {{end}}
                                 </select>
                             </div>
@@ -198,7 +198,7 @@
                         </thead>
                         <tbody>
                             {{range .cableGroups}}
-                            <tr>
+                            <tr onclick="viewCableGroup({{.CableIDs}})" style="cursor: pointer;">
                                 <td><strong>{{if .Name}}{{.Name}}{{else}}Cable Group{{end}}</strong></td>
                                 <td><span class="rc-badge rc-badge-secondary">{{if .TypeInfo}}{{.TypeInfo.Name}}{{else}}Unknown{{end}}</span></td>
                                 <td>
@@ -211,7 +211,7 @@
                                 <td><span class="cable-length">{{printf "%.2f" .Length}} m</span></td>
                                 <td><span class="cable-cross-section">{{.GetMM2Display}}</span></td>
                                 <td><span class="rc-badge rc-badge-primary">{{.Count}}</span></td>
-                                <td>
+                                <td onclick="event.stopPropagation()">
                                     <div class="rc-flex rc-flex-gap-xs">
                                         <button onclick="viewCableGroup({{.CableIDs}})" class="rc-btn rc-btn-outline rc-btn-sm" title="View Details">
                                             <i class="bi bi-eye"></i>
@@ -340,23 +340,39 @@ function setupConnectorOverviewToggle() {
 }
 
 function initializeConnectorFilters() {
-    const connector1Select = document.querySelector('select[name="connector1"]');
-    const connector2Select = document.querySelector('select[name="connector2"]');
+    const connector1Select = document.getElementById('connector1Select');
+    const connector2Select = document.getElementById('connector2Select');
 
     if (!connector1Select || !connector2Select) {
         return;
     }
 
+    const initialConnector1 = connector1Select.dataset.selected || connector1Select.value || '';
+    const initialConnector2 = connector2Select.dataset.selected || connector2Select.value || '';
+
+    if (initialConnector1) {
+        connector1Select.value = initialConnector1;
+    }
+    if (initialConnector2) {
+        connector2Select.value = initialConnector2;
+    }
+
+    connector1Select.dataset.selected = connector1Select.value || '';
+    connector2Select.dataset.selected = connector2Select.value || '';
+
     const allOptions = Array.from(connector2Select.options).map(option => ({
         value: option.value,
-        label: option.textContent
+        label: option.textContent,
     }));
 
     const defaultOption = allOptions[0];
     const remainingOptions = allOptions.slice(1);
 
-    const rebuildConnector2 = (allowedValues) => {
-        const previousValue = connector2Select.value;
+    const rebuildConnector2 = (allowedSet, preferredValue) => {
+        const previousValue = typeof preferredValue === 'string' ? preferredValue : connector2Select.value;
+        const hasRestrictions = allowedSet !== null;
+        const activeSet = hasRestrictions ? allowedSet : new Set();
+
         connector2Select.innerHTML = '';
 
         const anyOption = document.createElement('option');
@@ -365,7 +381,7 @@ function initializeConnectorFilters() {
         connector2Select.appendChild(anyOption);
 
         remainingOptions.forEach(opt => {
-            if (!allowedValues || allowedValues.has(opt.value)) {
+            if (!hasRestrictions || activeSet.has(opt.value)) {
                 const optionElement = document.createElement('option');
                 optionElement.value = opt.value;
                 optionElement.textContent = opt.label;
@@ -374,31 +390,41 @@ function initializeConnectorFilters() {
         });
 
         let nextValue = '';
-        if (!allowedValues) {
+        if (!hasRestrictions) {
             nextValue = previousValue;
-        } else if (allowedValues.has(previousValue)) {
+        } else if (activeSet.has(previousValue)) {
             nextValue = previousValue;
+        } else if (activeSet.size === 1) {
+            nextValue = Array.from(activeSet)[0];
         }
 
         connector2Select.value = nextValue;
-        connector2Select.disabled = allowedValues !== null && connector2Select.options.length <= 1;
+        connector2Select.dataset.selected = connector2Select.value;
+        connector2Select.disabled = hasRestrictions ? activeSet.size === 0 : false;
     };
 
     const syncConnector2Options = () => {
         const selectedFirst = connector1Select.value;
+        const desiredSecond = connector2Select.dataset.selected || connector2Select.value || '';
+
         if (!selectedFirst) {
-            rebuildConnector2(null);
+            rebuildConnector2(null, desiredSecond);
             return;
         }
 
         const allowedRaw = connectorPairs[selectedFirst];
-        const allowed = Array.isArray(allowedRaw) ? allowedRaw : [];
-        const allowedSet = new Set(allowed.map(value => String(value)));
-        rebuildConnector2(allowedSet);
+        const allowedArray = Array.isArray(allowedRaw) ? allowedRaw.map(value => String(value)) : [];
+        const allowedSet = new Set(allowedArray);
+        rebuildConnector2(allowedSet, desiredSecond);
     };
 
     connector1Select.addEventListener('change', () => {
+        connector1Select.dataset.selected = connector1Select.value;
         syncConnector2Options();
+    });
+
+    connector2Select.addEventListener('change', () => {
+        connector2Select.dataset.selected = connector2Select.value;
     });
 
     syncConnector2Options();
