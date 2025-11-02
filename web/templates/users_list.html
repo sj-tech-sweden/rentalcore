@@ -1021,7 +1021,7 @@ function resetPassword(userId, username) {
         'Reset Password',
         `Set new password for user "${username}"?`,
         () => {
-            fetch(`/security/api/admin/users/${userId}/password`, {
+		fetch(`/users/${userId}/password`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

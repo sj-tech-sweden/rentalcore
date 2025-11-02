@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"go-barcode-webapp/internal/config"
@@ -937,9 +938,9 @@ func (h *AuthHandler) AdminSetUserPassword(c *gin.Context) {
 		return
 	}
 
-	// Check if current user has admin privileges
-	if !h.hasAdminPermission(currentUser) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin privileges required"})
+	// Check if current user has permission to manage user passwords
+	if !h.hasPasswordResetPermission(currentUser) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 		return
 	}
 
@@ -967,8 +968,9 @@ func (h *AuthHandler) AdminSetUserPassword(c *gin.Context) {
 		return
 	}
 
-	// Update the user's password
+	// Update the user's password and enforce change on next login
 	targetUser.PasswordHash = hashedPassword
+	targetUser.ForcePasswordChange = true
 	targetUser.UpdatedAt = time.Now()
 
 	if err := h.db.Save(&targetUser).Error; err != nil {
@@ -1050,6 +1052,45 @@ func (h *AuthHandler) AdminBlockUser(c *gin.Context) {
 		"oldStatus": oldStatus,
 		"newStatus": request.IsActive,
 	})
+}
+
+func (h *AuthHandler) hasPasswordResetPermission(user *models.User) bool {
+	if user == nil {
+		return false
+	}
+
+	if h.hasAdminPermission(user) {
+		return true
+	}
+
+	var userRoles []models.UserRole
+	if err := h.db.Preload("Role").Where("userID = ? AND is_active = ?", user.UserID, true).Find(&userRoles).Error; err != nil {
+		return false
+	}
+
+	for _, userRole := range userRoles {
+		if userRole.Role == nil || !userRole.Role.IsActive {
+			continue
+		}
+
+		roleName := strings.ToLower(userRole.Role.Name)
+		if roleName == "manager" || roleName == "users_manager" {
+			return true
+		}
+
+		var permissions []string
+		if err := json.Unmarshal(userRole.Role.Permissions, &permissions); err != nil {
+			continue
+		}
+
+		for _, perm := range permissions {
+			if perm == "users.manage" || perm == "users.edit" {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // hasAdminPermission checks if user has admin privileges

@@ -2691,17 +2691,16 @@ label,
 /* ===== MODAL STYLES ===== */
 .rc-modal {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 1050;
+    z-index: 4000;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: var(--space-lg);
     box-sizing: border-box;
-    overflow: auto;
+    overflow: hidden;
 }
 
 .rc-modal-overlay {
@@ -2727,7 +2726,7 @@ label,
     display: flex;
     flex-direction: column;
     animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);  /* Enhanced bounce animation */
-    z-index: 1051;
+    z-index: 4001;
     flex-shrink: 0;
     margin: var(--space-4); /* Consistent spacing around modal */
 }
@@ -2788,6 +2787,17 @@ label,
     padding: var(--space-lg);
     overflow-y: auto;
     flex: 1;
+}
+
+html.rc-modal-open,
+body.rc-modal-open {
+    overflow: hidden;
+    height: 100%;
+}
+
+body.rc-modal-open {
+    position: fixed;
+    width: 100%;
 }
 
 .rc-spinner {

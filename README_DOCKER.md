@@ -5,7 +5,7 @@ This guide explains how to deploy the Go Barcode Webapp using Docker Compose.
 ## Prerequisites
 
 - Docker and Docker Compose installed on your system
-- Access to the external MySQL database at tsunami-events.de
+- Access to a reachable MySQL database (for example: db.example.com)
 
 ## Quick Start
 
@@ -37,9 +37,9 @@ This guide explains how to deploy the Go Barcode Webapp using Docker Compose.
 The application is configured using environment variables in the `.env` file:
 
 #### Database Configuration
-- `DB_HOST`: Database host (default: tsunami-events.de)
+- `DB_HOST`: Database host (default: db.example.com)
 - `DB_PORT`: Database port (default: 3306)
-- `DB_NAME`: Database name (default: TS-Lager)
+- `DB_NAME`: Database name (default: rentalcore)
 - `DB_USERNAME`: Database username
 - `DB_PASSWORD`: Database password
 

@@ -527,6 +527,52 @@
 
     <script>
     // Modal Management Functions
+    let modalLockCount = 0;
+
+    function lockPageScroll() {
+        if (modalLockCount === 0) {
+            const scrollY = window.scrollY || window.pageYOffset || 0;
+            document.body.dataset.modalScrollLock = scrollY;
+            document.body.style.top = `-${scrollY}px`;
+            document.documentElement.classList.add('rc-modal-open');
+            document.body.classList.add('rc-modal-open');
+        }
+        modalLockCount++;
+    }
+
+    function unlockPageScroll() {
+        if (modalLockCount === 0) {
+            return;
+        }
+        modalLockCount = Math.max(0, modalLockCount - 1);
+        if (modalLockCount === 0) {
+            const scrollY = parseInt(document.body.dataset.modalScrollLock || '0', 10) || 0;
+            document.documentElement.classList.remove('rc-modal-open');
+            document.body.classList.remove('rc-modal-open');
+            document.body.style.top = '';
+            delete document.body.dataset.modalScrollLock;
+            window.scrollTo(0, scrollY);
+        }
+    }
+
+    function showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            return;
+        }
+        modal.style.display = 'flex';
+        lockPageScroll();
+    }
+
+    function hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+            return;
+        }
+        modal.style.display = 'none';
+        unlockPageScroll();
+    }
+
     function openAddProductModal() {
         console.log('Opening add product modal');
         
@@ -539,19 +585,16 @@
             // Set up cascading event listeners for new product modal
             setupCascadingDropdowns('productCategory', 'productSubcategory', 'productSubbiercategory');
 
-            document.getElementById('addProductModal').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+            showModal('addProductModal');
         }).catch(error => {
             console.error('Error loading dropdown data:', error);
             // Show modal anyway
-            document.getElementById('addProductModal').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+            showModal('addProductModal');
         });
     }
 
     function closeAddProductModal() {
-        document.getElementById('addProductModal').style.display = 'none';
-        document.body.style.overflow = 'auto';
+        hideModal('addProductModal');
         document.getElementById('addProductForm').reset();
     }
 
@@ -630,8 +673,7 @@
                             </div>
                         </div>
                     `;
-                    document.getElementById('viewProductModal').style.display = 'flex';
-                    document.body.style.overflow = 'hidden';
+                    showModal('viewProductModal');
                 }
             })
             .catch(error => {
@@ -641,8 +683,7 @@
     }
 
     function closeViewProductModal() {
-        document.getElementById('viewProductModal').style.display = 'none';
-        document.body.style.overflow = 'auto';
+        hideModal('viewProductModal');
     }
 
     function editProduct(productId) {
@@ -686,13 +727,11 @@
                         // Set up cascading event listeners for edit product modal
                         setupCascadingDropdowns('editProductCategory', 'editProductSubcategory', 'editProductSubbiercategory');
 
-                        document.getElementById('editProductModal').style.display = 'flex';
-                        document.body.style.overflow = 'hidden';
+                        showModal('editProductModal');
                     }).catch(error => {
                         console.error('Error loading dropdown data:', error);
                         // Show modal anyway
-                        document.getElementById('editProductModal').style.display = 'flex';
-                        document.body.style.overflow = 'hidden';
+                        showModal('editProductModal');
                     });
                 }
             })
@@ -703,8 +742,7 @@
     }
 
     function closeEditProductModal() {
-        document.getElementById('editProductModal').style.display = 'none';
-        document.body.style.overflow = 'auto';
+        hideModal('editProductModal');
         document.getElementById('editProductForm').reset();
     }
 

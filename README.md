@@ -798,7 +798,7 @@ All documentation is organized in the `docs/` folder for easy access:
 - ✅ **Neutral Text**: Text colors changed from bluish to neutral white/gray (#ffffff, #d1d5db)
 - ✅ **Grayscale Status**: Success/Warning changed from green/orange to gray tones
 - ✅ **Final Color Palette**: Only gray, white, black, and red (#dc2626) accents
-- ✅ **Brand Consistency**: Complete alignment with Tsunami Events brand identity
+- ✅ **Brand Consistency**: Complete alignment with the unified RentalCore/WarehouseCore visual language
 
 ### **v1.6** - Professional Design Refinement
 - ✅ **Color Scheme Overhaul**: Replaced colorful accents with professional grayscale + red

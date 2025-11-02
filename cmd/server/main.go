@@ -176,7 +176,8 @@ func main() {
 	securityHandler := handlers.NewSecurityHandler(db.DB)
 	invoiceHandler := handlers.NewInvoiceHandlerNew(invoiceRepo, customerRepo, jobRepo, deviceRepo, equipmentPackageRepo, productRepo, &cfg.PDF)
 	templateHandler := handlers.NewInvoiceTemplateHandler(invoiceRepo)
-	companyHandler := handlers.NewCompanyHandler(db.DB)
+	companyProvider := services.NewCompanyProvider(db.DB)
+	companyHandler := handlers.NewCompanyHandler(db.DB, companyProvider)
 	monitoringHandler := handlers.NewMonitoringHandler(db.DB, monitoring.GlobalErrorTracker, perfMonitor, cacheManager)
 	jobAttachmentHandler := handlers.NewJobAttachmentHandler(jobAttachmentRepo, jobRepo)
 
@@ -439,6 +440,9 @@ func main() {
 				}
 			}
 			return false
+		},
+		"companyName": func() string {
+			return companyProvider.CompanyName()
 		},
 	}
 	r.SetFuncMap(funcMap)
@@ -1076,6 +1080,7 @@ func setupRoutes(r *gin.Engine,
 			// Main user management routes
 			userManagement.GET("/users", authHandler.ListUsers)
 			userManagement.POST("/users", authHandler.CreateUserWeb)
+			userManagement.PUT("/users/:id/password", authHandler.AdminSetUserPassword)
 
 			// User form and management routes with no parameter conflicts
 			userManagement.GET("/user-management/new", authHandler.NewUserForm)

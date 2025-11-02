@@ -33,7 +33,7 @@ clean:
 # Create first admin user
 create-admin: user-manager
 	@echo "Creating admin user..."
-	./user_manager -username admin -email admin@tsunami-events.de -firstname Admin -lastname User -password "admin123"
+	./user_manager -username admin -email admin@example.com -firstname Admin -lastname User -password "admin123"
 	@echo "Default admin credentials: admin / admin123"
 	@echo "Please change this password after first login!"
 

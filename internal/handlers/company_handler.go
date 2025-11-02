@@ -19,12 +19,20 @@ import (
 )
 
 type CompanyHandler struct {
-	db *gorm.DB
+	db              *gorm.DB
+	companyProvider interface {
+		CompanyName() string
+		UpdateName(string)
+	}
 }
 
-func NewCompanyHandler(db *gorm.DB) *CompanyHandler {
+func NewCompanyHandler(db *gorm.DB, provider interface {
+	CompanyName() string
+	UpdateName(string)
+}) *CompanyHandler {
 	return &CompanyHandler{
-		db: db,
+		db:              db,
+		companyProvider: provider,
 	}
 }
 
@@ -42,24 +50,24 @@ func (h *CompanyHandler) CompanySettingsForm(c *gin.Context) {
 		log.Printf("CompanySettingsForm: Error fetching company settings: %v", err)
 		// Create default empty company settings
 		company = &models.CompanySettings{
-			CompanyName: "Ihre Firma GmbH",
+			CompanyName: h.defaultCompanyName(),
 		}
 	}
 
 	log.Printf("DEBUG: CompanySettingsForm handler called successfully - rendering company_settings.html")
-	
+
 	// Check for success message
 	var successMsg string
 	if c.Query("success") == "1" {
 		successMsg = "Company settings saved successfully!"
 	}
-	
+
 	c.HTML(http.StatusOK, "company_settings.html", gin.H{
-		"title":        "Company Settings",
-		"user":         user,
-		"company":      company,
-		"success":      successMsg,
-		"currentPage":  "settings",
+		"title":       "Company Settings",
+		"user":        user,
+		"company":     company,
+		"success":     successMsg,
+		"currentPage": "settings",
 	})
 }
 
@@ -143,6 +151,10 @@ func (h *CompanyHandler) UpdateCompanySettingsForm(c *gin.Context) {
 		return
 	}
 
+	if h.companyProvider != nil {
+		h.companyProvider.UpdateName(company.CompanyName)
+	}
+
 	log.Printf("Company settings updated successfully by user %s", user.Username)
 	c.Redirect(http.StatusSeeOther, "/settings/company?success=1")
 }
@@ -208,22 +220,22 @@ func (h *CompanyHandler) UpdateCompanySettings(c *gin.Context) {
 	company.Website = h.trimStringPointer(request.Website)
 	company.TaxNumber = h.trimStringPointer(request.TaxNumber)
 	company.VATNumber = h.trimStringPointer(request.VATNumber)
-	
+
 	// Update German banking fields
 	company.BankName = h.trimStringPointer(request.BankName)
 	company.IBAN = h.trimStringPointer(request.IBAN)
 	company.BIC = h.trimStringPointer(request.BIC)
 	company.AccountHolder = h.trimStringPointer(request.AccountHolder)
-	
+
 	// Update German legal fields
 	company.CEOName = h.trimStringPointer(request.CEOName)
 	company.RegisterCourt = h.trimStringPointer(request.RegisterCourt)
 	company.RegisterNumber = h.trimStringPointer(request.RegisterNumber)
-	
+
 	// Update invoice text fields
 	company.FooterText = h.trimStringPointer(request.FooterText)
 	company.PaymentTermsText = h.trimStringPointer(request.PaymentTermsText)
-	
+
 	// Update email settings
 	company.SMTPHost = h.trimStringPointer(request.SMTPHost)
 	company.SMTPPort = request.SMTPPort
@@ -265,6 +277,10 @@ func (h *CompanyHandler) UpdateCompanySettings(c *gin.Context) {
 			"details": result.Error.Error(),
 		})
 		return
+	}
+
+	if h.companyProvider != nil {
+		h.companyProvider.UpdateName(company.CompanyName)
 	}
 
 	log.Printf("Company settings updated successfully by user %s", user.Username)
@@ -394,6 +410,13 @@ func (h *CompanyHandler) UploadCompanyLogo(c *gin.Context) {
 	})
 }
 
+func (h *CompanyHandler) defaultCompanyName() string {
+	if h.companyProvider != nil {
+		return h.companyProvider.CompanyName()
+	}
+	return "RentalCore"
+}
+
 // DeleteCompanyLogo removes the company logo
 func (h *CompanyHandler) DeleteCompanyLogo(c *gin.Context) {
 	user, exists := GetCurrentUser(c)
@@ -447,7 +470,7 @@ func (h *CompanyHandler) DeleteCompanyLogo(c *gin.Context) {
 
 func (h *CompanyHandler) getCompanySettings() (*models.CompanySettings, error) {
 	var company models.CompanySettings
-	
+
 	// Try to get the first (and should be only) company settings record
 	result := h.db.First(&company)
 	if result.Error != nil {
@@ -456,7 +479,7 @@ func (h *CompanyHandler) getCompanySettings() (*models.CompanySettings, error) {
 		}
 		return nil, result.Error
 	}
-	
+
 	return &company, nil
 }
 
@@ -615,11 +638,11 @@ func (h *CompanyHandler) UpdateSMTPConfig(c *gin.Context) {
 	company.SMTPUsername = &request.SMTPUsername
 	company.SMTPFromEmail = &request.SMTPFromEmail
 	company.SMTPUseTLS = &request.SMTPUseTLS
-	
+
 	if request.SMTPFromName != "" {
 		company.SMTPFromName = &request.SMTPFromName
 	}
-	
+
 	// Only update password if provided
 	if request.SMTPPassword != "" {
 		company.SMTPPassword = &request.SMTPPassword
