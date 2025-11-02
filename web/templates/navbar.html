@@ -44,10 +44,15 @@
             <i class="bi bi-box"></i>
             <span class="rc-nav-label">Products (WH)</span>
         </a>
+        <a href="" id="storage-devices-link" class="rc-nav-item rc-nav-crosslink" title="Open WarehouseCore Devices">
+            <i class="bi bi-cpu"></i>
+            <span class="rc-nav-label">Devices (WH)</span>
+        </a>
         <script>
         (function() {
             var link = document.getElementById('storage-nav-link');
             var productLink = document.getElementById('storage-products-link');
+            var deviceLink = document.getElementById('storage-devices-link');
             var storageDomain = '{{.WarehouseCoreDomain}}';
             var protocol = window.location.protocol;
 
@@ -74,6 +79,9 @@
             if (productLink) {
                 productLink.href = targetUrl + '/admin/products';
             }
+            if (deviceLink) {
+                deviceLink.href = targetUrl + '/admin/devices';
+            }
         })();
         </script>
 
@@ -93,11 +101,6 @@
         <a href="/jobs" class="rc-nav-item {{if eq .currentPage "jobs"}}active{{end}}" title="Jobs">
             <i class="bi bi-briefcase"></i>
             <span class="rc-nav-label">Jobs</span>
-        </a>
-
-        <a href="/devices" class="rc-nav-item {{if eq .currentPage "devices"}}active{{end}}" title="Devices">
-            <i class="bi bi-cpu"></i>
-            <span class="rc-nav-label">Devices</span>
         </a>
 
         <a href="/rental-equipment" class="rc-nav-item {{if eq .currentPage "rental-equipment"}}active{{end}}" title="Rental Equipment">

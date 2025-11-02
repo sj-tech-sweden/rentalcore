@@ -72,6 +72,50 @@ func buildWarehouseProductsURL(r *http.Request) string {
 	return fmt.Sprintf("%s://%s/admin/products", scheme, host)
 }
 
+func buildWarehouseDevicesURL(r *http.Request) string {
+	warehouseDomain := os.Getenv("WAREHOUSECORE_DOMAIN")
+
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "" {
+		if r.TLS != nil {
+			scheme = "https"
+		} else {
+			scheme = "http"
+		}
+	}
+
+	host := warehouseDomain
+	if host == "" {
+		rawHost := r.Host
+		hostname := rawHost
+		port := ""
+
+		if h, p, err := net.SplitHostPort(rawHost); err == nil {
+			hostname = h
+			port = p
+		}
+
+		switch {
+		case strings.HasPrefix(hostname, "rent."):
+			hostname = strings.Replace(hostname, "rent.", "warehouse.", 1)
+		case strings.HasPrefix(hostname, "rental."):
+			hostname = strings.Replace(hostname, "rental.", "warehouse.", 1)
+		case port == "8081":
+			hostname = hostname + ":8082"
+		case port != "":
+			hostname = hostname + ":8082"
+		}
+
+		host = hostname
+	}
+
+	if host == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("%s://%s/admin/devices", scheme, host)
+}
+
 func main() {
 	// Parse command line flags
 	configFile := flag.String("config", "config.json", "Configuration file path")
@@ -719,20 +763,37 @@ func setupRoutes(r *gin.Engine,
 			jobs.POST("/:id/bulk-scan", jobHandler.BulkScanDevices)
 		}
 
-		// Device routes
+		// Device routes - redirect to WarehouseCore
+		redirectToWarehouseDevices := func(c *gin.Context) {
+			target := buildWarehouseDevicesURL(c.Request)
+			if target == "" {
+				c.JSON(http.StatusServiceUnavailable, gin.H{
+					"error":   "WarehouseCore domain not configured",
+					"message": "Set WAREHOUSECORE_DOMAIN to enable device management in WarehouseCore.",
+				})
+				return
+			}
+			c.Redirect(http.StatusFound, target)
+		}
+
 		devices := protected.Group("/devices")
 		{
-			devices.GET("", deviceHandler.ListDevices)
-			devices.GET("/new", deviceHandler.NewDeviceForm)
-			devices.POST("", deviceHandler.CreateDevice)
+			// Redirect web UI to WarehouseCore
+			devices.GET("", redirectToWarehouseDevices)
+			devices.GET("/new", redirectToWarehouseDevices)
+			devices.GET("/:id/edit", redirectToWarehouseDevices)
+
+			// Keep read-only endpoints for Jobs/Invoices integration
 			devices.GET("/:id", deviceHandler.GetDevice)
-			devices.GET("/:id/edit", deviceHandler.EditDeviceForm)
-			devices.PUT("/:id", deviceHandler.UpdateDevice)
-			devices.DELETE("/:id", deviceHandler.DeleteDevice)
-			devices.GET("/:id/qr", deviceHandler.GetDeviceQR)
-			devices.GET("/:id/barcode", deviceHandler.GetDeviceBarcode)
 			devices.GET("/:id/stats", deviceHandler.GetDeviceStatsAPI)
 			devices.GET("/available", deviceHandler.GetAvailableDevices)
+
+			// QR/Barcode redirected to WarehouseCore
+			devices.GET("/:id/qr", redirectToWarehouseDevices)
+			devices.GET("/:id/barcode", redirectToWarehouseDevices)
+
+			// Write operations removed - handled in WarehouseCore
+			// POST, PUT, DELETE routes removed
 		}
 
 		redirectToWarehouseProducts := func(c *gin.Context) {

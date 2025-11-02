@@ -31,9 +31,9 @@ A comprehensive, enterprise-grade equipment rental management system built with 
 
 ### 🏢 **Equipment Management**
 - **Product Catalog (WarehouseCore)**: Manage product master data exclusively in WarehouseCore (`/admin/products`); RentalCore consumes the catalog read-only for jobs, invoices, and device assignments
-- **Device Inventory**: Complete equipment tracking with categories and products
-- **Availability Tracking**: Real-time device status (available, checked out, maintenance)
-- **QR Code & Barcode Generation**: Automated code generation for device identification
+- **Device Management (WarehouseCore)**: Full device CRUD operations now managed exclusively in WarehouseCore (`/admin/devices`); RentalCore provides read-only device access for job assignments, invoices, and analytics
+- **Availability Tracking**: Real-time device status integration from WarehouseCore (available, checked out, maintenance)
+- **QR Code & Barcode Generation**: Device identification codes now managed in WarehouseCore
 - **🆕 Scan-Board**: Full-screen pack workflow board displaying large barcodes for all job devices
   - **Live Pack Status**: Real-time visual indication of packed vs pending items
   - **Visual Progress Tracking**: Circular progress indicator with completion percentage
@@ -319,13 +319,14 @@ SMTP_PASSWORD=email_password
 
 ### **Core Management APIs**
 - `GET|POST|PUT|DELETE /api/v1/jobs` - Job management
-- `GET|POST|PUT|DELETE /api/v1/devices` - Device inventory
+- `GET /api/v1/devices` - Device inventory (read-only, write operations in WarehouseCore)
+- `GET /api/v1/devices/:id` - Device details (read-only)
+- `GET /api/v1/devices/available` - Available devices for assignment
 - `GET|POST|PUT|DELETE /api/v1/customers` - Customer database
 - `GET|POST|PUT|DELETE /api/v1/invoices` - Invoice management
 
 ### **Utility Endpoints**
 - `GET /health` - Application health check
-- `GET /barcodes/device/:id/qr` - Generate QR codes
 - `POST /search/global` - Global search functionality
 - `GET /monitoring/metrics` - Prometheus metrics
 
@@ -454,7 +455,17 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.38** (Latest) - Clickable Job Rows
+### **v2.39** (Latest) - Phase 2: Device Management Redirect to WarehouseCore
+- ✅ **Device CRUD Redirected**: All device management operations now redirect to WarehouseCore
+- ✅ **Read-Only APIs Preserved**: Device GET endpoints remain for Jobs/Invoices integration
+- ✅ **Navigation Updated**: Added "Devices (WH)" cross-link to WarehouseCore in sidebar
+- ✅ **Templates Removed**: Deleted device_form.html, device_detail.html, devices_standalone.html
+- ✅ **Redirect Function**: Added buildWarehouseDevicesURL for automatic WarehouseCore routing
+- ✅ **Tests Added**: Comprehensive redirect tests for device URL building
+- ✅ **Documentation Updated**: README reflects device management now in WarehouseCore
+- ✅ **Write Operations Removed**: POST/PUT/DELETE device routes removed from RentalCore
+
+### **v2.38** - Clickable Job Rows
 - ✅ **Entire Row Clickable**: Click anywhere on a job row to open job details
 - ✅ **Better UX**: No need to find and click the specific eye icon
 - ✅ **Visual Feedback**: Cursor changes to pointer when hovering over job rows
