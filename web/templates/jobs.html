@@ -864,32 +864,50 @@
                 content.innerHTML = html;
             }
 
-            // Re-initialize any scripts in the loaded content
+            // Execute scripts by appending to document body (innerHTML doesn't execute them)
             const scripts = content.querySelectorAll('script');
-            scripts.forEach(script => {
+            const scriptPromises = [];
+
+            scripts.forEach(oldScript => {
                 const newScript = document.createElement('script');
-                if (script.src) {
-                    newScript.src = script.src;
+
+                // Copy all attributes
+                Array.from(oldScript.attributes).forEach(attr => {
+                    newScript.setAttribute(attr.name, attr.value);
+                });
+
+                if (oldScript.src) {
+                    // External script - wait for load
+                    scriptPromises.push(new Promise((resolve, reject) => {
+                        newScript.onload = resolve;
+                        newScript.onerror = reject;
+                        newScript.src = oldScript.src;
+                    }));
                 } else {
-                    newScript.textContent = script.textContent;
+                    // Inline script - copy content
+                    newScript.textContent = oldScript.textContent;
                 }
-                script.parentNode.replaceChild(newScript, script);
+
+                // Remove old script and append new one to ensure execution
+                oldScript.parentNode.removeChild(oldScript);
+                document.body.appendChild(newScript);
             });
 
-            // IMPORTANT: Wait for initializeJobForm to be available, then call it
-            let attempts = 0;
-            const maxAttempts = 50; // 5 seconds max
-            const checkInterval = setInterval(() => {
-                attempts++;
-                if (typeof window.initializeJobForm === 'function') {
-                    clearInterval(checkInterval);
-                    window.initializeJobForm();
-                    console.log('✅ Job form initialized in modal');
-                } else if (attempts >= maxAttempts) {
-                    clearInterval(checkInterval);
-                    console.error('❌ initializeJobForm function not found after 5 seconds');
-                }
-            }, 100);
+            // Wait for all external scripts to load, then initialize
+            Promise.all(scriptPromises).then(() => {
+                // Give scripts a moment to execute
+                setTimeout(() => {
+                    if (typeof window.initializeJobForm === 'function') {
+                        window.initializeJobForm();
+                        console.log('✅ Job form initialized in modal');
+                    } else {
+                        console.error('❌ initializeJobForm still not available');
+                        console.log('Available window functions:', Object.keys(window).filter(k => k.includes('init')));
+                    }
+                }, 200);
+            }).catch(err => {
+                console.error('Error loading scripts:', err);
+            });
         })
         .catch(error => {
             console.error('Error loading job form:', error);
