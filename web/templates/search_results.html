@@ -56,9 +56,6 @@
                     <li><a href="/customers" class="rc-nav-link">
                         <i class="bi bi-people"></i> Customers
                     </a></li>
-                    <li><a href="/cases" class="rc-nav-link">
-                        <i class="bi bi-box"></i> Cases
-                    </a></li>
                     
                     <!-- Tools Dropdown -->
                     <li class="rc-dropdown">
@@ -197,7 +194,6 @@
                         <option value="jobs" {{ if eq .searchType "jobs" }}selected{{ end }}>Jobs</option>
                         <option value="devices" {{ if eq .searchType "devices" }}selected{{ end }}>Devices</option>
                         <option value="customers" {{ if eq .searchType "customers" }}selected{{ end }}>Customers</option>
-                        <option value="cases" {{ if eq .searchType "cases" }}selected{{ end }}>Cases</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -315,46 +311,9 @@
             </div>
         </div>
         {{ end }}
-
-        {{ if .results.cases }}
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-box me-2"></i>Cases ({{ len .results.cases.data }})
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {{ if .results.cases.data }}
-                        {{ range .results.cases.data }}
-                        <div class="border-bottom pb-2 mb-2">
-                            <h6><a href="/cases/{{ .CaseID }}" class="text-decoration-none">{{ .CaseName }}</a></h6>
-                            <p class="mb-1">{{ .Description }}</p>
-                            <small class="text-muted">
-                                {{ if .Customer }}{{ .Customer.GetDisplayName }}{{ end }} • 
-                                <span class="badge bg-{{ if eq .Status "active" }}success{{ else if eq .Status "pending" }}warning{{ else }}secondary{{ end }}">
-                                    {{ .Status }}
-                                </span>
-                            </small>
-                        </div>
-                        {{ end }}
-                        {{ if gt .results.cases.total (len .results.cases.data) }}
-                        <div class="text-center mt-3">
-                            <a href="/cases?q={{ .query }}" class="btn btn-sm btn-outline-primary">
-                                View all {{ .results.cases.total }} cases
-                            </a>
-                        </div>
-                        {{ end }}
-                    {{ else }}
-                        <p class="text-muted">No cases found</p>
-                    {{ end }}
-                </div>
-            </div>
-        </div>
-        {{ end }}
     </div>
 
-    {{ if not .results.jobs }}{{ if not .results.devices }}{{ if not .results.customers }}{{ if not .results.cases }}
+    {{ if not .results.jobs }}{{ if not .results.devices }}{{ if not .results.customers }}
     <div class="card">
         <div class="card-body text-center py-5">
             <i class="fas fa-search display-1 text-muted mb-3"></i>
@@ -367,7 +326,7 @@
             </div>
         </div>
     </div>
-    {{ end }}{{ end }}{{ end }}{{ end }}
+    {{ end }}{{ end }}{{ end }}
 
     {{ else }}
     <!-- Welcome message when no query -->
