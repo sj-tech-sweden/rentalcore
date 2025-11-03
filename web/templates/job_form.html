@@ -267,18 +267,18 @@
                                 <i class="bi bi-box-seam"></i> Product Selection
                             </h4>
                             <div class="rc-text-sm rc-text-secondary">
-                                Availability is based on the selected start and end dates.
+                                Select start and end dates to see real-time availability.
                             </div>
                         </div>
                         <div class="rc-card-body">
                             <div id="productSelectionContainer">
                                 <div class="rc-flex rc-flex-center rc-py-xl" id="productTreeLoading">
                                     <i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i>
-                                    Please select start and end dates to load available products
+                                    Loading products...
                                 </div>
                                 <div id="productTreeRoot" class="rc-product-tree" style="display: none;"></div>
                                 <div id="productTreeEmpty" class="rc-alert rc-alert-info rc-mt-lg" style="display: none;">
-                                    <i class="bi bi-info-circle"></i> No products found for the selected dates.
+                                    <i class="bi bi-info-circle"></i> No products found.
                                 </div>
                             </div>
                             <div id="productSelectionErrors" class="rc-alert rc-alert-error rc-mt-lg" style="display: none;"></div>
@@ -759,28 +759,25 @@
             const root = document.getElementById('productTreeRoot');
             const empty = document.getElementById('productTreeEmpty');
 
-            if (!startDate || !endDate) {
-                if (loading) {
-                    loading.style.display = 'flex';
-                    loading.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Please select start and end dates to load available products';
+            const jobId = getJobIdFromUrl();
+            let url = `/api/v1/devices/tree/availability`;
+
+            // Add dates to URL if provided (for availability checking)
+            if (startDate && endDate) {
+                url += `?start_date=${startDate}&end_date=${endDate}`;
+                if (jobId) {
+                    url += `&job_id=${jobId}`;
                 }
-                if (root) root.style.display = 'none';
-                if (empty) empty.style.display = 'none';
-                return;
+            } else if (jobId) {
+                url += `?job_id=${jobId}`;
             }
 
             if (loading) {
                 loading.style.display = 'flex';
-                loading.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available products...';
+                loading.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading products...';
             }
             if (root) root.style.display = 'none';
             if (empty) empty.style.display = 'none';
-
-            const jobId = getJobIdFromUrl();
-            let url = `/api/v1/devices/tree/availability?start_date=${startDate}&end_date=${endDate}`;
-            if (jobId) {
-                url += `&job_id=${jobId}`;
-            }
 
             fetch(url, { credentials: 'include' })
                 .then(response => {
