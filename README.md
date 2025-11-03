@@ -442,7 +442,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.50** (Latest) - Product Tree Always Visible
+### **v2.51** (Latest) - Modal-Based Job Creation
+- ✅ **Popup Interface**: "New Job" button opens modal popup instead of navigating to new page
+- ✅ **Streamlined UX**: Create jobs without leaving the jobs overview page
+- ✅ **Dynamic Loading**: Modal fetches and displays job form via AJAX
+- ✅ **Smart Content Extraction**: Automatically extracts <main> content for clean modal display
+- ✅ **Fallback Support**: Direct link to /jobs/new available if modal fails to load
+
+### **v2.50** - Product Tree Always Visible
 - ✅ **Immediate Loading**: Product tree loads immediately on page open (no date requirement)
 - ✅ **Always Visible**: All products and categories shown by default with total device counts
 - ✅ **Dynamic Availability**: Availability counts update in real-time when dates are selected
