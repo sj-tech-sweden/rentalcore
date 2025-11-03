@@ -442,7 +442,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.56** (Latest) - Script Extraction Fix
+### **v2.57** (Latest) - Debug Logging for Product Tree
+- ✅ **Debug Enhancement**: Added comprehensive logging for product tree rendering
+- ✅ **API Response Logging**: Shows API response data and parsed tree structure
+- ✅ **Element Detection**: Logs productTreeRoot element availability
+- ✅ **Render Status**: Logs categories count and rendering progress
+- ✅ **Troubleshooting Aid**: Helps diagnose display issues with product tree
+
+### **v2.56** - Script Extraction Fix
 - ✅ **Critical Bug Fix**: Fixed script extraction from fetched HTML in modal
 - ✅ **Root Cause**: Scripts were in `<head>` and end of `<body>`, not inside `<main>`
 - ✅ **Solution**: Changed `content.querySelectorAll('script')` to `doc.querySelectorAll('script')`
