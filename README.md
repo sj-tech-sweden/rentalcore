@@ -442,7 +442,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.58** (Latest) - CSS Extraction Fix for Modal
+### **v2.59** (Latest) - Property Name Case Fix
+- ✅ **Critical Fix**: Changed JavaScript property access from PascalCase to snake_case
+- ✅ **Root Cause**: Backend JSON uses snake_case (id, name, available_count) but JS used PascalCase (ID, Name, AvailableCount)
+- ✅ **Fixed Properties**: All category, subcategory, and product property references
+- ✅ **Complete Fix**: Category names, products, and availability counts now display correctly
+- ✅ **Issue #23 FULLY RESOLVED**: Product tree fully functional in modal
+
+### **v2.58** - CSS Extraction Fix for Modal
 - ✅ **Critical Fix**: Extract and inject `<style>` tags from fetched HTML
 - ✅ **Root Cause**: CSS was in `<head>`, not included when extracting `<main>` content
 - ✅ **Solution**: Append all style tags to document.head for modal context
