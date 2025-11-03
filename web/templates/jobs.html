@@ -876,13 +876,18 @@
                 script.parentNode.replaceChild(newScript, script);
             });
 
-            // IMPORTANT: Manually trigger form initialization after scripts load
-            setTimeout(() => {
+            // IMPORTANT: Wait for initializeJobForm to be available, then call it
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds max
+            const checkInterval = setInterval(() => {
+                attempts++;
                 if (typeof window.initializeJobForm === 'function') {
+                    clearInterval(checkInterval);
                     window.initializeJobForm();
                     console.log('✅ Job form initialized in modal');
-                } else {
-                    console.error('❌ initializeJobForm function not found');
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    console.error('❌ initializeJobForm function not found after 5 seconds');
                 }
             }, 100);
         })
