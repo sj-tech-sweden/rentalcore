@@ -260,46 +260,48 @@
                         </div>
                     </div>
                     
-                    <!-- Device Selection Section -->
+                    <!-- Product Selection Section -->
                     <div class="rc-card rc-mb-lg" style="background: var(--surface-2); border: 1px solid var(--surface-3);">
                         <div class="rc-card-header">
                             <h4 class="rc-card-title">
-                                <i class="bi bi-cpu"></i> Device Selection
+                                <i class="bi bi-box-seam"></i> Product Selection
                             </h4>
-                            <div class="rc-flex rc-flex-gap-sm">
-                                <button type="button" id="quickAddButton" class="rc-btn rc-btn-primary rc-btn-sm">
-                                    <i class="bi bi-lightning-fill"></i> Quick Add by Product
-                                </button>
-                                <button type="button" id="refreshDeviceTree" class="rc-btn rc-btn-outline rc-btn-sm">
-                                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                                </button>
-                                <button type="button" id="toggleTreeView" class="rc-btn rc-btn-outline rc-btn-sm">
-                                    <i class="bi bi-diagram-3"></i> Tree View
-                                </button>
+                            <div class="rc-text-sm rc-text-secondary">
+                                Availability is based on the selected start and end dates.
                             </div>
                         </div>
                         <div class="rc-card-body">
-                            <div id="deviceSelectionContainer">
-                                <div id="loadingDevices" class="rc-flex rc-flex-center rc-py-xl">
+                            <div id="productSelectionContainer">
+                                <div class="rc-flex rc-flex-center rc-py-xl" id="productTreeLoading">
                                     <i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i>
-                                    Please select start and end dates to load available devices
+                                    Please select start and end dates to load available products
                                 </div>
-                                
-                                <div id="deviceTreeContainer" style="display: none;">
-                                    <!-- Tree view will be loaded here -->
-                                </div>
-                                
-                                <div id="selectedDevicesContainer" class="rc-mt-lg">
-                                    <h5>Selected Devices</h5>
-                                    <div id="selectedDevicesList" class="rc-flex rc-flex-wrap rc-flex-gap-sm">
-                                        <!-- Selected devices will appear here as badges -->
-                                    </div>
-                                    <input type="hidden" name="selected_devices" id="selectedDevicesInput" value="">
+                                <div id="productTreeRoot" class="rc-product-tree" style="display: none;"></div>
+                                <div id="productTreeEmpty" class="rc-alert rc-alert-info rc-mt-lg" style="display: none;">
+                                    <i class="bi bi-info-circle"></i> No products found for the selected dates.
                                 </div>
                             </div>
+                            <div id="productSelectionErrors" class="rc-alert rc-alert-error rc-mt-lg" style="display: none;"></div>
+                            <div class="rc-divider rc-mt-lg rc-mb-lg"></div>
+                            <div>
+                                <h5>Selected Products</h5>
+                                <div id="selectedProductsEmpty" class="rc-text-sm rc-text-secondary rc-mb-md">
+                                    No products selected yet.
+                                </div>
+                                <table class="rc-table rc-table-compact" id="selectedProductsTable" style="display: none;">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th style="width: 120px;">Quantity</th>
+                                            <th style="width: 140px;">Available</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <input type="hidden" name="selected_products" id="selectedProductsInput" value="">
                         </div>
                     </div>
-                    
                     <div class="rc-form-group rc-mb-xl">
                         <label class="rc-label">Description</label>
                         <textarea class="rc-textarea" name="description" rows="4" placeholder="Additional job details and notes...">{{derefString .job.Description}}</textarea>
@@ -414,45 +416,6 @@
             </div>
         </div>
 
-        <!-- Quick Add Modal -->
-        <div id="quickAddModal" class="rc-modal" style="display: none;">
-            <div class="rc-modal-overlay" onclick="closeQuickAddModal()"></div>
-            <div class="rc-modal-content" style="max-width: 500px;">
-                <div class="rc-modal-header">
-                    <h3 class="rc-modal-title">
-                        <i class="bi bi-lightning-fill"></i> Quick Add Devices by Product
-                    </h3>
-                    <button type="button" class="rc-modal-close" onclick="closeQuickAddModal()">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
-                <div class="rc-modal-body">
-                    <div class="rc-form-group">
-                        <label class="rc-label">Product *</label>
-                        <select id="quickAddProduct" class="rc-select" required>
-                            <option value="">Select a product...</option>
-                        </select>
-                    </div>
-                    <div class="rc-form-group">
-                        <label class="rc-label">Quantity *</label>
-                        <input type="number" id="quickAddQuantity" class="rc-input" min="1" value="1" required>
-                        <p class="rc-text-sm rc-text-muted rc-mt-xs">
-                            System will automatically select available devices
-                        </p>
-                    </div>
-                    <div id="quickAddStatus" class="rc-alert rc-alert-info" style="display: none; margin-top: var(--space-md);">
-                        <i class="bi bi-info-circle"></i>
-                        <span id="quickAddStatusText"></span>
-                    </div>
-                </div>
-                <div class="rc-modal-footer">
-                    <button type="button" class="rc-btn rc-btn-secondary" onclick="closeQuickAddModal()">Cancel</button>
-                    <button type="button" id="quickAddConfirm" class="rc-btn rc-btn-primary" onclick="performQuickAdd()">
-                        <i class="bi bi-plus-lg"></i> Add Devices
-                    </button>
-                </div>
-            </div>
-        </div>
     </main>
 
     <!-- Footer -->
@@ -479,224 +442,73 @@
     </footer>
 
 
-    <!-- Device Tree Styles -->
+    <!-- Product Tree Styles -->
     <style>
-        .device-tree-container {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .tree-category {
-            margin-bottom: var(--space-md);
+        .rc-product-tree details {
+            margin-bottom: var(--space-sm);
             border: 1px solid var(--surface-3);
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-sm);
             background: var(--surface-1);
         }
-        
-        .tree-category-header {
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-            padding: var(--space-md);
+
+        .rc-product-tree summary {
             cursor: pointer;
-            transition: var(--transition-normal);
-            border-radius: var(--radius-md);
-        }
-        
-        .tree-category-header:hover {
-            background: var(--surface-2);
-        }
-        
-        .tree-chevron {
-            color: var(--text-muted);
-            transition: transform 0.2s ease;
-            font-size: 0.9rem;
-        }
-        
-        .tree-chevron.expanded {
-            transform: rotate(90deg);
-        }
-        
-        .tree-icon {
-            color: var(--accent-electric);
-            font-size: 1.1rem;
-        }
-        
-        .tree-title {
+            padding: var(--space-sm) var(--space-md);
             font-weight: 600;
-            color: var(--text-primary);
-            flex: 1;
-        }
-        
-        .tree-count {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            background: var(--surface-3);
-            padding: 2px 8px;
-            border-radius: var(--radius-sm);
-        }
-        
-        .tree-device {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: var(--space-sm);
-            margin: var(--space-xs) 0;
-            background: var(--surface-1);
-            border: 1px solid var(--surface-2);
-            border-radius: var(--radius-sm);
-            transition: var(--transition-normal);
-            cursor: pointer;
         }
-        
-        .tree-device:hover {
-            background: var(--surface-2);
-            border-color: var(--accent-electric);
-        }
-        
-        .tree-device.available {
-            border-color: var(--success);
-        }
-        
-        .tree-device.unavailable {
-            opacity: 0.5;
-            background: var(--surface-1);
-            border-color: var(--error);
-            cursor: not-allowed;
-        }
-        
-        .tree-device.selected {
-            background: #f0f0f0;
-            border-color: #dc3545;
-            opacity: 0.7;
-            color: #6c757d;
-        }
-        
-        [data-theme="dark"] .tree-device.selected {
-            background: #2a2a2a;
-            border-color: #dc3545;
-            opacity: 0.8;
-            color: #9ca3af;
-        }
-        
-        .device-info {
-            flex: 1;
-        }
-        
-        .device-name {
-            font-weight: 500;
-            color: var(--text-primary);
-            margin-bottom: 2px;
-        }
-        
-        .tree-device.selected .device-name {
-            color: #6c757d;
-        }
-        
-        [data-theme="dark"] .tree-device.selected .device-name {
-            color: #9ca3af;
-        }
-        
-        .device-details {
+
+        .rc-product-node-body {
+            padding: var(--space-sm) var(--space-md) var(--space-md);
             display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-            font-size: 0.85rem;
+            flex-direction: column;
+            gap: var(--space-sm);
         }
-        
-        .device-id {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text-muted);
-            background: var(--surface-2);
-            padding: 1px 4px;
-            border-radius: 2px;
-        }
-        
-        .tree-device.selected .device-id {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            border: 1px solid #dc3545;
-        }
-        
-        .device-status {
-            padding: 2px 6px;
-            border-radius: var(--radius-sm);
-            font-size: 0.75rem;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-        
-        .device-status-free {
-            background: var(--success);
-            color: white;
-        }
-        
-        .device-status-assigned {
-            background: var(--warning);
-            color: white;
-        }
-        
-        .device-status-maintenance {
-            background: var(--error);
-            color: white;
-        }
-        
-        .tree-content {
-            padding-left: var(--space-lg);
-            border-left: 2px solid var(--surface-3);
-            margin-left: var(--space-lg);
-        }
-        
-        .tree-subcategory, .tree-subbiercategory {
-            margin: var(--space-sm) 0;
-            border: 1px solid var(--surface-2);
+
+        .rc-product-node-subbiercategory {
+            margin-left: var(--space-md);
+            border: 1px solid var(--surface-3);
             border-radius: var(--radius-sm);
             background: var(--surface-0);
         }
-        
-        .tree-subcategory-header, .tree-subbiercategory-header {
+
+        .rc-product-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            padding: var(--space-sm) 0;
+        }
+
+        .rc-product-entry {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            gap: var(--space-md);
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--surface-3);
+            border-radius: var(--radius-sm);
+            background: var(--surface-0);
+        }
+
+        .rc-product-entry-name {
+            font-weight: 500;
+        }
+
+        .rc-product-entry-meta {
             display: flex;
             align-items: center;
             gap: var(--space-sm);
-            padding: var(--space-sm) var(--space-md);
-            cursor: pointer;
-            transition: var(--transition-normal);
-            border-radius: var(--radius-sm);
-        }
-        
-        .tree-subcategory-header:hover, .tree-subbiercategory-header:hover {
-            background: var(--surface-1);
-        }
-        
-        .selected-device-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-xs);
-            background: var(--accent-electric);
-            color: white;
-            padding: var(--space-xs) var(--space-sm);
-            border-radius: var(--radius-sm);
             font-size: 0.85rem;
         }
-        
-        .selected-device-badge .remove-device {
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            padding: 0;
-            margin-left: var(--space-xs);
+
+        .rc-product-entry-input input {
+            width: 100px;
         }
-        
-        .category-icon {
-            color: var(--accent-electric);
-        }
-        
-        .subcategory-icon {
-            color: var(--accent-purple);
-        }
-        
-        .subbiercategory-icon {
-            color: var(--accent-coral);
+
+        .rc-table-row-warning {
+            background: rgba(239, 68, 68, 0.12);
         }
     </style>
 
@@ -880,610 +692,490 @@
             };
         }
 
-        // Device selection functionality
-        let selectedDevices = new Set();
-        let deviceTreeData = null;
-        let expandedNodes = new Set(); // Track expanded tree nodes
-        let deviceProductIndex = new Map();
-        let treeAutoExpanded = false;
-        let treeVisible = false;
+                // Product selection functionality
+        const productSelections = new Map(); // productId -> { id, name, available, total, quantity }
+        const initialProductSelections = new Map();
+        let productTreeData = [];
+        let productValidationErrors = [];
 
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof window.setupCustomerInlineCreation === 'function') {
-                window.setupCustomerInlineCreation(document);
-            }
-            // Listen for date changes
-            const startDateInput = document.querySelector('input[name="start_date"]');
-            const endDateInput = document.querySelector('input[name="end_date"]');
-            
-            // Set current year dates for new jobs (if no existing values)
-            function setDefaultDates() {
-                const startInput = document.querySelector('input[name="start_date"]');
-                const endInput = document.querySelector('input[name="end_date"]');
-                
-                console.log('DEBUG: Checking for date inputs...', {
-                    startInput: !!startInput,
-                    endInput: !!endInput,
-                    startValue: startInput?.value,
-                    endValue: endInput?.value
-                });
-                
-                if (startInput && endInput) {
-                    // Only set default dates if both fields are empty (new job)
-                    if (!startInput.value && !endInput.value) {
-                        const today = new Date();
-                        const currentYear = today.getFullYear();
-                        const month = String(today.getMonth() + 1).padStart(2, '0');
-                        const day = String(today.getDate()).padStart(2, '0');
-                        
-                        // Set start date to today
-                        const todayString = `${currentYear}-${month}-${day}`;
-                        startInput.value = todayString;
-                        
-                        // Set end date to tomorrow
-                        const tomorrow = new Date(today);
-                        tomorrow.setDate(today.getDate() + 1);
-                        const tomorrowMonth = String(tomorrow.getMonth() + 1).padStart(2, '0');
-                        const tomorrowDay = String(tomorrow.getDate()).padStart(2, '0');
-                        const tomorrowString = `${tomorrow.getFullYear()}-${tomorrowMonth}-${tomorrowDay}`;
-                        endInput.value = tomorrowString;
-                        
-                        console.log('DEBUG: Set default dates for new job:', todayString, 'to', tomorrowString);
-                        
-                        // Trigger change events to update device tree
-                        startInput.dispatchEvent(new Event('change'));
-                        endInput.dispatchEvent(new Event('change'));
-                    } else {
-                        console.log('DEBUG: Not setting default dates - fields have values:', {
-                            start: startInput.value,
-                            end: endInput.value
-                        });
-                    }
-                } else {
-                    console.log('DEBUG: Date inputs not found yet');
-                }
-            }
-            
-            // Try to set default dates immediately
-            setDefaultDates();
-            
-            if (startDateInput && endDateInput) {
-                
-                startDateInput.addEventListener('change', loadDeviceTree);
-                endDateInput.addEventListener('change', loadDeviceTree);
-            }
-            
-            const refreshButton = document.getElementById('refreshDeviceTree');
-            if (refreshButton) {
-                refreshButton.addEventListener('click', loadDeviceTree);
-            }
-
-            const toggleTreeButton = document.getElementById('toggleTreeView');
-            if (toggleTreeButton) {
-                toggleTreeButton.addEventListener('click', function() {
-                    const startDate = document.querySelector('input[name="start_date"]').value;
-                    const endDate = document.querySelector('input[name="end_date"]').value;
-
-                    if (!treeVisible) {
-                        if (!startDate || !endDate) {
-                            alert('Please select start and end dates first to load available devices.');
-                            return;
-                        }
-
-                        if (!deviceTreeData) {
-                            loadDeviceTree();
-                        } else {
-                            showDeviceTree();
-                        }
-                    } else {
-                        hideDeviceTree('<i class="bi bi-diagram-3"></i> Device tree hidden. Click "Show Tree" to view available devices.');
-                    }
-                });
-            }
-
-            // Always load device tree immediately on page load
-            console.log('DEBUG: Loading device tree on page load');
-            loadDeviceTree();
-
-            // Also load after a delay to handle any dynamic form loading
-            setTimeout(function() {
-                // Set default dates if not already set
-                setDefaultDates();
-
-                // Reload tree if it hasn't loaded yet
-                if (!deviceTreeData || deviceTreeData.length === 0) {
-                    console.log('DEBUG: Delayed device tree reload');
-                    loadDeviceTree();
-                }
-            }, 500);
-        });
-        
-        // Make setDefaultDates available globally for dynamic forms
-        window.initializeJobFormDates = function() {
-            // Wait a bit for form to be fully rendered
-            setTimeout(function() {
-                console.log('DEBUG: Global initializeJobFormDates called');
-                setDefaultDates();
-            }, 100);
-        };
-        
-        function loadDeviceTree() {
-            const startDate = document.querySelector('input[name="start_date"]').value;
-            const endDate = document.querySelector('input[name="end_date"]').value;
-            const quickAddButton = document.getElementById('quickAddButton');
-
-            if (quickAddButton) {
-                quickAddButton.disabled = true;
-            }
-
-            const loadingMessage = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available devices...';
-            hideDeviceTree(loadingMessage);
-
-            // Get job ID for exclusion (if editing)
-            const jobId = getJobIdFromUrl();
-            treeAutoExpanded = false;
-            expandedNodes = new Set();
-
-            // Build URL with dates if available, otherwise load all devices
-            let url = `/api/v1/devices/tree/availability?`;
-            if (jobId) {
-                url += `job_id=${jobId}`;
-            }
-            if (startDate && endDate) {
-                url += `${jobId ? '&' : ''}start_date=${startDate}&end_date=${endDate}`;
-            }
-
-            fetch(url, {
-                credentials: 'include'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                deviceTreeData = Array.isArray(data.treeData) ? data.treeData : [];
-                renderDeviceTree(deviceTreeData);
-
-                if (deviceTreeData.length === 0) {
-                    hideDeviceTree('<div style="color: var(--text-muted);"><i class="bi bi-info-circle"></i> No devices found for the selected dates.</div>');
-                } else {
-                    showDeviceTree();
-                }
-
-                if (quickAddButton && deviceProductIndex.size > 0) {
-                    quickAddButton.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Error loading device tree:', error);
-                hideDeviceTree('<div style="color: var(--error);"><i class="bi bi-exclamation-triangle"></i> Error loading devices: ' + error.message + '</div>');
-                if (quickAddButton) {
-                    quickAddButton.disabled = true;
-                }
-            });
-        }
-        
         function getJobIdFromUrl() {
             const path = window.location.pathname;
             const matches = path.match(/\/jobs\/([^\/]+)\/edit/);
             return matches ? matches[1] : null;
         }
 
-        function showDeviceTree() {
-            const treeContainer = document.getElementById('deviceTreeContainer');
-            const loadingDiv = document.getElementById('loadingDevices');
-            const toggleBtn = document.getElementById('toggleTreeView');
-
-            if (treeContainer) {
-                treeContainer.style.display = 'block';
-            }
-            if (loadingDiv) {
-                loadingDiv.style.display = 'none';
-            }
-            if (toggleBtn) {
-                toggleBtn.innerHTML = '<i class="bi bi-eye-slash"></i> Hide Tree';
-                toggleBtn.setAttribute('aria-pressed', 'true');
-            }
-            treeVisible = true;
-        }
-
-        function hideDeviceTree(message) {
-            const treeContainer = document.getElementById('deviceTreeContainer');
-            const loadingDiv = document.getElementById('loadingDevices');
-            const toggleBtn = document.getElementById('toggleTreeView');
-
-            if (treeContainer) {
-                treeContainer.style.display = 'none';
-            }
-            if (loadingDiv) {
-                loadingDiv.style.display = 'flex';
-                loadingDiv.innerHTML = message || '<i class="bi bi-diagram-3"></i> Device tree hidden. Click "Show Tree" to view available devices.';
-            }
-            if (toggleBtn) {
-                toggleBtn.innerHTML = '<i class="bi bi-diagram-3"></i> Show Tree';
-                toggleBtn.setAttribute('aria-pressed', 'false');
-            }
-            treeVisible = false;
-        }
-
-        function hasDevices(list) {
-            return Array.isArray(list) && list.length > 0;
-        }
-
-        function subbiercategoryHasDevices(subbiercategory) {
-            if (!subbiercategory) return false;
-            return hasDevices(subbiercategory.devices);
-        }
-
-        function subcategoryHasDevices(subcategory) {
-            if (!subcategory) return false;
-            if (hasDevices(subcategory.direct_devices)) return true;
-            if (Array.isArray(subcategory.subbiercategories)) {
-                return subcategory.subbiercategories.some(subbiercategoryHasDevices);
-            }
-            return false;
-        }
-
-        function categoryHasDevices(category) {
-            if (!category) return false;
-            if (hasDevices(category.direct_devices)) return true;
-            if (Array.isArray(category.subcategories)) {
-                return category.subcategories.some(subcategoryHasDevices);
-            }
-            return false;
-        }
-
-        function ensureInitialExpansion(treeData) {
-            if (treeAutoExpanded || !Array.isArray(treeData)) {
-                return;
-            }
-
-            const firstCategory = treeData.find(categoryHasDevices);
-            if (firstCategory) {
-                expandedNodes.add(`category-${firstCategory.id}`);
-                if (Array.isArray(firstCategory.subcategories)) {
-                    const firstSubcategory = firstCategory.subcategories.find(subcategoryHasDevices);
-                    if (firstSubcategory) {
-                        expandedNodes.add(`subcategory-${firstSubcategory.id}`);
-                        if (Array.isArray(firstSubcategory.subbiercategories)) {
-                            const firstSubbiercategory = firstSubcategory.subbiercategories.find(subbiercategoryHasDevices);
-                            if (firstSubbiercategory) {
-                                expandedNodes.add(`subbiercategory-${firstSubbiercategory.id}`);
-                            }
-                        }
+        function loadExistingProductSelections(jobID) {
+            return fetch(`/api/v1/jobs/${jobID}`, { credentials: 'include' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
                     }
-                }
-            }
-
-            treeAutoExpanded = true;
+                    return response.json();
+                })
+                .then(job => {
+                    if (!job || !Array.isArray(job.jobDevices)) {
+                        return;
+                    }
+                    const counts = new Map();
+                    job.jobDevices.forEach(jd => {
+                        const device = jd.device || {};
+                        const product = device.product || {};
+                        const productID = product.productID || product.ProductID;
+                        const productName = product.name || product.Name;
+                        if (!productID) {
+                            return;
+                        }
+                        const current = counts.get(productID) || { id: productID, name: productName || `Product ${productID}`, quantity: 0 };
+                        current.quantity += 1;
+                        counts.set(productID, current);
+                    });
+                    counts.forEach(value => {
+                        initialProductSelections.set(String(value.id), value);
+                        productSelections.set(String(value.id), {
+                            id: value.id,
+                            name: value.name,
+                            available: 0,
+                            total: 0,
+                            quantity: value.quantity
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Failed to load existing product selections:', error);
+                });
         }
 
-        function addDeviceToProductIndex(device) {
-            if (!device || !device.device_id) {
+        function loadProductTree() {
+            const startDate = document.querySelector('input[name="start_date"]').value;
+            const endDate = document.querySelector('input[name="end_date"]').value;
+            const loading = document.getElementById('productTreeLoading');
+            const root = document.getElementById('productTreeRoot');
+            const empty = document.getElementById('productTreeEmpty');
+
+            if (!startDate || !endDate) {
+                if (loading) {
+                    loading.style.display = 'flex';
+                    loading.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Please select start and end dates to load available products';
+                }
+                if (root) root.style.display = 'none';
+                if (empty) empty.style.display = 'none';
                 return;
             }
 
-            const productName = device.product_name || 'Unknown Product';
-            const alreadySelected = selectedDevices.has(device.device_id);
-            const isAvailable = device.available !== false && !alreadySelected;
+            if (loading) {
+                loading.style.display = 'flex';
+                loading.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available products...';
+            }
+            if (root) root.style.display = 'none';
+            if (empty) empty.style.display = 'none';
 
-            let entry = deviceProductIndex.get(productName);
-            if (!entry) {
-                entry = { devices: [], available: 0, total: 0 };
-                deviceProductIndex.set(productName, entry);
+            const jobId = getJobIdFromUrl();
+            let url = `/api/v1/devices/tree/availability?start_date=${startDate}&end_date=${endDate}`;
+            if (jobId) {
+                url += `&job_id=${jobId}`;
             }
 
-            entry.devices.push(device);
-            entry.total += 1;
-            if (isAvailable) {
-                entry.available += 1;
-            }
+            fetch(url, { credentials: 'include' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    productTreeData = Array.isArray(data.treeData) ? data.treeData : [];
+                    applyAvailabilityToSelections(productTreeData);
+                    renderProductTree(productTreeData);
+                })
+                .catch(error => {
+                    console.error('Error loading product tree:', error);
+                    if (loading) {
+                        loading.style.display = 'flex';
+                        loading.innerHTML = `<div style="color: var(--error);"><i class="bi bi-exclamation-triangle"></i> Error loading products: ${error.message}</div>`;
+                    }
+                });
         }
 
-        function buildDeviceProductIndex(treeData) {
-            deviceProductIndex = new Map();
+        function applyAvailabilityToSelections(treeData) {
+            const availabilityMap = new Map();
 
-            if (!Array.isArray(treeData)) {
-                return;
-            }
-
-            treeData.forEach(category => {
-                if (Array.isArray(category.direct_devices)) {
-                    category.direct_devices.forEach(addDeviceToProductIndex);
-                }
-                if (Array.isArray(category.subcategories)) {
-                    category.subcategories.forEach(subcategory => {
-                        if (Array.isArray(subcategory.direct_devices)) {
-                            subcategory.direct_devices.forEach(addDeviceToProductIndex);
-                        }
-                        if (Array.isArray(subcategory.subbiercategories)) {
-                            subcategory.subbiercategories.forEach(subbiercategory => {
-                                if (Array.isArray(subbiercategory.devices)) {
-                                    subbiercategory.devices.forEach(addDeviceToProductIndex);
-                                }
-                            });
-                        }
+            function visitCategory(category) {
+                if (Array.isArray(category.Products)) {
+                    category.Products.forEach(product => {
+                        availabilityMap.set(String(product.ID), {
+                            available: product.AvailableCount || 0,
+                            total: product.DeviceCount || 0
+                        });
                     });
                 }
-            });
-        }
-
-        function getAvailableDevicesForProduct(productName) {
-            const entry = deviceProductIndex.get(productName);
-            if (!entry) return [];
-
-            return entry.devices.filter(device => device.available !== false && !selectedDevices.has(device.device_id));
-        }
-        
-        function renderDeviceTree(treeData) {
-            const container = document.getElementById('deviceTreeContainer');
-            
-            if (!treeData || treeData.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: var(--space-xl); color: var(--text-muted);">No devices found</div>';
-                deviceProductIndex = new Map();
-                const quickAddButton = document.getElementById('quickAddButton');
-                if (quickAddButton) {
-                    quickAddButton.disabled = true;
+                if (Array.isArray(category.Subcategories)) {
+                    category.Subcategories.forEach(visitSubcategory);
                 }
+            }
+
+            function visitSubcategory(subcategory) {
+                if (Array.isArray(subcategory.Products)) {
+                    subcategory.Products.forEach(product => {
+                        availabilityMap.set(String(product.ID), {
+                            available: product.AvailableCount || 0,
+                            total: product.DeviceCount || 0
+                        });
+                    });
+                }
+                if (Array.isArray(subcategory.Subbiercategories)) {
+                    subcategory.Subbiercategories.forEach(visitSubbiercategory);
+                }
+            }
+
+            function visitSubbiercategory(subbiercategory) {
+                if (Array.isArray(subbiercategory.Products)) {
+                    subbiercategory.Products.forEach(product => {
+                        availabilityMap.set(String(product.ID), {
+                            available: product.AvailableCount || 0,
+                            total: product.DeviceCount || 0
+                        });
+                    });
+                }
+            }
+
+            treeData.forEach(visitCategory);
+
+            const idsToRemove = [];
+            productSelections.forEach((value, key) => {
+                const availability = availabilityMap.get(key);
+                if (!availability) {
+                    idsToRemove.push(key);
+                    return;
+                }
+                value.available = availability.available;
+                value.total = availability.total;
+                if (value.quantity > value.available) {
+                    value.quantity = value.available;
+                }
+                productSelections.set(key, value);
+            });
+
+            idsToRemove.forEach(id => productSelections.delete(id));
+        }
+
+        function renderProductTree(treeData) {
+            const loading = document.getElementById('productTreeLoading');
+            const root = document.getElementById('productTreeRoot');
+            const empty = document.getElementById('productTreeEmpty');
+
+            if (!root) {
                 return;
             }
 
-            ensureInitialExpansion(treeData);
-            buildDeviceProductIndex(treeData);
-            
-            let html = '<div class="device-tree-container">';
-            
+            root.innerHTML = '';
+
+            if (loading) loading.style.display = 'none';
+
+            if (!Array.isArray(treeData) || treeData.length === 0) {
+                if (empty) empty.style.display = 'block';
+                root.style.display = 'none';
+                updateSelectedProductsSummary();
+                updateHiddenProductInput();
+                validateProductSelections();
+                return;
+            }
+
+            if (empty) empty.style.display = 'none';
+            root.style.display = 'block';
+
+            const renderedProducts = new Set();
+
             treeData.forEach(category => {
-                html += renderCategoryHtml(category);
-            });
-            
-            html += '</div>';
-            container.innerHTML = html;
+                const categoryDetails = document.createElement('details');
+                categoryDetails.open = true;
+                categoryDetails.className = 'rc-product-node rc-product-node-category';
 
-            const quickAddButton = document.getElementById('quickAddButton');
-            if (quickAddButton) {
-                const hasAvailableProducts = Array.from(deviceProductIndex.values()).some(entry => entry.available > 0);
-                quickAddButton.disabled = !hasAvailableProducts;
-            }
-        }
-        
-        function renderCategoryHtml(category) {
-            const nodeId = `category-${category.id}`;
-            const isExpanded = expandedNodes.has(nodeId);
-            const displayStyle = isExpanded ? 'block' : 'none';
-            const chevronClass = isExpanded ? 'bi bi-chevron-right tree-chevron expanded' : 'bi bi-chevron-right tree-chevron';
+                const summary = document.createElement('summary');
+                summary.innerHTML = `<strong>${escapeHtml(category.Name)}</strong>`;
+                categoryDetails.appendChild(summary);
 
-            let html = `
-                <div class="tree-category">
-                    <div class="tree-category-header" onclick="toggleTreeNode('${nodeId}')">
-                        <i class="${chevronClass}" id="chevron-${nodeId}"></i>
-                        <i class="bi bi-folder2 tree-icon category-icon"></i>
-                        <span class="tree-title">${category.name}</span>
-                        <span class="tree-count">${category.device_count} devices</span>
-                    </div>
-                    <div class="tree-content" id="${nodeId}" style="display: ${displayStyle};">
-            `;
-            
-            // Direct devices in category
-            if (category.direct_devices && category.direct_devices.length > 0) {
-                category.direct_devices.forEach(device => {
-                    html += renderDeviceHtml(device);
-                });
-            }
-            
-            // Subcategories
-            if (category.subcategories && category.subcategories.length > 0) {
-                category.subcategories.forEach(subcategory => {
-                    html += renderSubcategoryHtml(subcategory);
-                });
-            }
-            
-            html += '</div></div>';
-            return html;
-        }
-        
-        function renderSubcategoryHtml(subcategory) {
-            const nodeId = `subcategory-${subcategory.id}`;
-            const isExpanded = expandedNodes.has(nodeId);
-            const displayStyle = isExpanded ? 'block' : 'none';
-            const chevronClass = isExpanded ? 'bi bi-chevron-right tree-chevron expanded' : 'bi bi-chevron-right tree-chevron';
+                const body = document.createElement('div');
+                body.className = 'rc-product-node-body';
 
-            let html = `
-                <div class="tree-subcategory">
-                    <div class="tree-subcategory-header" onclick="toggleTreeNode('${nodeId}')">
-                        <i class="${chevronClass}" id="chevron-${nodeId}"></i>
-                        <i class="bi bi-folder tree-icon subcategory-icon"></i>
-                        <span class="tree-title">${subcategory.name}</span>
-                        <span class="tree-count">${subcategory.device_count} devices</span>
-                    </div>
-                    <div class="tree-content" id="${nodeId}" style="display: ${displayStyle};">
-            `;
-            
-            // Direct devices in subcategory
-            if (subcategory.direct_devices && subcategory.direct_devices.length > 0) {
-                subcategory.direct_devices.forEach(device => {
-                    html += renderDeviceHtml(device);
-                });
-            }
-            
-            // Subbiercategories
-            if (subcategory.subbiercategories && subcategory.subbiercategories.length > 0) {
-                subcategory.subbiercategories.forEach(subbiercategory => {
-                    html += renderSubbiercategoryHtml(subbiercategory);
-                });
-            }
-            
-            html += '</div></div>';
-            return html;
-        }
-        
-        function renderSubbiercategoryHtml(subbiercategory) {
-            const nodeId = `subbiercategory-${subbiercategory.id}`;
-            const isExpanded = expandedNodes.has(nodeId);
-            const displayStyle = isExpanded ? 'block' : 'none';
-            const chevronClass = isExpanded ? 'bi bi-chevron-right tree-chevron expanded' : 'bi bi-chevron-right tree-chevron';
-
-            let html = `
-                <div class="tree-subbiercategory">
-                    <div class="tree-subbiercategory-header" onclick="toggleTreeNode('${nodeId}')">
-                        <i class="${chevronClass}" id="chevron-${nodeId}"></i>
-                        <i class="bi bi-folder-fill tree-icon subbiercategory-icon"></i>
-                        <span class="tree-title">${subbiercategory.name}</span>
-                        <span class="tree-count">${subbiercategory.device_count} devices</span>
-                    </div>
-                    <div class="tree-content" id="${nodeId}" style="display: ${displayStyle};">
-            `;
-            
-            // Devices in subbiercategory
-            if (subbiercategory.devices && subbiercategory.devices.length > 0) {
-                subbiercategory.devices.forEach(device => {
-                    html += renderDeviceHtml(device);
-                });
-            }
-            
-            html += '</div></div>';
-            return html;
-        }
-        
-        function renderDeviceHtml(device) {
-            const isSelected = selectedDevices.has(device.device_id);
-            const isAvailable = device.available === true;
-            
-            let classes = 'tree-device';
-            if (isSelected) classes += ' selected';
-            if (!isAvailable) classes += ' unavailable';
-            else classes += ' available';
-            
-            let onclick = '';
-            if (isAvailable) {
-                onclick = `onclick="toggleDeviceSelection('${device.device_id}')"`;
-            }
-            
-            return `
-                <div class="${classes}" ${onclick}>
-                    <div class="device-info">
-                        <div class="device-name">${device.product_name}</div>
-                        <div class="device-details">
-                            <span class="device-id">${device.device_id}</span>
-                            ${device.serial_number ? '<span class="device-serial">• ' + device.serial_number + '</span>' : ''}
-                            <span class="device-status device-status-${device.status}">${device.status}</span>
-                            ${!isAvailable && device.conflict_job ? '<span style="color: var(--error); font-size: 0.75rem;">• Conflict with Job ' + device.conflict_job + '</span>' : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        function toggleTreeNode(nodeId) {
-            const contentDiv = document.getElementById(nodeId);
-            const chevron = document.getElementById('chevron-' + nodeId);
-
-            if (contentDiv && chevron) {
-                if (contentDiv.style.display === 'none') {
-                    contentDiv.style.display = 'block';
-                    chevron.classList.add('expanded');
-                    expandedNodes.add(nodeId); // Track expanded state
-                } else {
-                    contentDiv.style.display = 'none';
-                    chevron.classList.remove('expanded');
-                    expandedNodes.delete(nodeId); // Remove from expanded state
+                if (Array.isArray(category.Subcategories) && category.Subcategories.length > 0) {
+                    category.Subcategories.forEach(subcategory => {
+                        body.appendChild(renderSubcategory(subcategory, renderedProducts));
+                    });
                 }
-            }
-        }
-        
-        function toggleDeviceSelection(deviceId) {
-            if (selectedDevices.has(deviceId)) {
-                selectedDevices.delete(deviceId);
-            } else {
-                selectedDevices.add(deviceId);
-            }
-            
-            updateSelectedDevicesDisplay();
-            updateSelectedDevicesInput();
-            updateDeviceTreeDisplay();
-        }
 
-        function selectDevice(deviceId) {
-            if (!selectedDevices.has(deviceId)) {
-                selectedDevices.add(deviceId);
-            }
-        }
-        
-        function updateSelectedDevicesDisplay() {
-            const container = document.getElementById('selectedDevicesList');
-            
-            if (selectedDevices.size === 0) {
-                container.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">No devices selected</span>';
-                return;
-            }
-            
-            let html = '';
-            selectedDevices.forEach(deviceId => {
-                const device = findDeviceInTree(deviceId);
-                if (device) {
-                    html += `
-                        <span class="selected-device-badge">
-                            ${device.product_name} (${deviceId})
-                            <button class="remove-device" onclick="toggleDeviceSelection('${deviceId}')" title="Remove device">
-                                <i class="bi bi-x"></i>
-                            </button>
-                        </span>
-                    `;
-                }
-            });
-            
-            container.innerHTML = html;
-        }
-        
-        function updateSelectedDevicesInput() {
-            document.getElementById('selectedDevicesInput').value = Array.from(selectedDevices).join(',');
-        }
-        
-        function updateDeviceTreeDisplay() {
-            // Re-render tree to update selected states
-            if (deviceTreeData) {
-                renderDeviceTree(deviceTreeData);
-            }
-        }
-        
-        function findDeviceInTree(deviceId) {
-            if (!deviceTreeData) return null;
-            
-            for (const category of deviceTreeData) {
-                // Check direct devices in category
-                if (category.direct_devices) {
-                    const device = category.direct_devices.find(d => d.device_id === deviceId);
-                    if (device) return device;
-                }
-                
-                // Check subcategories
-                if (category.subcategories) {
-                    for (const subcategory of category.subcategories) {
-                        // Check direct devices in subcategory
-                        if (subcategory.direct_devices) {
-                            const device = subcategory.direct_devices.find(d => d.device_id === deviceId);
-                            if (device) return device;
-                        }
-                        
-                        // Check subbiercategories
-                        if (subcategory.subbiercategories) {
-                            for (const subbiercategory of subcategory.subbiercategories) {
-                                if (subbiercategory.devices) {
-                                    const device = subbiercategory.devices.find(d => d.device_id === deviceId);
-                                    if (device) return device;
-                                }
-                            }
-                        }
+                if (Array.isArray(category.Products)) {
+                    const remainingProducts = category.Products.filter(product => !renderedProducts.has(String(product.ID)));
+                    if (remainingProducts.length > 0) {
+                        const list = document.createElement('div');
+                        list.className = 'rc-product-list';
+                        remainingProducts.forEach(product => {
+                            renderedProducts.add(String(product.ID));
+                            list.appendChild(renderProductEntry(product));
+                        });
+                        body.appendChild(list);
                     }
                 }
-            }
-            
-            return null;
+
+                categoryDetails.appendChild(body);
+                root.appendChild(categoryDetails);
+            });
+
+            updateSelectedProductsSummary();
+            updateHiddenProductInput();
+            validateProductSelections();
         }
 
-        // File Upload Functions
+        function renderSubcategory(subcategory, renderedProducts) {
+            const subDetails = document.createElement('details');
+            subDetails.open = true;
+            subDetails.className = 'rc-product-node rc-product-node-subcategory';
+
+            const summary = document.createElement('summary');
+            summary.innerHTML = `<span>${escapeHtml(subcategory.Name || 'Subcategory')}</span>`;
+            subDetails.appendChild(summary);
+
+            const body = document.createElement('div');
+            body.className = 'rc-product-node-body';
+
+            if (Array.isArray(subcategory.Subbiercategories) && subcategory.Subbiercategories.length > 0) {
+                subcategory.Subbiercategories.forEach(subbiercategory => {
+                    const detail = document.createElement('details');
+                    detail.open = true;
+                    detail.className = 'rc-product-node rc-product-node-subbiercategory';
+                    const summary = document.createElement('summary');
+                    summary.innerHTML = `<span>${escapeHtml(subbiercategory.Name || 'Group')}</span>`;
+                    detail.appendChild(summary);
+                    const list = document.createElement('div');
+                    list.className = 'rc-product-list';
+                    if (Array.isArray(subbiercategory.Products)) {
+                        subbiercategory.Products.forEach(product => {
+                            renderedProducts.add(String(product.ID));
+                            list.appendChild(renderProductEntry(product));
+                        });
+                    }
+                    detail.appendChild(list);
+                    body.appendChild(detail);
+                });
+            }
+
+            if (Array.isArray(subcategory.Products)) {
+                const remainingProducts = subcategory.Products.filter(product => !renderedProducts.has(String(product.ID)));
+                if (remainingProducts.length > 0) {
+                    const list = document.createElement('div');
+                    list.className = 'rc-product-list';
+                    remainingProducts.forEach(product => {
+                        renderedProducts.add(String(product.ID));
+                        list.appendChild(renderProductEntry(product));
+                    });
+                    body.appendChild(list);
+                }
+            }
+
+            subDetails.appendChild(body);
+            return subDetails;
+        }
+
+        function renderProductEntry(product) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'rc-product-entry';
+
+            const name = document.createElement('div');
+            name.className = 'rc-product-entry-name';
+            name.innerHTML = `<span>${escapeHtml(product.Name)}</span>`;
+
+            const meta = document.createElement('div');
+            meta.className = 'rc-product-entry-meta';
+            const available = product.AvailableCount || 0;
+            const total = product.DeviceCount || 0;
+            meta.innerHTML = `<span class="rc-badge ${available > 0 ? 'rc-badge-success' : 'rc-badge-warning'}">${available} / ${total}</span>`;
+
+            const inputGroup = document.createElement('div');
+            inputGroup.className = 'rc-product-entry-input';
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '0';
+            input.step = '1';
+            input.value = getCurrentQuantity(product.ID);
+            input.addEventListener('input', () => {
+                const value = Math.max(0, parseInt(input.value || '0', 10));
+                setProductSelection(product, value);
+            });
+
+            inputGroup.appendChild(input);
+
+            wrapper.appendChild(name);
+            wrapper.appendChild(meta);
+            wrapper.appendChild(inputGroup);
+
+            return wrapper;
+        }
+
+        function getCurrentQuantity(productID) {
+            const key = String(productID);
+            if (productSelections.has(key)) {
+                return productSelections.get(key).quantity;
+            }
+            if (initialProductSelections.has(key)) {
+                return initialProductSelections.get(key).quantity;
+            }
+            return 0;
+        }
+
+        function setProductSelection(product, quantity) {
+            const key = String(product.ID);
+            const entry = productSelections.get(key) || {
+                id: product.ID,
+                name: product.Name,
+                available: product.AvailableCount || 0,
+                total: product.DeviceCount || 0,
+                quantity: 0
+            };
+
+            entry.available = product.AvailableCount || 0;
+            entry.total = product.DeviceCount || 0;
+            entry.quantity = quantity;
+
+            if (entry.quantity <= 0) {
+                productSelections.delete(key);
+            } else {
+                productSelections.set(key, entry);
+            }
+
+            updateSelectedProductsSummary();
+            updateHiddenProductInput();
+            validateProductSelections();
+        }
+
+        function updateSelectedProductsSummary() {
+            const table = document.getElementById('selectedProductsTable');
+            const empty = document.getElementById('selectedProductsEmpty');
+            if (!table || !empty) {
+                return;
+            }
+
+            const tbody = table.querySelector('tbody');
+            tbody.innerHTML = '';
+
+            if (productSelections.size === 0) {
+                table.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            table.style.display = 'table';
+            empty.style.display = 'none';
+
+            Array.from(productSelections.values()).sort((a, b) => a.name.localeCompare(b.name)).forEach(entry => {
+                const row = document.createElement('tr');
+                const warn = entry.quantity > entry.available;
+                row.innerHTML = `
+                    <td>${escapeHtml(entry.name)}</td>
+                    <td>${entry.quantity}</td>
+                    <td>${entry.available} / ${entry.total}</td>
+                `;
+                if (warn) {
+                    row.classList.add('rc-table-row-warning');
+                }
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateHiddenProductInput() {
+            const input = document.getElementById('selectedProductsInput');
+            if (!input) {
+                return;
+            }
+            const payload = Array.from(productSelections.values())
+                .filter(entry => entry.quantity > 0)
+                .map(entry => ({ product_id: entry.id, quantity: entry.quantity }));
+            input.value = JSON.stringify(payload);
+        }
+
+        function validateProductSelections() {
+            productValidationErrors = [];
+            productSelections.forEach(entry => {
+                if (entry.quantity > entry.available) {
+                    productValidationErrors.push(`${entry.name}: requested ${entry.quantity}, available ${entry.available}`);
+                }
+            });
+
+            const errorBox = document.getElementById('productSelectionErrors');
+            if (!errorBox) {
+                return;
+            }
+
+            if (productValidationErrors.length === 0) {
+                errorBox.style.display = 'none';
+                errorBox.innerHTML = '';
+                return;
+            }
+
+            errorBox.style.display = 'block';
+            errorBox.innerHTML = `
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Adjust product quantities:</strong>
+                <ul style="margin-top: 8px; padding-left: 16px;">
+                    ${productValidationErrors.map(msg => `<li>${escapeHtml(msg)}</li>`).join('')}
+                </ul>
+            `;
+        }
+
+        function escapeHtml(text) {
+            if (text === undefined || text === null) {
+                return '';
+            }
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof window.setupCustomerInlineCreation === 'function') {
+                window.setupCustomerInlineCreation(document);
+            }
+
+            const startDateInput = document.querySelector('input[name="start_date"]');
+            const endDateInput = document.querySelector('input[name="end_date"]');
+
+            function triggerReload() {
+                loadProductTree();
+            }
+
+            if (startDateInput) {
+                startDateInput.addEventListener('change', triggerReload);
+            }
+            if (endDateInput) {
+                endDateInput.addEventListener('change', triggerReload);
+            }
+
+            const jobID = getJobIdFromUrl();
+            const initialize = jobID ? loadExistingProductSelections(jobID) : Promise.resolve();
+
+            initialize.finally(() => {
+                loadProductTree();
+            });
+        });
+
+        const jobFormElement = document.getElementById('jobForm');
+        if (jobFormElement) {
+            jobFormElement.addEventListener('submit', function(event) {
+                updateHiddenProductInput();
+                validateProductSelections();
+                if (productValidationErrors.length > 0) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    window.scrollTo({ top: document.getElementById('productSelectionContainer').offsetTop - 80, behavior: 'smooth' });
+                }
+            });
+        }
+
+        // Legacy device logic (selected_devices) removed in favor of product-based flow
+
+// File Upload Functions
         let selectedFiles = [];
 
         function handleJobFileSelection(input) {
@@ -1672,108 +1364,6 @@
             selectedFiles = [];
             displaySelectedFiles();
         }
-
-        // Quick Add by Product Functions
-        function openQuickAddModal() {
-            const startDate = document.querySelector('input[name="start_date"]').value;
-            const endDate = document.querySelector('input[name="end_date"]').value;
-
-            if (!startDate || !endDate) {
-                alert('Please select start and end dates first.');
-                return;
-            }
-
-            if (!deviceTreeData) {
-                alert('Device availability is still loading. Please try again in a moment.');
-                return;
-            }
-
-            const productSelect = document.getElementById('quickAddProduct');
-            productSelect.innerHTML = '<option value="">Select a product...</option>';
-
-            const availableProducts = Array.from(deviceProductIndex.entries())
-                .filter(([, info]) => info.available > 0)
-                .sort((a, b) => a[0].localeCompare(b[0]));
-
-            if (availableProducts.length === 0) {
-                alert('No available devices found for the selected dates.');
-                return;
-            }
-
-            availableProducts.forEach(([productName, info]) => {
-                const option = document.createElement('option');
-                const availabilityLabel = info.available === info.total
-                    ? `${info.available}`
-                    : `${info.available}/${info.total}`;
-                option.value = productName;
-                option.textContent = `${productName} (${availabilityLabel} available)`;
-                productSelect.appendChild(option);
-            });
-
-            document.getElementById('quickAddModal').style.display = 'flex';
-        }
-
-        function closeQuickAddModal() {
-            document.getElementById('quickAddModal').style.display = 'none';
-            document.getElementById('quickAddProduct').value = '';
-            document.getElementById('quickAddQuantity').value = '1';
-            document.getElementById('quickAddStatus').style.display = 'none';
-        }
-
-        function performQuickAdd() {
-            const productName = document.getElementById('quickAddProduct').value;
-            const quantity = parseInt(document.getElementById('quickAddQuantity').value, 10);
-
-            if (!productName || !quantity || quantity < 1) {
-                showQuickAddStatus('Please select a product and enter a valid quantity.', 'warning');
-                return;
-            }
-
-            const availableDevices = getAvailableDevicesForProduct(productName);
-
-            if (availableDevices.length === 0) {
-                showQuickAddStatus(`No available devices found for ${productName}`, 'warning');
-                return;
-            }
-
-            const toSelect = Math.min(quantity, availableDevices.length);
-            let added = 0;
-
-            for (let i = 0; i < toSelect; i++) {
-                const deviceId = availableDevices[i].device_id;
-                if (!selectedDevices.has(deviceId)) {
-                    selectDevice(deviceId);
-                    added++;
-                }
-            }
-
-            if (added > 0) {
-                updateSelectedDevicesDisplay();
-                updateSelectedDevicesInput();
-                updateDeviceTreeDisplay();
-            }
-
-            if (added === quantity) {
-                showQuickAddStatus(`Added ${added} device(s) of ${productName}`, 'success');
-                setTimeout(() => closeQuickAddModal(), 1200);
-            } else if (added > 0) {
-                showQuickAddStatus(`Only ${added} of ${quantity} requested device(s) were available`, 'warning');
-            } else {
-                showQuickAddStatus(`Devices for ${productName} are already selected or unavailable`, 'warning');
-            }
-        }
-
-        function showQuickAddStatus(message, type) {
-            const statusDiv = document.getElementById('quickAddStatus');
-            const statusText = document.getElementById('quickAddStatusText');
-
-            statusText.textContent = message;
-            statusDiv.className = `rc-alert rc-alert-${type}`;
-            statusDiv.style.display = 'block';
-        }
-
-        // Attach Quick Add button event listener
-        document.getElementById('quickAddButton')?.addEventListener('click', openQuickAddModal);
 
     </script>
 

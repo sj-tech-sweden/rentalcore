@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -23,12 +24,99 @@ func jobDebugLog(format string, args ...interface{}) {
 	fmt.Printf(format, args...)
 }
 
+func normalizeProductSelections(selections []JobProductSelection) []JobProductSelection {
+	aggregated := make(map[uint]int)
+	for _, selection := range selections {
+		if selection.ProductID == 0 {
+			continue
+		}
+		if selection.Quantity <= 0 {
+			continue
+		}
+		aggregated[selection.ProductID] += selection.Quantity
+	}
+
+	if len(aggregated) == 0 {
+		return nil
+	}
+
+	result := make([]JobProductSelection, 0, len(aggregated))
+	for productID, qty := range aggregated {
+		result = append(result, JobProductSelection{ProductID: productID, Quantity: qty})
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ProductID < result[j].ProductID
+	})
+
+	return result
+}
+
+func parseProductSelectionsFromString(raw string) ([]JobProductSelection, error) {
+	clean := strings.TrimSpace(raw)
+	if clean == "" {
+		return nil, nil
+	}
+
+	var selections []JobProductSelection
+	if err := json.Unmarshal([]byte(clean), &selections); err != nil {
+		return nil, err
+	}
+
+	return normalizeProductSelections(selections), nil
+}
+
+func parseProductSelectionsFromInterface(value interface{}) ([]JobProductSelection, error) {
+	switch v := value.(type) {
+	case string:
+		return parseProductSelectionsFromString(v)
+	case []interface{}:
+		selections := make([]JobProductSelection, 0, len(v))
+		for _, item := range v {
+			obj, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			selection := JobProductSelection{}
+			if productIDVal, exists := obj["product_id"]; exists {
+				switch id := productIDVal.(type) {
+				case float64:
+					selection.ProductID = uint(id)
+				case int:
+					selection.ProductID = uint(id)
+				case uint:
+					selection.ProductID = id
+				}
+			}
+			if quantityVal, exists := obj["quantity"]; exists {
+				switch qty := quantityVal.(type) {
+				case float64:
+					selection.Quantity = int(qty)
+				case int:
+					selection.Quantity = qty
+				}
+			}
+			selections = append(selections, selection)
+		}
+		return normalizeProductSelections(selections), nil
+	case nil:
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("unsupported selected_products payload")
+	}
+}
+
 type JobHandler struct {
 	jobRepo         *repository.JobRepository
 	deviceRepo      *repository.DeviceRepository
 	customerRepo    *repository.CustomerRepository
 	statusRepo      *repository.StatusRepository
 	jobCategoryRepo *repository.JobCategoryRepository
+}
+
+type JobProductSelection struct {
+	ProductID uint `json:"product_id"`
+	Quantity  int  `json:"quantity"`
 }
 
 func NewJobHandler(jobRepo *repository.JobRepository, deviceRepo *repository.DeviceRepository, customerRepo *repository.CustomerRepository, statusRepo *repository.StatusRepository, jobCategoryRepo *repository.JobCategoryRepository) *JobHandler {
@@ -39,6 +127,23 @@ func NewJobHandler(jobRepo *repository.JobRepository, deviceRepo *repository.Dev
 		statusRepo:      statusRepo,
 		jobCategoryRepo: jobCategoryRepo,
 	}
+}
+
+func (h *JobHandler) renderJobFormWithError(c *gin.Context, job *models.Job, title, errorText string) {
+	user, _ := GetCurrentUser(c)
+	customers, _ := h.customerRepo.List(&models.FilterParams{})
+	statuses, _ := h.statusRepo.List()
+	jobCategories, _ := h.jobCategoryRepo.List()
+
+	c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
+		"title":         title,
+		"job":           job,
+		"customers":     customers,
+		"statuses":      statuses,
+		"jobCategories": jobCategories,
+		"error":         errorText,
+		"user":          user,
+	})
 }
 
 // Web interface handlers
@@ -273,6 +378,20 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 			"user":          user,
 		})
 		return
+	}
+
+	if selectionsStr := c.PostForm("selected_products"); selectionsStr != "" {
+		selections, err := parseProductSelectionsFromString(selectionsStr)
+		if err != nil {
+			_ = h.jobRepo.Delete(job.JobID)
+			h.renderJobFormWithError(c, &job, "New Job", "Invalid product selection payload")
+			return
+		}
+		if err := h.applyProductSelections(&job, selections); err != nil {
+			_ = h.jobRepo.Delete(job.JobID)
+			h.renderJobFormWithError(c, &job, "New Job", err.Error())
+			return
+		}
 	}
 
 	c.Redirect(http.StatusFound, "/jobs")
@@ -530,6 +649,18 @@ func (h *JobHandler) UpdateJob(c *gin.Context) {
 		return
 	}
 
+	if selectionsStr := c.PostForm("selected_products"); selectionsStr != "" {
+		selections, err := parseProductSelectionsFromString(selectionsStr)
+		if err != nil {
+			h.renderJobFormWithError(c, job, "Edit Job", "Invalid product selection payload")
+			return
+		}
+		if err := h.applyProductSelections(job, selections); err != nil {
+			h.renderJobFormWithError(c, job, "Edit Job", err.Error())
+			return
+		}
+	}
+
 	// Only recalculate revenue automatically if no manual revenue was provided
 	// This preserves manual revenue entries while still updating when dates change
 	if c.PostForm("revenue") == "" {
@@ -659,6 +790,169 @@ func (h *JobHandler) ListJobsAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"jobs": jobs})
 }
 
+func (h *JobHandler) resolveProductSelections(job *models.Job, selections []JobProductSelection, currentDevices []models.JobDevice) (map[uint][]string, error) {
+	if job.StartDate == nil || job.EndDate == nil {
+		return nil, fmt.Errorf("job must have start and end dates")
+	}
+
+	currentByProduct := make(map[uint][]string)
+	for _, jd := range currentDevices {
+		if jd.Device.ProductID == nil {
+			continue
+		}
+		productID := *jd.Device.ProductID
+		currentByProduct[productID] = append(currentByProduct[productID], jd.DeviceID)
+	}
+
+	usedDevices := make(map[string]bool)
+	target := make(map[uint][]string)
+
+	for _, selection := range selections {
+		productID := selection.ProductID
+		needed := selection.Quantity
+		if needed <= 0 {
+			continue
+		}
+
+		currentList := currentByProduct[productID]
+		toKeep := needed
+		if len(currentList) < toKeep {
+			toKeep = len(currentList)
+		}
+		if toKeep > 0 {
+			target[productID] = append(target[productID], currentList[:toKeep]...)
+			for _, deviceID := range currentList[:toKeep] {
+				usedDevices[deviceID] = true
+			}
+		}
+
+		remaining := needed - toKeep
+		if remaining <= 0 {
+			continue
+		}
+
+		availability, err := h.deviceRepo.GetProductAvailabilityForJob(productID, &job.JobID, job.StartDate, job.EndDate)
+		if err != nil {
+			return nil, err
+		}
+
+		caseGroups := make(map[uint][]repository.ProductDeviceAvailability)
+		caseOrder := make([]uint, 0)
+		loose := make([]repository.ProductDeviceAvailability, 0)
+
+		for _, device := range availability {
+			if usedDevices[device.DeviceID] {
+				continue
+			}
+			if !device.Available {
+				continue
+			}
+			if device.CaseID != nil {
+				caseID := *device.CaseID
+				if _, exists := caseGroups[caseID]; !exists {
+					caseGroups[caseID] = []repository.ProductDeviceAvailability{}
+					caseOrder = append(caseOrder, caseID)
+				}
+				caseGroups[caseID] = append(caseGroups[caseID], device)
+			} else {
+				loose = append(loose, device)
+			}
+		}
+
+		sort.Slice(caseOrder, func(i, j int) bool {
+			return len(caseGroups[caseOrder[i]]) > len(caseGroups[caseOrder[j]])
+		})
+
+		for _, caseID := range caseOrder {
+			if remaining == 0 {
+				break
+			}
+			devices := caseGroups[caseID]
+			sort.Slice(devices, func(i, j int) bool {
+				return devices[i].DeviceID < devices[j].DeviceID
+			})
+			for _, device := range devices {
+				if remaining == 0 {
+					break
+				}
+				if usedDevices[device.DeviceID] {
+					continue
+				}
+				target[productID] = append(target[productID], device.DeviceID)
+				usedDevices[device.DeviceID] = true
+				remaining--
+			}
+		}
+
+		if remaining > 0 {
+			sort.Slice(loose, func(i, j int) bool {
+				return loose[i].DeviceID < loose[j].DeviceID
+			})
+			for _, device := range loose {
+				if remaining == 0 {
+					break
+				}
+				if usedDevices[device.DeviceID] {
+					continue
+				}
+				target[productID] = append(target[productID], device.DeviceID)
+				usedDevices[device.DeviceID] = true
+				remaining--
+			}
+		}
+
+		if remaining > 0 {
+			return nil, fmt.Errorf("not enough available devices for product %d", productID)
+		}
+	}
+
+	return target, nil
+}
+
+func (h *JobHandler) applyProductSelections(job *models.Job, selections []JobProductSelection) error {
+	selections = normalizeProductSelections(selections)
+
+	currentDevices, err := h.jobRepo.GetJobDevices(job.JobID)
+	if err != nil {
+		return err
+	}
+
+	targetByProduct, err := h.resolveProductSelections(job, selections, currentDevices)
+	if err != nil {
+		return err
+	}
+
+	currentDeviceSet := make(map[string]bool)
+	for _, jd := range currentDevices {
+		currentDeviceSet[jd.DeviceID] = true
+	}
+
+	targetDeviceSet := make(map[string]bool)
+	for _, devices := range targetByProduct {
+		for _, deviceID := range devices {
+			targetDeviceSet[deviceID] = true
+		}
+	}
+
+	for deviceID := range currentDeviceSet {
+		if !targetDeviceSet[deviceID] {
+			if err := h.jobRepo.RemoveDevice(job.JobID, deviceID); err != nil {
+				return err
+			}
+		}
+	}
+
+	for deviceID := range targetDeviceSet {
+		if !currentDeviceSet[deviceID] {
+			if err := h.jobRepo.AssignDevice(job.JobID, deviceID, 0); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (h *JobHandler) CreateJobAPI(c *gin.Context) {
 	// Use a map to capture raw JSON data
 	var requestData map[string]interface{}
@@ -724,6 +1018,20 @@ func (h *JobHandler) CreateJobAPI(c *gin.Context) {
 	if err := h.jobRepo.Create(&job); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if selectionsValue, exists := requestData["selected_products"]; exists {
+		selections, err := parseProductSelectionsFromInterface(selectionsValue)
+		if err != nil {
+			_ = h.jobRepo.Delete(job.JobID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product selection payload"})
+			return
+		}
+		if err := h.applyProductSelections(&job, selections); err != nil {
+			_ = h.jobRepo.Delete(job.JobID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	c.JSON(http.StatusCreated, job)
@@ -847,51 +1155,15 @@ func (h *JobHandler) UpdateJobAPI(c *gin.Context) {
 		return
 	}
 
-	// Handle device assignments if selected_devices is provided
-	if selectedDevicesStr, ok := requestData["selected_devices"]; ok {
-		if deviceStr, ok := selectedDevicesStr.(string); ok && deviceStr != "" {
-			// Parse selected devices
-			selectedDevices := strings.Split(deviceStr, ",")
-
-			// Get current job devices
-			currentDevices, err := h.jobRepo.GetJobDevices(uint(id))
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current devices"})
-				return
-			}
-
-			// Create sets for comparison
-			currentDeviceIDs := make(map[string]bool)
-			for _, device := range currentDevices {
-				currentDeviceIDs[device.DeviceID] = true
-			}
-
-			newDeviceIDs := make(map[string]bool)
-			for _, deviceID := range selectedDevices {
-				if deviceID != "" {
-					newDeviceIDs[deviceID] = true
-				}
-			}
-
-			// Remove devices that are no longer selected
-			for deviceID := range currentDeviceIDs {
-				if !newDeviceIDs[deviceID] {
-					if err := h.jobRepo.UnassignDevice(uint(id), deviceID); err != nil {
-						c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unassign device " + deviceID})
-						return
-					}
-				}
-			}
-
-			// Add new devices
-			for deviceID := range newDeviceIDs {
-				if !currentDeviceIDs[deviceID] {
-					if err := h.jobRepo.AssignDevice(uint(id), deviceID, 0.0); err != nil {
-						c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to assign device " + deviceID})
-						return
-					}
-				}
-			}
+	if selectionsValue, exists := requestData["selected_products"]; exists {
+		selections, err := parseProductSelectionsFromInterface(selectionsValue)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product selection payload"})
+			return
+		}
+		if err := h.applyProductSelections(&job, selections); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
 	}
 

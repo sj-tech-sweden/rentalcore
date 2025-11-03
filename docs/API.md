@@ -19,11 +19,14 @@ All API endpoints require authentication via session cookies or API tokens.
 - `PUT /api/v1/jobs/:id` - Update job
 - `DELETE /api/v1/jobs/:id` - Delete job
 
-### Device Management
+### Device Management (Read-Only)
 - `GET /api/v1/devices` - List all devices
-- `POST /api/v1/devices` - Create new device
-- `PUT /api/v1/devices/:id` - Update device
-- `DELETE /api/v1/devices/:id` - Delete device
+- `GET /api/v1/devices/:id` - Device details
+- `GET /api/v1/devices/available` - Devices available for assignment
+- `GET /api/v1/devices/available/job/:jobId` - Availability scoped to a job
+- `GET /api/v1/devices/tree/availability` - Hierarchical availability view
+
+> **Note:** Write operations (`POST`, `PUT`, `DELETE`) now return `410 Gone`. Device creation, updates, and deletions are handled exclusively by WarehouseCore.
 
 ### Customer Management
 - `GET /api/v1/customers` - List all customers

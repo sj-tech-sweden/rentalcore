@@ -65,9 +65,9 @@
             <!-- Actions Bar -->
             <div class="rc-flex rc-flex-between rc-mb-lg">
                 <div></div>
-                <button type="button" class="rc-btn rc-btn-primary" onclick="showNewJob()">
+                <a class="rc-btn rc-btn-primary" href="/jobs/new">
                     <i class="bi bi-plus-lg"></i> New Job
-                </button>
+                </a>
             </div>
 
             <!-- Jobs Table -->
@@ -254,27 +254,6 @@
                 </button>
             </div>
             <div class="rc-modal-body" id="jobEditContent">
-                <div class="rc-text-center rc-py-xl">
-                    <div class="rc-spinner"></div>
-                    <p class="rc-text-muted rc-mt-md">Loading job form...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- New Job Modal -->
-    <div id="newJobModal" class="rc-modal" style="display: none;">
-        <div class="rc-modal-overlay" onclick="closeNewJobModal()"></div>
-        <div class="rc-modal-content" style="max-width: 800px;">
-            <div class="rc-modal-header">
-                <h3 class="rc-modal-title">
-                    <i class="bi bi-plus-lg"></i> New Job
-                </h3>
-                <button class="rc-modal-close" onclick="closeNewJobModal()">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <div class="rc-modal-body" id="newJobContent">
                 <div class="rc-text-center rc-py-xl">
                     <div class="rc-spinner"></div>
                     <p class="rc-text-muted rc-mt-md">Loading job form...</p>
@@ -585,10 +564,6 @@
             </div>
         `;
         
-        // Reset edit modal device state
-        editSelectedDevices.clear();
-        editDeviceTreeData = null;
-        
         // Fetch job data for editing
         Promise.all([
             fetch('/api/v1/jobs/' + jobID),
@@ -610,15 +585,6 @@
             const customers = customersResponse.customers || customersResponse;
             const statuses = statusResponse.statuses || statusResponse;
             const existingDevices = devicesResponse.devices || [];
-            
-            // Load existing devices into selected set
-            existingDevices.forEach(device => {
-                if (device.device && device.device.deviceID) {
-                    editSelectedDevices.add(device.device.deviceID);
-                } else if (device.deviceID) {
-                    editSelectedDevices.add(device.deviceID);
-                }
-            });
             
             console.log('Job edit data:', {job, customers, statuses});
             
@@ -723,96 +689,64 @@
                                     </div>
                                 </div>
 
-                                <!-- Device Tree Toggle Section -->
-                                <div class="rc-flex rc-flex-between rc-flex-align-center rc-mt-lg rc-mb-md">
-                                    <h5 class="rc-heading-5">Device Management</h5>
-                                    <button type="button" onclick="toggleEditDeviceTree()" class="rc-btn rc-btn-outline rc-btn-sm" id="toggleEditDeviceTreeBtn">
-                                        <i class="bi bi-eye"></i> Show Device Tree
-                                    </button>
-                                </div>
+                                            <div class="rc-card rc-mt-lg">
+                                                <div class="rc-card-header">
+                                                    <h4 class="rc-card-title">
+                                                        <i class="bi bi-box-seam"></i> Product Selection
+                                                    </h4>
+                                                    <div class="rc-text-sm rc-text-secondary">
+                                                        Availability updates automatically based on the selected dates above.
+                                                    </div>
+                                                </div>
+                                                <div class="rc-card-body">
+                                                    <div id="editProductSelectionContainer">
+                                                        <div class="rc-flex rc-flex-center rc-py-xl" id="editProductTreeLoading">
+                                                            <i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i>
+                                                            Please select start and end dates to load available products
+                                                        </div>
+                                                        <div id="editProductTreeRoot" class="rc-product-tree" style="display: none;"></div>
+                                                        <div id="editProductTreeEmpty" class="rc-alert rc-alert-info rc-mt-lg" style="display: none;">
+                                                            <i class="bi bi-info-circle"></i> No products found for the selected dates.
+                                                        </div>
+                                                    </div>
+                                                    <div id="editProductSelectionErrors" class="rc-alert rc-alert-error rc-mt-lg" style="display: none;"></div>
+                                                    <div class="rc-divider rc-mt-lg rc-mb-lg"></div>
+                                                    <div>
+                                                        <h5>Selected Products</h5>
+                                                        <div id="editSelectedProductsEmpty" class="rc-text-sm rc-text-secondary rc-mb-md">
+                                                            No products selected yet.
+                                                        </div>
+                                                        <table class="rc-table rc-table-compact" id="editSelectedProductsTable" style="display: none;">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Product</th>
+                                                                    <th style="width: 120px;">Quantity</th>
+                                                                    <th style="width: 140px;">Available</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                    <input type="hidden" name="selected_products" id="editSelectedProductsInput" value="">
+                                                </div>
+                                            </div>
 
-                                <div id="editDeviceManagementSection" style="display: none;">
-                                    <div class="rc-card">
-                                        <div class="rc-card-header">
-                                            <div class="rc-flex rc-flex-between">
-                                                <h4 class="rc-card-title">Available Devices</h4>
-                                                <div class="rc-flex rc-flex-gap-sm">
-                                                    <button type="button" onclick="loadEditDeviceTree(${job.jobID})" class="rc-btn rc-btn-outline rc-btn-sm" id="refreshEditDeviceTree">
+                                            <div class="rc-card rc-mt-lg">
+                                                <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
+                                                    <div>
+                                                        <h4 class="rc-card-title"><i class="bi bi-cpu"></i> Assigned Devices</h4>
+                                                        <div class="rc-text-sm rc-text-secondary">Review pricing or remove device assignments.</div>
+                                                    </div>
+                                                    <button type="button" onclick="refreshEditAssignedDevices(${job.jobID})" class="rc-btn rc-btn-outline rc-btn-sm" title="Refresh assigned devices">
                                                         <i class="bi bi-arrow-clockwise"></i> Refresh
                                                     </button>
-                                                    <button type="button" onclick="expandAllEditTreeNodes()" class="rc-btn rc-btn-outline rc-btn-sm" title="Expand All Categories">
-                                                        <i class="bi bi-arrows-expand"></i> Expand All
-                                                    </button>
-                                                    <button type="button" onclick="collapseAllEditTreeNodes()" class="rc-btn rc-btn-outline rc-btn-sm" title="Collapse All Categories">
-                                                        <i class="bi bi-arrows-collapse"></i> Collapse All
-                                                    </button>
-                                                    <button type="button" id="toggleEditTreeView" class="rc-btn rc-btn-outline rc-btn-sm">
-                                                        <i class="bi bi-diagram-3"></i> Tree View
-                                                    </button>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        <div class="rc-card-body">
-                                            <!-- Quick Add by Product Section -->
-                                            <div class="rc-mb-lg" style="background: rgba(0, 174, 199, 0.1); padding: var(--space-md); border-radius: 8px; border: 1px solid rgba(0, 174, 199, 0.3);">
-                                                <div class="rc-flex rc-flex-between rc-flex-align-center rc-mb-sm">
-                                                    <h6 class="rc-heading-6" style="margin: 0; color: var(--info);">
-                                                        <i class="bi bi-lightning-charge-fill"></i> Quick Add by Product
-                                                    </h6>
-                                                    <small style="color: var(--text-muted);">Select product and quantity to auto-add devices</small>
-                                                </div>
-                                                <div class="rc-flex rc-flex-gap-md rc-flex-align-end" style="flex-wrap: wrap;">
-                                                    <div style="flex: 1; min-width: 250px;">
-                                                        <label class="rc-label" style="font-size: 0.875rem;">Product</label>
-                                                        <select id="quickAddProductSelect" class="rc-select" style="width: 100%;">
-                                                            <option value="">-- Select a product --</option>
-                                                        </select>
-                                                    </div>
-                                                    <div style="width: 120px;">
-                                                        <label class="rc-label" style="font-size: 0.875rem;">Quantity</label>
-                                                        <input type="number" id="quickAddQuantity" class="rc-input" placeholder="1" min="1" value="1" style="width: 100%;">
-                                                    </div>
-                                                    <button type="button" onclick="quickAddDevicesByProduct()" class="rc-btn rc-btn-primary">
-                                                        <i class="bi bi-plus-circle"></i> Add Devices
-                                                    </button>
-                                                </div>
-                                                <div id="quickAddFeedback" class="rc-mt-sm" style="display: none; font-size: 0.875rem;"></div>
-                                            </div>
-
-                                            <div id="editDeviceSelectionContainer">
-                                                <div id="loadingEditDevices" class="rc-flex rc-flex-center rc-py-xl">
-                                                    <i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i>
-                                                    Loading available devices...
-                                                </div>
-
-                                                <div id="editDeviceTreeContainer" style="display: none;">
-                                                    <!-- Tree view will be loaded here -->
-                                                </div>
-
-                                                <!-- Currently Assigned Devices Section -->
-                                                <div id="editAssignedDevicesContainer" class="rc-mt-lg">
-                                                    <div class="rc-flex rc-flex-between rc-mb-md">
-                                                        <h5 class="rc-heading-5">Currently Assigned Devices</h5>
-                                                        <button type="button" onclick="refreshEditAssignedDevices(${job.jobID})" class="rc-btn rc-btn-outline rc-btn-sm" title="Refresh assigned devices">
-                                                            <i class="bi bi-arrow-clockwise"></i> Refresh
-                                                        </button>
-                                                    </div>
+                                                <div class="rc-card-body">
                                                     <div id="editAssignedDevicesList">
                                                         <!-- Assigned devices with price editing will appear here -->
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    <div id="editSelectedDevicesContainer" class="rc-mt-lg">
-                                        <h5>Additional Device Selection</h5>
-                                        <p class="rc-text-sm rc-text-secondary rc-mb-sm">Select additional devices to add to this job:</p>
-                                        <div id="editSelectedDevicesList" class="rc-flex rc-flex-wrap rc-flex-gap-sm">
-                                            <!-- Selected devices will appear here as badges -->
-                                        </div>
-                                        <input type="hidden" name="selected_devices" id="editSelectedDevicesInput" value="">
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -829,33 +763,34 @@
             `;
             
             // Handle form submission
-            document.getElementById('editJobForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveJob(jobID, new FormData(this));
-            });
+            const editForm = document.getElementById('editJobForm');
+            if (editForm) {
+                editForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    updateEditHiddenProductInput();
+                    validateEditProductSelections();
+                    if (editProductValidationErrors.length > 0) {
+                        const errorBox = document.getElementById('editProductSelectionErrors');
+                        if (errorBox) {
+                            errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return;
+                    }
+                    saveJob(jobID, new FormData(this));
+                });
+            }
 
-            // Add event listeners for date changes in edit modal
             const startDateInput = document.querySelector('#editJobForm input[name="startDate"]');
             const endDateInput = document.querySelector('#editJobForm input[name="endDate"]');
-            
-            if (startDateInput && endDateInput) {
-                startDateInput.addEventListener('change', () => loadEditDeviceTree(jobID));
-                endDateInput.addEventListener('change', () => loadEditDeviceTree(jobID));
+            if (startDateInput) {
+                startDateInput.addEventListener('change', () => loadEditProductTree(jobID));
             }
-            
-            // Add refresh button listener
-            document.getElementById('refreshEditDeviceTree').addEventListener('click', () => loadEditDeviceTree(jobID));
+            if (endDateInput) {
+                endDateInput.addEventListener('change', () => loadEditProductTree(jobID));
+            }
 
-            // Always load device tree immediately (dates optional)
-            loadEditDeviceTree(jobID);
-
-            // Update selected devices display immediately
-            updateEditSelectedDevicesDisplay();
-
-            // Load and display currently assigned devices
+            initializeEditProductSelections(job.jobID, existingDevices);
             loadEditAssignedDevices(job.jobID, existingDevices);
-
-            // Load and display rental equipment for this job
             refreshJobRentalEquipment(job.jobID);
         })
         .catch(error => {
@@ -1149,654 +1084,438 @@
     }
 
 
-    // New Job Modal
-    function showNewJob() {
-        const modal = document.getElementById('newJobModal');
-        const content = document.getElementById('newJobContent');
-        
-        // Show modal with loading state
-        modal.style.display = 'flex';
-        content.innerHTML = `
-            <div class="rc-text-center rc-py-xl">
-                <div class="rc-spinner"></div>
-                <p class="rc-text-muted rc-mt-md">Loading job form...</p>
-            </div>
-        `;
-        
-        // Fetch new job form
-        fetch('/jobs/new')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                return response.text();
-            })
-            .then(html => {
-                // Extract just the form content from the HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const form = doc.querySelector('form');
-                
-                if (form) {
-                    content.innerHTML = form.outerHTML;
-                    if (typeof window.setupCustomerInlineCreation === 'function') {
-                        window.setupCustomerInlineCreation(content);
-                    }
-                    
-                    // Update form action to handle modal submission
-                    const modalForm = content.querySelector('form');
-                    if (modalForm) {
-                        modalForm.addEventListener('submit', function(e) {
-                            e.preventDefault();
-                            submitNewJobForm(new FormData(this));
-                        });
-                        
-                        // Initialize default dates for the modal form
-                        console.log('DEBUG: Setting up auto dates for modal form');
-                        setTimeout(function() {
-                            const startInput = document.querySelector('#newJobModal input[name="start_date"]');
-                            const endInput = document.querySelector('#newJobModal input[name="end_date"]');
-
-                            console.log('DEBUG: Modal date inputs found:', {
-                                startInput: !!startInput,
-                                endInput: !!endInput,
-                                startValue: startInput?.value,
-                                endValue: endInput?.value
-                            });
-
-                            if (startInput && endInput) {
-                                // Always set up live calculation
-                                setupLiveEndDateCalculation(startInput, endInput);
-
-                                // Only set default dates if both fields are empty
-                                if (!startInput.value && !endInput.value) {
-                                const today = new Date();
-                                const currentYear = today.getFullYear();
-                                const month = String(today.getMonth() + 1).padStart(2, '0');
-                                const day = String(today.getDate()).padStart(2, '0');
-
-                                // Set start date to today
-                                const todayString = `${currentYear}-${month}-${day}`;
-                                startInput.value = todayString;
-
-                                // Set end date to tomorrow
-                                const tomorrow = new Date(today);
-                                tomorrow.setDate(today.getDate() + 1);
-                                const tomorrowMonth = String(tomorrow.getMonth() + 1).padStart(2, '0');
-                                const tomorrowDay = String(tomorrow.getDate()).padStart(2, '0');
-                                const tomorrowString = `${tomorrow.getFullYear()}-${tomorrowMonth}-${tomorrowDay}`;
-                                endInput.value = tomorrowString;
-
-                                console.log('DEBUG: Modal - Set default dates:', todayString, 'to', tomorrowString);
-                                }
-                            }
-
-                            // CRITICAL: Manually trigger device tree loading for modal
-                            // DOMContentLoaded won't fire for dynamically injected content
-                            console.log('DEBUG: Manually triggering device tree load for new job modal');
-                            if (typeof window.initializeJobFormDates === 'function') {
-                                window.initializeJobFormDates();
-                            }
-
-                            // Also try calling loadDeviceTree directly if it exists
-                            const loadBtn = document.querySelector('#newJobModal #refreshDeviceTree');
-                            if (loadBtn) {
-                                console.log('DEBUG: Found refresh button, triggering click');
-                                loadBtn.click();
-                            }
-                        }, 100);
-                    }
-                } else {
-                    content.innerHTML = `
-                        <div class="rc-alert rc-alert-error">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            Could not load job form
-                        </div>
-                    `;
-                }
-            })
-            .catch(error => {
-                content.innerHTML = `
-                    <div class="rc-alert rc-alert-error">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        Error loading job form: ${error.message}
-                    </div>
-                `;
-            });
-    }
-
-    function closeNewJobModal() {
-        document.getElementById('newJobModal').style.display = 'none';
-    }
-
-    function submitNewJobForm(formData) {
-        const submitBtn = document.querySelector('#newJobModal button[type="submit"]');
-        const originalText = submitBtn ? submitBtn.innerHTML : '';
-        
-        // Show loading state
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Creating...';
-            submitBtn.disabled = true;
-        }
-        
-        fetch('/jobs', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => {
-                    throw new Error(`HTTP ${response.status}: ${text}`);
-                });
-            }
-            return response.text();
-        })
-        .then(result => {
-            // Success - close modal and reload page
-            closeNewJobModal();
-            window.location.reload();
-        })
-        .catch(error => {
-            // Restore button and show error
-            if (submitBtn) {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-            
-            alert('Error creating job: ' + error.message);
-        });
-    }
-
     // Close modals on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeJobModal();
             closeEditJobModal();
-            closeNewJobModal();
         }
     });
 
-    // Edit Modal Device Tree Functions
-    let editSelectedDevices = new Set();
-    let editDeviceTreeData = null;
-    let editExpandedNodes = new Set();
-    let editDeviceProductsIndex = new Map();
-    let editTreeAutoExpanded = false;
+    // Edit modal product selection state
+    let editProductSelections = new Map();
+    let editInitialProductSelections = new Map();
+    let editProductTreeData = [];
+    let editProductValidationErrors = [];
 
-    function loadEditDeviceTree(jobID) {
-        const startDate = document.querySelector('#editJobForm input[name="startDate"]').value;
-        const endDate = document.querySelector('#editJobForm input[name="endDate"]').value;
-        
-        // Always load device tree, even without dates
-        document.getElementById('loadingEditDevices').innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available devices...';
-        document.getElementById('editDeviceTreeContainer').style.display = 'none';
-        editTreeAutoExpanded = false;
-        editExpandedNodes = new Set();
+    function initializeEditProductSelections(jobID, existingDevices) {
+        editProductSelections = new Map();
+        editInitialProductSelections = new Map();
+        editProductValidationErrors = [];
 
-        // Build URL with dates if available, otherwise load all devices
-        let url = `/api/v1/devices/tree/availability?job_id=${jobID}`;
-        if (startDate && endDate) {
-            url += `&start_date=${startDate}&end_date=${endDate}`;
-        }
-
-        fetch(url, {
-            credentials: 'include'
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            editDeviceTreeData = data.treeData;
-            renderEditDeviceTree(editDeviceTreeData);
-            document.getElementById('loadingEditDevices').style.display = 'none';
-            document.getElementById('editDeviceTreeContainer').style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error loading device tree:', error);
-            document.getElementById('loadingEditDevices').innerHTML = '<div style="color: var(--error);"><i class="bi bi-exclamation-triangle"></i> Error loading devices: ' + error.message + '</div>';
-            document.getElementById('editDeviceTreeContainer').style.display = 'none';
-        });
-    }
-
-    function hasEditDevices(list) {
-        return Array.isArray(list) && list.length > 0;
-    }
-
-    function editSubbiercategoryHasDevices(subbiercategory) {
-        if (!subbiercategory) return false;
-        return hasEditDevices(subbiercategory.devices);
-    }
-
-    function editSubcategoryHasDevices(subcategory) {
-        if (!subcategory) return false;
-        if (hasEditDevices(subcategory.direct_devices)) return true;
-        if (Array.isArray(subcategory.subbiercategories)) {
-            return subcategory.subbiercategories.some(editSubbiercategoryHasDevices);
-        }
-        return false;
-    }
-
-    function editCategoryHasDevices(category) {
-        if (!category) return false;
-        if (hasEditDevices(category.direct_devices)) return true;
-        if (Array.isArray(category.subcategories)) {
-            return category.subcategories.some(editSubcategoryHasDevices);
-        }
-        return false;
-    }
-
-    function ensureEditInitialExpansion(treeData) {
-        if (editTreeAutoExpanded || !Array.isArray(treeData)) {
-            return;
-        }
-
-        const firstCategory = treeData.find(editCategoryHasDevices);
-        if (firstCategory) {
-            editExpandedNodes.add(`edit-category-${firstCategory.id}`);
-            if (Array.isArray(firstCategory.subcategories)) {
-                const firstSubcategory = firstCategory.subcategories.find(editSubcategoryHasDevices);
-                if (firstSubcategory) {
-                    editExpandedNodes.add(`edit-subcategory-${firstSubcategory.id}`);
-                    if (Array.isArray(firstSubcategory.subbiercategories)) {
-                        const firstSubbiercategory = firstSubcategory.subbiercategories.find(editSubbiercategoryHasDevices);
-                        if (firstSubbiercategory) {
-                            editExpandedNodes.add(`edit-subbiercategory-${firstSubbiercategory.id}`);
-                        }
-                    }
+        if (Array.isArray(existingDevices)) {
+            const counts = new Map();
+            existingDevices.forEach(deviceEntry => {
+                const device = deviceEntry.device || deviceEntry;
+                const product = device.product || {};
+                const productID = product.productID || product.ProductID;
+                if (!productID) {
+                    return;
                 }
-            }
+                const productName = product.name || product.Name || `Product ${productID}`;
+                const current = counts.get(productID) || { id: productID, name: productName, quantity: 0 };
+                current.quantity += 1;
+                counts.set(productID, current);
+            });
+
+            counts.forEach(value => {
+                editInitialProductSelections.set(String(value.id), value);
+                editProductSelections.set(String(value.id), {
+                    id: value.id,
+                    name: value.name,
+                    available: 0,
+                    total: 0,
+                    quantity: value.quantity
+                });
+            });
         }
 
-        editTreeAutoExpanded = true;
+        updateEditSelectedProductsSummary();
+        updateEditHiddenProductInput();
+        validateEditProductSelections();
+        loadEditProductTree(jobID);
     }
 
-    function addEditDeviceToProductIndex(device) {
-        if (!device || !device.device_id) {
+    function loadEditProductTree(jobID) {
+        const startInput = document.querySelector('#editJobForm input[name="startDate"]');
+        const endInput = document.querySelector('#editJobForm input[name="endDate"]');
+        const startDate = startInput ? startInput.value : '';
+        const endDate = endInput ? endInput.value : '';
+
+        const loading = document.getElementById('editProductTreeLoading');
+        const root = document.getElementById('editProductTreeRoot');
+        const empty = document.getElementById('editProductTreeEmpty');
+
+        if (!startDate || !endDate) {
+            if (loading) {
+                loading.style.display = 'flex';
+                loading.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Please select start and end dates to load available products';
+            }
+            if (root) root.style.display = 'none';
+            if (empty) empty.style.display = 'none';
             return;
         }
 
-        const productName = device.product_name || 'Unknown Product';
-        const alreadySelected = editSelectedDevices.has(device.device_id);
-        const isAvailable = device.available !== false && !alreadySelected;
+        if (loading) {
+            loading.style.display = 'flex';
+            loading.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i> Loading available products...';
+        }
+        if (root) root.style.display = 'none';
+        if (empty) empty.style.display = 'none';
 
-        let entry = editDeviceProductsIndex.get(productName);
-        if (!entry) {
-            entry = { devices: [], available: 0, total: 0 };
-            editDeviceProductsIndex.set(productName, entry);
+        let url = `/api/v1/devices/tree/availability?start_date=${startDate}&end_date=${endDate}`;
+        if (jobID) {
+            url += `&job_id=${jobID}`;
         }
 
-        entry.devices.push(device);
-        entry.total += 1;
-        if (isAvailable) {
-            entry.available += 1;
-        }
+        fetch(url, { credentials: 'include' })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                editProductTreeData = Array.isArray(data.treeData) ? data.treeData : [];
+                applyEditAvailability(editProductTreeData);
+                renderEditProductTree(editProductTreeData);
+            })
+            .catch(error => {
+                console.error('Error loading product tree:', error);
+                if (loading) {
+                    loading.style.display = 'flex';
+                    loading.innerHTML = `<div style="color: var(--error);"><i class="bi bi-exclamation-triangle"></i> Error loading products: ${escapeHtml(error.message)}</div>`;
+                }
+            });
     }
 
-    function buildEditDeviceProductIndex(treeData) {
-        editDeviceProductsIndex = new Map();
+    function applyEditAvailability(treeData) {
+        const availabilityMap = new Map();
 
-        if (!Array.isArray(treeData)) {
-            return;
-        }
-
-        treeData.forEach(category => {
-            if (Array.isArray(category.direct_devices)) {
-                category.direct_devices.forEach(addEditDeviceToProductIndex);
-            }
-            if (Array.isArray(category.subcategories)) {
-                category.subcategories.forEach(subcategory => {
-                    if (Array.isArray(subcategory.direct_devices)) {
-                        subcategory.direct_devices.forEach(addEditDeviceToProductIndex);
-                    }
-                    if (Array.isArray(subcategory.subbiercategories)) {
-                        subcategory.subbiercategories.forEach(subbiercategory => {
-                            if (Array.isArray(subbiercategory.devices)) {
-                                subbiercategory.devices.forEach(addEditDeviceToProductIndex);
-                            }
-                        });
-                    }
+        function visitCategory(category) {
+            if (Array.isArray(category.Products)) {
+                category.Products.forEach(product => {
+                    availabilityMap.set(String(product.ID), {
+                        available: product.AvailableCount || 0,
+                        total: product.DeviceCount || 0
+                    });
                 });
             }
+            if (Array.isArray(category.Subcategories)) {
+                category.Subcategories.forEach(visitSubcategory);
+            }
+        }
+
+        function visitSubcategory(subcategory) {
+            if (Array.isArray(subcategory.Products)) {
+                subcategory.Products.forEach(product => {
+                    availabilityMap.set(String(product.ID), {
+                        available: product.AvailableCount || 0,
+                        total: product.DeviceCount || 0
+                    });
+                });
+            }
+            if (Array.isArray(subcategory.Subbiercategories)) {
+                subcategory.Subbiercategories.forEach(visitSubbiercategory);
+            }
+        }
+
+        function visitSubbiercategory(subbiercategory) {
+            if (Array.isArray(subbiercategory.Products)) {
+                subbiercategory.Products.forEach(product => {
+                    availabilityMap.set(String(product.ID), {
+                        available: product.AvailableCount || 0,
+                        total: product.DeviceCount || 0
+                    });
+                });
+            }
+        }
+
+        (treeData || []).forEach(visitCategory);
+
+        const idsToRemove = [];
+        editProductSelections.forEach((value, key) => {
+            const availability = availabilityMap.get(key);
+            if (!availability) {
+                idsToRemove.push(key);
+                return;
+            }
+            value.available = availability.available;
+            value.total = availability.total;
+            if (value.quantity > value.available) {
+                value.quantity = value.available;
+            }
+            editProductSelections.set(key, value);
         });
+
+        idsToRemove.forEach(id => editProductSelections.delete(id));
     }
 
-    function getEditAvailableDevicesForProduct(productName) {
-        const entry = editDeviceProductsIndex.get(productName);
-        if (!entry) return [];
+    function renderEditProductTree(treeData) {
+        const loading = document.getElementById('editProductTreeLoading');
+        const root = document.getElementById('editProductTreeRoot');
+        const empty = document.getElementById('editProductTreeEmpty');
 
-        return entry.devices.filter(device => device.available !== false && !editSelectedDevices.has(device.device_id));
-    }
-
-    function renderEditDeviceTree(treeData) {
-        const container = document.getElementById('editDeviceTreeContainer');
-        
-        if (!treeData || treeData.length === 0) {
-            container.innerHTML = '<div style="text-align: center; padding: var(--space-xl); color: var(--text-muted);">No devices found</div>';
-            editDeviceProductsIndex = new Map();
+        if (!root) {
             return;
         }
-        
-        ensureEditInitialExpansion(treeData);
-        buildEditDeviceProductIndex(treeData);
-        let html = '<div class="device-tree-container">';
-        
+
+        root.innerHTML = '';
+
+        if (loading) {
+            loading.style.display = 'none';
+        }
+
+        if (!Array.isArray(treeData) || treeData.length === 0) {
+            if (empty) empty.style.display = 'block';
+            root.style.display = 'none';
+            updateEditSelectedProductsSummary();
+            updateEditHiddenProductInput();
+            validateEditProductSelections();
+            return;
+        }
+
+        if (empty) empty.style.display = 'none';
+        root.style.display = 'block';
+
+        const renderedProducts = new Set();
+
         treeData.forEach(category => {
-            html += renderEditCategoryHtml(category);
+            const categoryDetails = document.createElement('details');
+            categoryDetails.open = true;
+            categoryDetails.className = 'rc-product-node rc-product-node-category';
+
+            const summary = document.createElement('summary');
+            summary.innerHTML = `<strong>${escapeHtml(category.Name)}</strong>`;
+            categoryDetails.appendChild(summary);
+
+            const body = document.createElement('div');
+            body.className = 'rc-product-node-body';
+
+            if (Array.isArray(category.Subcategories) && category.Subcategories.length > 0) {
+                category.Subcategories.forEach(subcategory => {
+                    body.appendChild(renderEditSubcategory(subcategory, renderedProducts));
+                });
+            }
+
+            if (Array.isArray(category.Products)) {
+                const remaining = category.Products.filter(product => !renderedProducts.has(String(product.ID)));
+                if (remaining.length > 0) {
+                    const list = document.createElement('div');
+                    list.className = 'rc-product-list';
+                    remaining.forEach(product => {
+                        renderedProducts.add(String(product.ID));
+                        list.appendChild(renderEditProductEntry(product));
+                    });
+                    body.appendChild(list);
+                }
+            }
+
+            categoryDetails.appendChild(body);
+            root.appendChild(categoryDetails);
         });
-        
-        html += '</div>';
-        container.innerHTML = html;
 
-        // Populate product dropdown for quick add
-        populateQuickAddProducts();
+        updateEditSelectedProductsSummary();
+        updateEditHiddenProductInput();
+        validateEditProductSelections();
     }
 
-    function populateQuickAddProducts() {
-        const select = document.getElementById('quickAddProductSelect');
-        if (!select) return;
+    function renderEditSubcategory(subcategory, renderedProducts) {
+        const subDetails = document.createElement('details');
+        subDetails.open = true;
+        subDetails.className = 'rc-product-node rc-product-node-subcategory';
 
-        // Clear existing options except first
-        select.innerHTML = '<option value="">-- Select a product --</option>';
+        const summary = document.createElement('summary');
+        summary.innerHTML = `<span>${escapeHtml(subcategory.Name || 'Subcategory')}</span>`;
+        subDetails.appendChild(summary);
 
-        const products = Array.from(editDeviceProductsIndex.entries())
-            .filter(([, info]) => info.available > 0)
-            .sort((a, b) => a[0].localeCompare(b[0]));
+        const body = document.createElement('div');
+        body.className = 'rc-product-node-body';
 
-        products.forEach(([productName, info]) => {
-            const option = document.createElement('option');
-            option.value = productName;
-            const availabilityLabel = info.available === info.total
-                ? `${info.available}`
-                : `${info.available}/${info.total}`;
-            option.textContent = `${productName} (${availabilityLabel} available)`;
-            select.appendChild(option);
-        });
-    }
-
-    function quickAddDevicesByProduct() {
-        const productName = document.getElementById('quickAddProductSelect').value;
-        const quantity = parseInt(document.getElementById('quickAddQuantity').value) || 1;
-        const feedback = document.getElementById('quickAddFeedback');
-
-        if (!productName) {
-            feedback.innerHTML = '<span style="color: var(--warning);"><i class="bi bi-exclamation-triangle"></i> Please select a product</span>';
-            feedback.style.display = 'block';
-            setTimeout(() => feedback.style.display = 'none', 3000);
-            return;
-        }
-
-        if (quantity < 1) {
-            feedback.innerHTML = '<span style="color: var(--warning);"><i class="bi bi-exclamation-triangle"></i> Quantity must be at least 1</span>';
-            feedback.style.display = 'block';
-            setTimeout(() => feedback.style.display = 'none', 3000);
-            return;
-        }
-
-        const availableDevices = getEditAvailableDevicesForProduct(productName);
-
-        if (availableDevices.length === 0) {
-            feedback.innerHTML = '<span style="color: var(--error);"><i class="bi bi-x-circle"></i> No available devices found for this product</span>';
-            feedback.style.display = 'block';
-            setTimeout(() => feedback.style.display = 'none', 3000);
-            return;
-        }
-
-        // Select the requested quantity (or all available if less)
-        const toSelect = Math.min(quantity, availableDevices.length);
-        let added = 0;
-
-        for (let i = 0; i < toSelect; i++) {
-            editSelectedDevices.add(availableDevices[i].device_id);
-            added++;
-        }
-
-        // Update displays
-        updateEditSelectedDevicesDisplay();
-        updateEditSelectedDevicesInput();
-        updateEditDeviceTreeDisplay();
-
-        // Show feedback
-        if (added === quantity) {
-            feedback.innerHTML = `<span style="color: var(--success);"><i class="bi bi-check-circle"></i> Successfully added ${added} device(s)</span>`;
-        } else {
-            feedback.innerHTML = `<span style="color: var(--warning);"><i class="bi bi-exclamation-triangle"></i> Only ${added} of ${quantity} requested devices were available</span>`;
-        }
-        feedback.style.display = 'block';
-        setTimeout(() => feedback.style.display = 'none', 3000);
-
-        // Reset inputs
-        document.getElementById('quickAddProductSelect').value = '';
-        document.getElementById('quickAddQuantity').value = '1';
-    }
-
-    function renderEditCategoryHtml(category) {
-        const nodeId = `edit-category-${category.id}`;
-        const isExpanded = editExpandedNodes.has(nodeId);
-        const displayStyle = isExpanded ? 'block' : 'none';
-        const chevronClass = isExpanded ? 'bi bi-chevron-right tree-chevron expanded' : 'bi bi-chevron-right tree-chevron';
-
-        let html = `
-            <div class="tree-category">
-                <div class="tree-category-header" onclick="toggleEditTreeNode('${nodeId}')">
-                    <i class="${chevronClass}" id="chevron-${nodeId}"></i>
-                    <i class="bi bi-folder2 tree-icon category-icon"></i>
-                    <span class="tree-title">${category.name}</span>
-                    <span class="tree-count">${category.device_count} devices</span>
-                </div>
-                <div class="tree-content" id="${nodeId}" style="display: ${displayStyle};">
-        `;
-        
-        if (category.direct_devices && category.direct_devices.length > 0) {
-            category.direct_devices.forEach(device => {
-                html += renderEditDeviceHtml(device);
+        if (Array.isArray(subcategory.Subbiercategories) && subcategory.Subbiercategories.length > 0) {
+            subcategory.Subbiercategories.forEach(subbiercategory => {
+                const detail = document.createElement('details');
+                detail.open = true;
+                detail.className = 'rc-product-node rc-product-node-subbiercategory';
+                const summary = document.createElement('summary');
+                summary.innerHTML = `<span>${escapeHtml(subbiercategory.Name || 'Group')}</span>`;
+                detail.appendChild(summary);
+                const list = document.createElement('div');
+                list.className = 'rc-product-list';
+                if (Array.isArray(subbiercategory.Products)) {
+                    subbiercategory.Products.forEach(product => {
+                        renderedProducts.add(String(product.ID));
+                        list.appendChild(renderEditProductEntry(product));
+                    });
+                }
+                detail.appendChild(list);
+                body.appendChild(detail);
             });
         }
-        
-        if (category.subcategories && category.subcategories.length > 0) {
-            category.subcategories.forEach(subcategory => {
-                html += renderEditSubcategoryHtml(subcategory);
-            });
-        }
-        
-        html += '</div></div>';
-        return html;
-    }
 
-    function renderEditSubcategoryHtml(subcategory) {
-        const nodeId = `edit-subcategory-${subcategory.id}`;
-        const isExpanded = editExpandedNodes.has(nodeId);
-        const displayStyle = isExpanded ? 'block' : 'none';
-        const chevronClass = isExpanded ? 'bi bi-chevron-right tree-chevron expanded' : 'bi bi-chevron-right tree-chevron';
-
-        let html = `
-            <div class="tree-subcategory">
-                <div class="tree-subcategory-header" onclick="toggleEditTreeNode('${nodeId}')">
-                    <i class="${chevronClass}" id="chevron-${nodeId}"></i>
-                    <i class="bi bi-folder tree-icon subcategory-icon"></i>
-                    <span class="tree-title">${subcategory.name}</span>
-                    <span class="tree-count">${subcategory.device_count} devices</span>
-                </div>
-                <div class="tree-content" id="${nodeId}" style="display: ${displayStyle};">
-        `;
-        
-        if (subcategory.direct_devices && subcategory.direct_devices.length > 0) {
-            subcategory.direct_devices.forEach(device => {
-                html += renderEditDeviceHtml(device);
-            });
-        }
-        
-        if (subcategory.subbiercategories && subcategory.subbiercategories.length > 0) {
-            subcategory.subbiercategories.forEach(subbiercategory => {
-                html += renderEditSubbiercategoryHtml(subbiercategory);
-            });
-        }
-        
-        html += '</div></div>';
-        return html;
-    }
-
-    function renderEditSubbiercategoryHtml(subbiercategory) {
-        const nodeId = `edit-subbiercategory-${subbiercategory.id}`;
-        const isExpanded = editExpandedNodes.has(nodeId);
-        const displayStyle = isExpanded ? 'block' : 'none';
-        const chevronClass = isExpanded ? 'bi bi-chevron-right tree-chevron expanded' : 'bi bi-chevron-right tree-chevron';
-
-        let html = `
-            <div class="tree-subbiercategory">
-                <div class="tree-subbiercategory-header" onclick="toggleEditTreeNode('${nodeId}')">
-                    <i class="${chevronClass}" id="chevron-${nodeId}"></i>
-                    <i class="bi bi-folder-fill tree-icon subbiercategory-icon"></i>
-                    <span class="tree-title">${subbiercategory.name}</span>
-                    <span class="tree-count">${subbiercategory.device_count} devices</span>
-                </div>
-                <div class="tree-content" id="${nodeId}" style="display: ${displayStyle};">
-        `;
-        
-        if (subbiercategory.devices && subbiercategory.devices.length > 0) {
-            subbiercategory.devices.forEach(device => {
-                html += renderEditDeviceHtml(device);
-            });
-        }
-        
-        html += '</div></div>';
-        return html;
-    }
-
-    function renderEditDeviceHtml(device) {
-        const isSelected = editSelectedDevices.has(device.device_id);
-        const isAvailable = device.available === true;
-        
-        let classes = 'tree-device';
-        if (isSelected) classes += ' selected';
-        if (!isAvailable) classes += ' unavailable';
-        else classes += ' available';
-        
-        let onclick = '';
-        if (isAvailable) {
-            onclick = `onclick="toggleEditDeviceSelection('${device.device_id}')"`;
-        }
-        
-        return `
-            <div class="${classes}" data-device-id="${device.device_id}" ${onclick}>
-                <div class="device-info">
-                    <div class="device-name">${device.product_name}</div>
-                    <div class="device-details">
-                        <span class="device-id">${device.device_id}</span>
-                        ${device.serial_number ? '<span class="device-serial">• ' + device.serial_number + '</span>' : ''}
-                        <span class="device-status device-status-${device.status}">${device.status}</span>
-                        ${!isAvailable && device.conflict_job ? '<span style="color: var(--error); font-size: 0.75rem;">• Conflict with Job ' + device.conflict_job + '</span>' : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    function toggleEditTreeNode(nodeId) {
-        const contentDiv = document.getElementById(nodeId);
-        const chevron = document.getElementById('chevron-' + nodeId);
-        
-        if (contentDiv && chevron) {
-            if (contentDiv.style.display === 'none') {
-                contentDiv.style.display = 'block';
-                chevron.classList.add('expanded');
-                editExpandedNodes.add(nodeId);
-            } else {
-                contentDiv.style.display = 'none';
-                chevron.classList.remove('expanded');
-                editExpandedNodes.delete(nodeId);
+        if (Array.isArray(subcategory.Products)) {
+            const remaining = subcategory.Products.filter(product => !renderedProducts.has(String(product.ID)));
+            if (remaining.length > 0) {
+                const list = document.createElement('div');
+                list.className = 'rc-product-list';
+                remaining.forEach(product => {
+                    renderedProducts.add(String(product.ID));
+                    list.appendChild(renderEditProductEntry(product));
+                });
+                body.appendChild(list);
             }
         }
+
+        subDetails.appendChild(body);
+        return subDetails;
     }
 
-    function toggleEditDeviceSelection(deviceId) {
-        if (editSelectedDevices.has(deviceId)) {
-            editSelectedDevices.delete(deviceId);
-        } else {
-            editSelectedDevices.add(deviceId);
+    function renderEditProductEntry(product) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'rc-product-entry';
+
+        const name = document.createElement('div');
+        name.className = 'rc-product-entry-name';
+        name.innerHTML = `<span>${escapeHtml(product.Name)}</span>`;
+
+        const meta = document.createElement('div');
+        meta.className = 'rc-product-entry-meta';
+        const available = product.AvailableCount || 0;
+        const total = product.DeviceCount || 0;
+        meta.innerHTML = `<span class="rc-badge ${available > 0 ? 'rc-badge-success' : 'rc-badge-warning'}">${available} / ${total}</span>`;
+
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'rc-product-entry-input';
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.step = '1';
+        input.value = getEditCurrentQuantity(product.ID);
+        input.addEventListener('input', () => {
+            const value = Math.max(0, parseInt(input.value || '0', 10));
+            setEditProductSelection(product, value);
+        });
+
+        inputGroup.appendChild(input);
+
+        wrapper.appendChild(name);
+        wrapper.appendChild(meta);
+        wrapper.appendChild(inputGroup);
+
+        return wrapper;
+    }
+
+    function getEditCurrentQuantity(productID) {
+        const key = String(productID);
+        if (editProductSelections.has(key)) {
+            return editProductSelections.get(key).quantity;
         }
-        
-        updateEditSelectedDevicesDisplay();
-        updateEditSelectedDevicesInput();
-        updateEditDeviceTreeDisplay();
+        if (editInitialProductSelections.has(key)) {
+            return editInitialProductSelections.get(key).quantity;
+        }
+        return 0;
     }
 
-    function updateEditSelectedDevicesDisplay() {
-        const container = document.getElementById('editSelectedDevicesList');
-        
-        if (editSelectedDevices.size === 0) {
-            container.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">No devices selected</span>';
+    function setEditProductSelection(product, quantity) {
+        const key = String(product.ID);
+        const entry = editProductSelections.get(key) || {
+            id: product.ID,
+            name: product.Name,
+            available: product.AvailableCount || 0,
+            total: product.DeviceCount || 0,
+            quantity: 0
+        };
+
+        entry.available = product.AvailableCount || 0;
+        entry.total = product.DeviceCount || 0;
+        entry.quantity = quantity;
+
+        if (entry.quantity <= 0) {
+            editProductSelections.delete(key);
+        } else {
+            editProductSelections.set(key, entry);
+        }
+
+        updateEditSelectedProductsSummary();
+        updateEditHiddenProductInput();
+        validateEditProductSelections();
+    }
+
+    function updateEditSelectedProductsSummary() {
+        const table = document.getElementById('editSelectedProductsTable');
+        const empty = document.getElementById('editSelectedProductsEmpty');
+        if (!table || !empty) {
             return;
         }
-        
-        let html = '';
-        editSelectedDevices.forEach(deviceId => {
-            const device = findEditDeviceInTree(deviceId);
-            if (device) {
-                html += `
-                    <span class="selected-device-badge">
-                        ${device.product_name} (${deviceId})
-                        <button class="remove-device" onclick="toggleEditDeviceSelection('${deviceId}')" title="Remove device">
-                            <i class="bi bi-x"></i>
-                        </button>
-                    </span>
+
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = '';
+
+        if (editProductSelections.size === 0) {
+            table.style.display = 'none';
+            empty.style.display = 'block';
+            return;
+        }
+
+        table.style.display = 'table';
+        empty.style.display = 'none';
+
+        Array.from(editProductSelections.values())
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .forEach(entry => {
+                const row = document.createElement('tr');
+                const warn = entry.quantity > entry.available;
+                row.innerHTML = `
+                    <td>${escapeHtml(entry.name)}</td>
+                    <td>${entry.quantity}</td>
+                    <td>${entry.available} / ${entry.total}</td>
                 `;
+                if (warn) {
+                    row.classList.add('rc-table-row-warning');
+                }
+                tbody.appendChild(row);
+            });
+    }
+
+    function updateEditHiddenProductInput() {
+        const input = document.getElementById('editSelectedProductsInput');
+        if (!input) {
+            return;
+        }
+        const payload = Array.from(editProductSelections.values())
+            .filter(entry => entry.quantity > 0)
+            .map(entry => ({ product_id: entry.id, quantity: entry.quantity }));
+        input.value = JSON.stringify(payload);
+    }
+
+    function validateEditProductSelections() {
+        editProductValidationErrors = [];
+        editProductSelections.forEach(entry => {
+            if (entry.quantity > entry.available) {
+                editProductValidationErrors.push(`${entry.name}: requested ${entry.quantity}, available ${entry.available}`);
             }
         });
-        
-        container.innerHTML = html;
-    }
 
-    function updateEditSelectedDevicesInput() {
-        document.getElementById('editSelectedDevicesInput').value = Array.from(editSelectedDevices).join(',');
-    }
-
-    function updateEditDeviceTreeDisplay() {
-        // Instead of re-rendering entire tree (which collapses all nodes),
-        // just update the selected/unselected visual state of devices
-        document.querySelectorAll('.tree-device').forEach(deviceEl => {
-            const deviceId = deviceEl.dataset.deviceId;
-            if (deviceId) {
-                if (editSelectedDevices.has(deviceId)) {
-                    deviceEl.classList.add('selected');
-                } else {
-                    deviceEl.classList.remove('selected');
-                }
-            }
-        });
-    }
-
-    function findEditDeviceInTree(deviceId) {
-        if (!editDeviceTreeData) return null;
-
-        for (const category of editDeviceTreeData) {
-            if (category.direct_devices) {
-                const device = category.direct_devices.find(d => d.device_id === deviceId);
-                if (device) return device;
-            }
-
-            if (category.subcategories) {
-                for (const subcategory of category.subcategories) {
-                    if (subcategory.direct_devices) {
-                        const device = subcategory.direct_devices.find(d => d.device_id === deviceId);
-                        if (device) return device;
-                    }
-
-                    if (subcategory.subbiercategories) {
-                        for (const subbiercategory of subcategory.subbiercategories) {
-                            if (subbiercategory.devices) {
-                                const device = subbiercategory.devices.find(d => d.device_id === deviceId);
-                                if (device) return device;
-                            }
-                        }
-                    }
-                }
-            }
+        const errorBox = document.getElementById('editProductSelectionErrors');
+        if (!errorBox) {
+            return;
         }
 
-        return null;
+        if (editProductValidationErrors.length === 0) {
+            errorBox.style.display = 'none';
+            errorBox.innerHTML = '';
+            return;
+        }
+
+        errorBox.style.display = 'block';
+        errorBox.innerHTML = `
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Adjust product quantities:</strong>
+            <ul style="margin-top: 8px; padding-left: 16px;">
+                ${editProductValidationErrors.map(msg => `<li>${escapeHtml(msg)}</li>`).join('')}
+            </ul>
+        `;
     }
 
     // Functions for managing assigned devices in edit modal
@@ -1931,8 +1650,8 @@
                 if (response.ok) {
                     // Refresh the assigned devices display
                     refreshEditAssignedDevices(jobID);
-                    // Also refresh the available device tree to reflect changes
-                    loadEditDeviceTree(jobID);
+                    // Refresh product availability after device removal
+                    loadEditProductTree(jobID);
                     // Show success feedback
                     showToast('Device removed successfully', 'success');
                 } else {
@@ -2499,72 +2218,6 @@ function showToast(message, type) {
             section.style.display = 'none';
             button.innerHTML = '<i class="bi bi-eye"></i> Show Files';
         }
-    }
-
-    function toggleEditDeviceTree() {
-        const section = document.getElementById('editDeviceManagementSection');
-        const button = document.getElementById('toggleEditDeviceTreeBtn');
-
-        if (section.style.display === 'none') {
-            section.style.display = 'block';
-            button.innerHTML = '<i class="bi bi-eye-slash"></i> Hide Device Tree';
-
-            // Load device tree when showing for the first time
-            const jobIDInput = document.querySelector('#editJobForm input[readonly]');
-            const jobID = jobIDInput ? jobIDInput.value : null;
-            if (jobID) {
-                const startDate = document.querySelector('#editJobForm input[name="startDate"]').value;
-                const endDate = document.querySelector('#editJobForm input[name="endDate"]').value;
-                if (startDate && endDate) {
-                    loadEditDeviceTree(jobID);
-                }
-            }
-        } else {
-            section.style.display = 'none';
-            button.innerHTML = '<i class="bi bi-eye"></i> Show Device Tree';
-        }
-    }
-
-    // ===== DEVICE TREE EXPAND/COLLAPSE FUNCTIONS =====
-
-    function expandAllEditTreeNodes() {
-        const treeContainer = document.getElementById('editDeviceTreeContainer');
-        if (!treeContainer) return;
-
-        // Find all tree content divs that are collapsed
-        const collapsedNodes = treeContainer.querySelectorAll('.tree-content[style*="display: none"]');
-        const collapsedChevrons = treeContainer.querySelectorAll('.tree-chevron:not(.expanded)');
-
-        collapsedNodes.forEach(node => {
-            node.style.display = 'block';
-            editExpandedNodes.add(node.id);
-        });
-
-        collapsedChevrons.forEach(chevron => {
-            chevron.classList.add('expanded');
-        });
-
-        console.log(`Expanded ${collapsedNodes.length} device tree nodes`);
-    }
-
-    function collapseAllEditTreeNodes() {
-        const treeContainer = document.getElementById('editDeviceTreeContainer');
-        if (!treeContainer) return;
-
-        // Find all tree content divs that are expanded
-        const expandedContentNodes = treeContainer.querySelectorAll('.tree-content[style*="display: block"], .tree-content:not([style*="display: none"])');
-        const expandedChevrons = treeContainer.querySelectorAll('.tree-chevron.expanded');
-
-        expandedContentNodes.forEach(node => {
-            node.style.display = 'none';
-            editExpandedNodes.delete(node.id);
-        });
-
-        expandedChevrons.forEach(chevron => {
-            chevron.classList.remove('expanded');
-        });
-
-        console.log(`Collapsed ${expandedContentNodes.length} device tree nodes`);
     }
 
     // Job Details Attachments Functions

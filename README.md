@@ -48,7 +48,7 @@ A comprehensive, enterprise-grade equipment rental management system built with 
 - **Job Lifecycle**: Complete job management from creation to completion
 - **Automatic Job Codes**: Consistent `JOB000123` style identifiers generated for every job
 - **Enhanced Job Modals**: Revenue and device count display with detailed overview
-- **Device Assignment**: Manual device assignment to rental jobs
+- **Product-Based Assignment**: Build job manifests by selecting products with live availability checks; RentalCore resolves device allocations automatically
 - **Device Price Management**: Real-time price adjustment per job with API integration
 - **Categorized Device Overview**: Devices grouped by Sound, Light, Effect, Stage, Other
 - **Invoice Generation**: Professional invoice creation with customizable templates
@@ -303,9 +303,12 @@ SMTP_PASSWORD=email_password
 
 ### **Core Management APIs**
 - `GET|POST|PUT|DELETE /api/v1/jobs` - Job management
-- `GET /api/v1/devices` - Device inventory (read-only, write operations in WarehouseCore)
+- `GET /api/v1/devices` - Device inventory (read-only)
 - `GET /api/v1/devices/:id` - Device details (read-only)
 - `GET /api/v1/devices/available` - Available devices for assignment
+- `GET /api/v1/devices/available/job/:jobId` - Availability scoped to a job
+- `GET /api/v1/devices/tree/availability` - Hierarchical availability view
+- `POST|PUT|DELETE /api/v1/devices` - **410 Gone** (use WarehouseCore for write operations)
 - `GET|POST|PUT|DELETE /api/v1/customers` - Customer database
 - `GET|POST|PUT|DELETE /api/v1/invoices` - Invoice management
 
@@ -439,7 +442,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.45** (Latest) - Phase 5: Case Management Redirect to WarehouseCore
+### **v2.46** (Latest) - Product-First Job Builder & API Hardening
+- ✅ **Unified Job Workflow**: Both create and edit forms use the new product availability tree with quantity selection and validation.
+- ✅ **Legacy Modal Removed**: Old device-tree modals, quick-add flows, and `selected_devices` payloads retired for a cleaner UI.
+- ✅ **Backend Alignment**: Job API now only accepts `selected_products` payloads; helper tests cover parsing and aggregation edge-cases.
+- ✅ **Device Write Guard**: All POST/PUT/DELETE device endpoints return `410 Gone`, directing operators to WarehouseCore.
+- ✅ **Documentation Refresh**: README and API docs outline the read-only scope for device operations in RentalCore.
+
+### **v2.45** - Phase 5: Case Management Redirect to WarehouseCore
 - ✅ **Case CRUD Redirected**: All case management operations now redirect to WarehouseCore
 - ✅ **Web Routes Updated**: Case list, new form, edit, and device mapping routes redirect to `/admin/cases` in WarehouseCore
 - ✅ **API Routes Removed**: All case API operations (POST, PUT, DELETE) removed from RentalCore

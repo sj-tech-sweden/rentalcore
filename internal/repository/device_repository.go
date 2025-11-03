@@ -9,6 +9,16 @@ import (
 	"go-barcode-webapp/internal/models"
 )
 
+type ProductDeviceAvailability struct {
+	DeviceID      string
+	ProductID     uint
+	Status        string
+	CaseID        *uint
+	CaseName      *string
+	AssignedToJob bool
+	Available     bool
+}
+
 type DeviceRepository struct {
 	db *Database
 }
@@ -629,6 +639,83 @@ func (r *DeviceRepository) GetAvailableDevicesForJob(jobID uint, startDate, endD
 	)`, jobID, endDate, startDate).Find(&devices).Error
 
 	return devices, err
+}
+
+func (r *DeviceRepository) GetProductAvailabilityForJob(productID uint, jobID *uint, startDate, endDate *time.Time) ([]ProductDeviceAvailability, error) {
+	rows := []struct {
+		DeviceID      string
+		ProductID     uint
+		Status        string
+		CaseID        *uint
+		CaseName      *string
+		AssignedToJob bool
+	}{}
+
+	jobIDVal := uint(0)
+	if jobID != nil {
+		jobIDVal = *jobID
+	}
+
+	query := r.db.Table("devices d").
+		Select(`d.deviceID, d.productID, d.status,
+			dc.caseID AS case_id,
+			c.name AS case_name,
+			CASE WHEN jd_current.jobID IS NOT NULL THEN TRUE ELSE FALSE END AS assigned_to_job`).
+		Joins("LEFT JOIN devicescases dc ON dc.deviceID = d.deviceID").
+		Joins("LEFT JOIN cases c ON c.caseID = dc.caseID").
+		Joins("LEFT JOIN jobdevices jd_current ON jd_current.deviceID = d.deviceID AND jd_current.jobID = ?", jobIDVal).
+		Where("d.productID = ?", productID).
+		Where("(d.status = 'free' OR jd_current.jobID IS NOT NULL)")
+
+	if err := query.Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	conflicts := make(map[string]bool)
+	if startDate != nil && endDate != nil {
+		start := *startDate
+		end := *endDate
+		conflictRows := []struct {
+			DeviceID string
+		}{}
+
+		conflictQuery := r.db.Table("jobdevices jd").
+			Select("jd.deviceID").
+			Joins("JOIN jobs j ON jd.jobID = j.jobID").
+			Where("NOT (COALESCE(j.endDate, j.startDate) < ? OR j.startDate > ?)", end, start)
+
+		if jobIDVal != 0 {
+			conflictQuery = conflictQuery.Where("j.jobID != ?", jobIDVal)
+		}
+
+		if err := conflictQuery.Scan(&conflictRows).Error; err != nil {
+			return nil, err
+		}
+
+		for _, row := range conflictRows {
+			conflicts[row.DeviceID] = true
+		}
+	}
+
+	results := make([]ProductDeviceAvailability, 0, len(rows))
+	for _, row := range rows {
+		available := !conflicts[row.DeviceID]
+		if row.Status != "free" && !row.AssignedToJob {
+			available = false
+		}
+
+		results = append(results, ProductDeviceAvailability{
+			DeviceID:      row.DeviceID,
+			ProductID:     row.ProductID,
+			Status:        row.Status,
+			CaseID:        row.CaseID,
+			CaseName:      row.CaseName,
+			AssignedToJob: row.AssignedToJob,
+			Available:     available,
+		})
+	}
+
+	return results, nil
 }
 
 // IsDeviceCurrentlyAssigned checks if a device is currently assigned to an active job

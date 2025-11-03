@@ -1223,13 +1223,24 @@ func setupRoutes(r *gin.Engine,
 			apiDevices := api.Group("/devices")
 			{
 				apiDevices.GET("", deviceHandler.ListDevicesAPI)
-				apiDevices.POST("", deviceHandler.CreateDeviceAPI)
-				apiDevices.GET("/:id", deviceHandler.GetDeviceAPI)
-				apiDevices.PUT("/:id", deviceHandler.UpdateDeviceAPI)
-				apiDevices.DELETE("/:id", deviceHandler.DeleteDeviceAPI)
+				warehouseWriteRedirect := func(c *gin.Context) {
+					target := buildWarehouseDevicesURL(c.Request)
+					message := gin.H{
+						"error":   "Device write APIs moved to WarehouseCore",
+						"message": "Use WarehouseCore for creating, updating, or deleting devices.",
+					}
+					if target != "" {
+						message["redirect"] = target
+					}
+					c.JSON(http.StatusGone, message)
+				}
+				apiDevices.POST("", warehouseWriteRedirect)
 				apiDevices.GET("/available", deviceHandler.GetAvailableDevicesAPI)
 				apiDevices.GET("/available/job/:jobId", deviceHandler.GetAvailableDevicesForJobAPI)
 				apiDevices.GET("/tree/availability", deviceHandler.GetDeviceTreeWithAvailability)
+				apiDevices.GET("/:id", deviceHandler.GetDeviceAPI)
+				apiDevices.PUT("/:id", warehouseWriteRedirect)
+				apiDevices.DELETE("/:id", warehouseWriteRedirect)
 			}
 
 			// Product API
