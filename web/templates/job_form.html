@@ -447,28 +447,89 @@
         .rc-product-tree details {
             margin-bottom: var(--space-sm);
             border: 1px solid var(--surface-3);
-            border-radius: var(--radius-sm);
+            border-radius: var(--radius-md);
             background: var(--surface-1);
+            transition: all 0.2s ease;
+        }
+
+        .rc-product-tree details[open] {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .rc-product-tree summary {
             cursor: pointer;
-            padding: var(--space-sm) var(--space-md);
+            padding: var(--space-md) var(--space-md);
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            user-select: none;
+            transition: background-color 0.2s ease;
+            border-radius: var(--radius-md);
+        }
+
+        .rc-product-tree summary:hover {
+            background: var(--surface-2);
+        }
+
+        .rc-product-tree summary::before {
+            content: '▶';
+            display: inline-block;
+            margin-right: var(--space-sm);
+            transition: transform 0.2s ease;
+            color: var(--primary);
+            font-size: 0.75rem;
+        }
+
+        .rc-product-tree details[open] > summary::before {
+            transform: rotate(90deg);
+        }
+
+        .rc-product-node-category > summary {
+            background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%);
+            font-size: 1.05rem;
+            border-bottom: 2px solid var(--surface-3);
+        }
+
+        .rc-product-node-subcategory > summary {
+            font-size: 0.95rem;
+            padding-left: var(--space-lg);
+        }
+
+        .rc-product-node-subbiercategory > summary {
+            font-size: 0.9rem;
+            padding-left: calc(var(--space-lg) + var(--space-md));
         }
 
         .rc-product-node-body {
-            padding: var(--space-sm) var(--space-md) var(--space-md);
+            padding: var(--space-md);
             display: flex;
             flex-direction: column;
             gap: var(--space-sm);
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .rc-product-node-subcategory {
+            margin-top: var(--space-xs);
+            border: 1px solid var(--surface-3);
+            border-radius: var(--radius-sm);
+            background: var(--surface-0);
         }
 
         .rc-product-node-subbiercategory {
             margin-left: var(--space-md);
+            margin-top: var(--space-xs);
             border: 1px solid var(--surface-3);
             border-radius: var(--radius-sm);
             background: var(--surface-0);
@@ -486,14 +547,29 @@
             grid-template-columns: 1fr auto;
             align-items: center;
             gap: var(--space-md);
-            padding: var(--space-sm) var(--space-md);
+            padding: var(--space-md);
             border: 1px solid var(--surface-3);
             border-radius: var(--radius-sm);
             background: var(--surface-0);
+            transition: all 0.2s ease;
+        }
+
+        .rc-product-entry:hover {
+            background: var(--surface-1);
+            border-color: var(--primary);
+            transform: translateX(4px);
         }
 
         .rc-product-entry-name {
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .rc-product-entry-name::before {
+            content: '📦';
+            font-size: 1.1rem;
         }
 
         .rc-product-entry-input {
@@ -505,6 +581,25 @@
 
         .rc-product-entry-input input {
             width: 100px;
+            padding: var(--space-xs) var(--space-sm);
+            border: 2px solid var(--surface-3);
+            border-radius: var(--radius-sm);
+            background: var(--surface-1);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .rc-product-entry-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--surface-0);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .rc-product-entry-input input:hover {
+            border-color: var(--primary);
         }
 
         .rc-product-entry-meta {
@@ -900,7 +995,7 @@
 
             treeData.forEach(category => {
                 const categoryDetails = document.createElement('details');
-                categoryDetails.open = true;
+                categoryDetails.open = false; // Collapsed by default
                 categoryDetails.className = 'rc-product-node rc-product-node-category';
 
                 const summary = document.createElement('summary');
@@ -940,7 +1035,7 @@
 
         function renderSubcategory(subcategory, renderedProducts) {
             const subDetails = document.createElement('details');
-            subDetails.open = true;
+            subDetails.open = false; // Collapsed by default
             subDetails.className = 'rc-product-node rc-product-node-subcategory';
 
             const summary = document.createElement('summary');
@@ -953,7 +1048,7 @@
             if (Array.isArray(subcategory.subbiercategories) && subcategory.subbiercategories.length > 0) {
                 subcategory.subbiercategories.forEach(subbiercategory => {
                     const detail = document.createElement('details');
-                    detail.open = true;
+                    detail.open = false; // Collapsed by default
                     detail.className = 'rc-product-node rc-product-node-subbiercategory';
                     const summary = document.createElement('summary');
                     summary.innerHTML = `<span>${escapeHtml(subbiercategory.name || 'Group')}</span>`;
