@@ -864,6 +864,17 @@
                 content.innerHTML = html;
             }
 
+            // Extract and inject styles from the fetched document
+            // Styles are typically in <head>, outside <main>
+            const styles = doc.querySelectorAll('style');
+            console.log(`🎨 Found ${styles.length} style tag(s) in fetched HTML`);
+
+            styles.forEach(oldStyle => {
+                const newStyle = document.createElement('style');
+                newStyle.textContent = oldStyle.textContent;
+                document.head.appendChild(newStyle);
+            });
+
             // Execute scripts from the ORIGINAL document (not just main content)
             // Scripts are typically in <head> or at end of <body>, outside <main>
             const scripts = doc.querySelectorAll('script');
