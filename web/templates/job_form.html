@@ -787,7 +787,10 @@
                     return response.json();
                 })
                 .then(data => {
+                    console.log('📦 API Response:', data);
                     productTreeData = Array.isArray(data.treeData) ? data.treeData : [];
+                    console.log('🌲 Product Tree Data:', productTreeData);
+                    console.log('🌲 Categories count:', productTreeData.length);
                     applyAvailabilityToSelections(productTreeData);
                     renderProductTree(productTreeData);
                 })
@@ -867,7 +870,11 @@
             const root = document.getElementById('productTreeRoot');
             const empty = document.getElementById('productTreeEmpty');
 
+            console.log('🎨 renderProductTree called with:', treeData);
+            console.log('🎨 productTreeRoot element:', root);
+
             if (!root) {
+                console.error('❌ productTreeRoot element not found!');
                 return;
             }
 
@@ -876,6 +883,7 @@
             if (loading) loading.style.display = 'none';
 
             if (!Array.isArray(treeData) || treeData.length === 0) {
+                console.log('⚠️ No tree data to render');
                 if (empty) empty.style.display = 'block';
                 root.style.display = 'none';
                 updateSelectedProductsSummary();
@@ -884,6 +892,7 @@
                 return;
             }
 
+            console.log('✅ Rendering', treeData.length, 'categories');
             if (empty) empty.style.display = 'none';
             root.style.display = 'block';
 
