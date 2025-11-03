@@ -442,7 +442,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.52** (Latest) - Critical Product Tree Fix
+### **v2.53** (Latest) - Dual Init Mechanism
+- ✅ **Auto-Init Script**: Added self-initializing script at end of job_form.html
+- ✅ **Modal Detection**: Automatically detects modal context (no navbar)
+- ✅ **Retry Logic**: Two retry mechanisms (auto-init + modal interval check)
+- ✅ **Debug Logs**: Enhanced logging with emoji indicators
+- ✅ **Guaranteed Init**: Product tree initialization now foolproof
+
+### **v2.52** - Critical Product Tree Fix
 - ✅ **Bug Fix**: Product tree now loads correctly in modal
 - ✅ **Initialization**: Manual form initialization after AJAX content load
 - ✅ **DOMContentLoaded**: Fixed event not firing for dynamically loaded content
