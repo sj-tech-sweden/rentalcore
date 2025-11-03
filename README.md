@@ -442,13 +442,18 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.61** (Latest) - Luxe Product Tree Experience
-- ✅ **Glassmorphism Layout**: New frame, gradients, and ambient shadows wrap the entire product tree for a premium modal look
-- ✅ **Live Availability Summary**: Category toolbar now aggregates totals (categories, products, free devices, utilization %) at a glance
+### **v2.62** (Latest) - Theme-Aligned Product Tree
+- ✅ **Unified Look & Feel**: Reworked product tree containers, chips, and cards to reuse RentalCore’s surface palette and spacing scale
+- ✅ **Balanced Shadows**: Softened elevation and hover states so the modal matches other RC cards and tables
+- ✅ **Readable Summaries**: Updated category headers and status chips for better contrast on light/dark modes
+- ✅ **Consistent Controls**: Toolbar actions, progress indicators, and quantity inputs now inherit system focus/hover treatments
+
+### **v2.61** - Product Tree Enhancements
+- ✅ **Live Availability Summary**: Category toolbar aggregates totals (categories, products, free devices, utilisation %)
 - ✅ **One-Click Tree Controls**: Added “Expand All” / “Collapse All” actions that toggle every node instantly
-- ✅ **Hero Product Cards**: Each product renders as a rich card with brand/manufacturer subtitles, selection badges, and hover elevation
-- ✅ **Availability Thermometer**: Gradient progress bar plus status chips that switch to warning mode for overbooked requests
-- ✅ **Accessibility Tweaks**: Inputs get descriptive aria labels and focus states for keyboard workflows
+- ✅ **Contextual Product Cards**: Each product renders with brand/manufacturer subtitles plus selection/state badges
+- ✅ **Availability Thermometer**: Gradient progress bar and warning states flag overbooked requests in real time
+- ✅ **Accessibility Tweaks**: Inputs ship with descriptive aria labels and improved keyboard focus handling
 
 ### **v2.60** - Enhanced Product Tree Styling
 - ✅ **Collapsed by Default**: All categories/subcategories start collapsed for cleaner view

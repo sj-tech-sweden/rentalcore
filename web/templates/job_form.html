@@ -461,11 +461,11 @@
     <!-- Product Tree Styles -->
     <style>
         .rc-product-tree-frame {
-            background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, rgba(14, 116, 144, 0.05) 100%);
-            border-radius: var(--radius-lg);
-            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: var(--surface-1);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--surface-3);
             padding: var(--space-lg);
-            box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
         }
 
         .rc-product-tree-toolbar {
@@ -474,9 +474,10 @@
             justify-content: space-between;
             gap: var(--space-md);
             padding: var(--space-md);
-            border-radius: var(--radius-md);
-            background: rgba(15, 23, 42, 0.04);
-            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: var(--radius-sm);
+            background: var(--surface-0);
+            border: 1px solid var(--surface-3);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
             margin-bottom: var(--space-md);
         }
 
@@ -484,7 +485,7 @@
             display: flex;
             align-items: center;
             gap: var(--space-sm);
-            color: var(--text-muted);
+            color: var(--text-secondary);
             font-size: 0.9rem;
             font-weight: 500;
         }
@@ -503,11 +504,11 @@
         .rc-btn.rc-btn-ghost {
             background: transparent;
             border: 1px solid transparent;
-            color: rgba(71, 85, 105, 0.9);
+            color: var(--text-secondary);
         }
 
         .rc-btn.rc-btn-ghost:hover {
-            background: rgba(148, 163, 184, 0.12);
+            background: var(--surface-2);
             color: var(--primary);
         }
 
@@ -518,17 +519,17 @@
         }
 
         .rc-product-tree details {
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            border-radius: var(--radius-md);
-            background: rgba(236, 244, 255, 0.4);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            border: 1px solid var(--surface-3);
+            border-radius: var(--radius-sm);
+            background: var(--surface-0);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
             overflow: hidden;
         }
 
         .rc-product-tree details[open] {
-            border-color: rgba(59, 130, 246, 0.45);
-            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
-            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+            background: var(--surface-1);
         }
 
         .rc-product-tree summary {
@@ -541,7 +542,7 @@
             user-select: none;
             transition: background 0.2s ease;
             list-style: none;
-            background: linear-gradient(90deg, rgba(15, 23, 42, 0.02) 0%, rgba(59, 130, 246, 0.12) 100%);
+            background: transparent;
         }
 
         .rc-product-tree summary::marker {
@@ -556,18 +557,19 @@
             width: 18px;
             height: 18px;
             border-radius: 999px;
-            background: rgba(59, 130, 246, 0.18);
-            color: rgba(29, 78, 216, 0.9);
+            background: var(--surface-2);
+            color: var(--primary);
             font-size: 0.75rem;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, background 0.2s ease;
         }
 
         .rc-product-tree details[open] > summary::before {
             transform: rotate(90deg);
+            background: rgba(59, 130, 246, 0.18);
         }
 
         .rc-product-tree summary:hover {
-            background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(14, 165, 233, 0.22) 100%);
+            background: var(--surface-2);
         }
 
         .rc-node-header {
@@ -582,13 +584,13 @@
             display: flex;
             align-items: center;
             gap: var(--space-sm);
-            color: rgba(15, 23, 42, 0.92);
+            color: var(--text-primary);
         }
 
         .rc-node-title i {
-            padding: 0.35rem;
-            border-radius: 10px;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(14, 165, 233, 0.15));
+            padding: 0.3rem;
+            border-radius: 8px;
+            background: var(--surface-2);
             color: var(--primary);
         }
 
@@ -621,22 +623,22 @@
         }
 
         .rc-chip-neutral {
-            background: rgba(148, 163, 184, 0.18);
-            color: rgba(30, 41, 59, 0.8);
+            background: var(--surface-2);
+            color: var(--text-secondary);
         }
 
         .rc-chip-success {
-            background: rgba(34, 197, 94, 0.18);
-            color: rgba(5, 122, 85, 0.9);
+            background: rgba(34, 197, 94, 0.16);
+            color: rgba(5, 122, 85, 0.85);
         }
 
         .rc-chip-danger {
-            background: rgba(239, 68, 68, 0.2);
-            color: rgba(185, 28, 28, 0.9);
+            background: rgba(239, 68, 68, 0.18);
+            color: rgba(185, 28, 28, 0.88);
         }
 
         .rc-chip-muted {
-            background: rgba(148, 163, 184, 0.12);
+            background: rgba(148, 163, 184, 0.15);
             color: rgba(71, 85, 105, 0.85);
         }
 
@@ -650,7 +652,7 @@
             display: flex;
             flex-direction: column;
             gap: var(--space-md);
-            background: rgba(255, 255, 255, 0.75);
+            background: var(--surface-0);
             animation: slideDown 0.2s ease;
         }
 
@@ -667,9 +669,9 @@
 
         .rc-product-node-subcategory,
         .rc-product-node-subbiercategory {
-            border: 1px dashed rgba(148, 163, 184, 0.4);
-            border-radius: var(--radius-md);
-            background: rgba(241, 245, 249, 0.4);
+            border: 1px solid var(--surface-3);
+            border-radius: var(--radius-sm);
+            background: var(--surface-1);
             padding: var(--space-sm);
         }
 
@@ -691,30 +693,29 @@
             gap: var(--space-lg);
             padding: var(--space-md) var(--space-lg);
             border-radius: var(--radius-md);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(229, 246, 255, 0.92) 100%);
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
-            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            background: var(--surface-0);
+            border: 1px solid var(--surface-3);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+            transition: border-color 0.16s ease, box-shadow 0.16s ease;
         }
 
         .rc-product-entry:hover {
-            transform: translateY(-2px);
-            border-color: rgba(59, 130, 246, 0.6);
-            box-shadow: 0 18px 36px rgba(59, 130, 246, 0.18);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
         }
 
         .rc-product-entry-selected {
-            border-color: rgba(59, 130, 246, 0.75);
-            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.22);
+            border-color: rgba(59, 130, 246, 0.6);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
         }
 
         .rc-product-entry-overbooked {
-            border-color: rgba(239, 68, 68, 0.65);
-            box-shadow: 0 20px 40px rgba(239, 68, 68, 0.22);
+            border-color: rgba(239, 68, 68, 0.55);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
         }
 
         .rc-product-entry-unavailable {
-            opacity: 0.85;
+            opacity: 0.8;
         }
 
         .rc-product-entry-name {
@@ -733,10 +734,10 @@
         }
 
         .rc-product-entry-title i {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(14, 165, 233, 0.2));
+            background: var(--surface-2);
             color: var(--primary);
-            border-radius: 12px;
-            padding: 0.4rem;
+            border-radius: 10px;
+            padding: 0.35rem;
             font-size: 1rem;
         }
 
@@ -805,7 +806,7 @@
             width: 160px;
             height: 8px;
             border-radius: 999px;
-            background: rgba(148, 163, 184, 0.25);
+            background: var(--surface-3);
             overflow: hidden;
         }
 
