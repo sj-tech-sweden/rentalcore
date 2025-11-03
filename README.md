@@ -442,13 +442,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.62** (Latest) - Theme-Aligned Product Tree
+### **v2.63** (Latest) - Theme-Aligned Product Tree
 - ✅ **Unified Look & Feel**: Reworked product tree containers, chips, and cards to reuse RentalCore’s surface palette and spacing scale
 - ✅ **Balanced Shadows**: Softened elevation and hover states so the modal matches other RC cards and tables
 - ✅ **Readable Summaries**: Updated category headers and status chips for better contrast on light/dark modes
 - ✅ **Consistent Controls**: Toolbar actions, progress indicators, and quantity inputs now inherit system focus/hover treatments
+- ✅ **Pure Typography**: All labels, chips, and product details render in crisp white to match the dark UI across RentalCore/WarehouseCore
 
-### **v2.61** - Product Tree Enhancements
+### **v2.62** - Product Tree Enhancements
 - ✅ **Live Availability Summary**: Category toolbar aggregates totals (categories, products, free devices, utilisation %)
 - ✅ **One-Click Tree Controls**: Added “Expand All” / “Collapse All” actions that toggle every node instantly
 - ✅ **Contextual Product Cards**: Each product renders with brand/manufacturer subtitles plus selection/state badges
