@@ -483,7 +483,7 @@
 
         .rc-product-entry {
             display: grid;
-            grid-template-columns: 1fr auto auto;
+            grid-template-columns: 1fr auto;
             align-items: center;
             gap: var(--space-md);
             padding: var(--space-sm) var(--space-md);
@@ -496,15 +496,22 @@
             font-weight: 500;
         }
 
+        .rc-product-entry-input {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: var(--space-xs);
+        }
+
+        .rc-product-entry-input input {
+            width: 100px;
+        }
+
         .rc-product-entry-meta {
             display: flex;
             align-items: center;
             gap: var(--space-sm);
             font-size: 0.85rem;
-        }
-
-        .rc-product-entry-input input {
-            width: 100px;
         }
 
         .rc-table-row-warning {
@@ -983,12 +990,6 @@
             name.className = 'rc-product-entry-name';
             name.innerHTML = `<span>${escapeHtml(product.Name)}</span>`;
 
-            const meta = document.createElement('div');
-            meta.className = 'rc-product-entry-meta';
-            const available = product.AvailableCount || 0;
-            const total = product.DeviceCount || 0;
-            meta.innerHTML = `<span class="rc-badge ${available > 0 ? 'rc-badge-success' : 'rc-badge-warning'}">${available} / ${total}</span>`;
-
             const inputGroup = document.createElement('div');
             inputGroup.className = 'rc-product-entry-input';
 
@@ -1002,10 +1003,16 @@
                 setProductSelection(product, value);
             });
 
+            const meta = document.createElement('div');
+            meta.className = 'rc-product-entry-meta';
+            const available = product.AvailableCount || 0;
+            const total = product.DeviceCount || 0;
+            meta.innerHTML = `<span class="rc-badge ${available > 0 ? 'rc-badge-success' : 'rc-badge-warning'}">${available} / ${total}</span>`;
+
             inputGroup.appendChild(input);
+            inputGroup.appendChild(meta);
 
             wrapper.appendChild(name);
-            wrapper.appendChild(meta);
             wrapper.appendChild(inputGroup);
 
             return wrapper;
