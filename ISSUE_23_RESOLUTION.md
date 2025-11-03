@@ -1,8 +1,11 @@
 # Issue #23 Resolution: Product Tree Assignment Logic
 
-## Status: ✅ ALREADY FULLY IMPLEMENTED
+## Status: ✅ FULLY RESOLVED (2025-11-03)
 
-All features requested in Issue #23 are already completely implemented in the RentalCore codebase.
+All features requested in Issue #23 are now fully implemented and match the exact requirements.
+
+**Fixed in version 2.49:**
+- UI layout corrected to show availability BELOW input field (as specified in issue)
 
 ## Requested Features vs. Implementation
 
@@ -31,15 +34,27 @@ The job form includes a complete product tree interface that displays:
 ```
 
 ### 2. Manual Quantity Input with Availability Display
-**Status:** ✅ Implemented
+**Status:** ✅ Implemented & Fixed (v2.49)
 
-**Location:** `web/templates/job_form.html:978-1011`
+**Location:** `web/templates/job_form.html:985-1019`
+
+**Layout (Fixed):**
+```
+[Product Name]           [Input Field]
+                         [6 / 12 Badge]
+```
 
 Each product shows:
 - Product name
-- Available quantity / Total quantity (e.g., "6 / 12")
 - Manual input field for quantity selection
+- Available quantity / Total quantity displayed BELOW input (e.g., "6 / 12")
 - Color-coded badges (green = available, yellow/orange = low stock)
+
+**Fix Details (commit 962e797):**
+- Changed from 3-column to 2-column grid layout
+- Moved availability badge below input field
+- Input container now uses vertical flex layout
+- Matches exact requirement: "darunter steht die verfügbare anzahl" (below it shows the available quantity)
 
 **Frontend JavaScript:**
 ```javascript
