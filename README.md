@@ -442,7 +442,17 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.69** (Latest) - Enhanced Device Availability Error Logging
+### **v2.74** (Latest) - Premium Product Tree Styling
+- ✅ **Premium Dark Theme**: Redesigned product tree with sophisticated gradient backgrounds and enhanced depth
+- ✅ **Enhanced Visual Hierarchy**: Improved spacing, typography, and layout for better readability
+- ✅ **Smooth Animations**: Added smooth transitions and hover effects throughout the product tree
+- ✅ **Modern UI Elements**: Redesigned chips/badges with gradient backgrounds and better color coding
+- ✅ **Interactive Product Cards**: Premium card design with left-side accent bars and lift animations
+- ✅ **Enhanced Progress Bars**: Glowing effect on progress indicators with better visual feedback
+- ✅ **Better Touch Targets**: Larger, more accessible interactive elements with improved hover states
+- ✅ **Responsive Design**: Mobile-optimized layout with full responsive breakpoints
+
+### **v2.69** - Enhanced Device Availability Error Logging
 - ✅ **Detailed Error Messages**: Enhanced "not enough available devices" error with comprehensive diagnostics
 - ✅ **Availability Breakdown**: Shows total needed, available (cases/loose), already kept, and remaining
 - ✅ **Debugging Aid**: Helps identify quantity multiplication issues and availability calculation problems
