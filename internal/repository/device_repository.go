@@ -643,12 +643,12 @@ func (r *DeviceRepository) GetAvailableDevicesForJob(jobID uint, startDate, endD
 
 func (r *DeviceRepository) GetProductAvailabilityForJob(productID uint, jobID *uint, startDate, endDate *time.Time) ([]ProductDeviceAvailability, error) {
 	rows := []struct {
-		DeviceID      string
-		ProductID     uint
-		Status        string
-		CaseID        *uint
-		CaseName      *string
-		AssignedToJob bool
+		DeviceID      string  `gorm:"column:deviceID"`
+		ProductID     uint    `gorm:"column:productID"`
+		Status        string  `gorm:"column:status"`
+		CaseID        *uint   `gorm:"column:case_id"`
+		CaseName      *string `gorm:"column:case_name"`
+		AssignedToJob bool    `gorm:"column:assigned_to_job"`
 	}{}
 
 	jobIDVal := uint(0)
