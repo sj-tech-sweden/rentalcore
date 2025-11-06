@@ -442,7 +442,13 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.77** (Latest) - Single-Line Horizontal Product Layout
+### **v2.78** (Latest) - Consistent Modal Widths
+- ✅ **Unified Modal Size**: Edit Job modal now matches New Job modal width (1200px)
+- ✅ **Better Product Tree View**: Wider modal provides more space for horizontal product layout
+- ✅ **Consistent UX**: Same visual experience across create and edit workflows
+- ✅ **Improved Scrolling**: Added max-height and overflow-y properties for long forms
+
+### **v2.77** - Single-Line Horizontal Product Layout
 - ✅ **One-Line Design**: Product name, quantity input, and availability all on one horizontal line
 - ✅ **Cleaner Interface**: Removed progress bars and quantity labels for minimalist look
 - ✅ **Compact Input**: Reduced input field to 80px width
