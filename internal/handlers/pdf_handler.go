@@ -1028,10 +1028,11 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (
 	}
 
 	if err := h.JobHandler.ApplyProductSelections(job, selections); err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "not enough available devices") {
+		lower := strings.ToLower(err.Error())
+		if strings.Contains(lower, "not enough available devices") {
 			return err.Error(), nil
 		}
-		return "", err
+		return fmt.Sprintf("Could not auto-assign devices: %s", err.Error()), nil
 	}
 
 	return "", nil

@@ -144,15 +144,16 @@ async function runAutoMapping(autoTrigger = false) {
     }
 }
 
-async function selectMapping(itemId, productId, element) {
-    if (typeof Event !== 'undefined' && element instanceof Event) {
-        element.preventDefault();
-        element.stopPropagation?.();
-        element = element.currentTarget || element.target;
+async function selectMapping(eventOrElement, fallbackItemId, fallbackProductId) {
+    let element = eventOrElement;
+    if (eventOrElement && typeof eventOrElement.preventDefault === 'function') {
+        eventOrElement.preventDefault();
+        eventOrElement.stopPropagation?.();
+        element = eventOrElement.currentTarget || eventOrElement.target;
     }
 
     const resolvedItemId = parseInt(
-        itemId ??
+        fallbackItemId ??
         element?.dataset?.itemId ??
         element?.getAttribute('data-item-id') ??
         element?.closest('.mapping-item')?.dataset?.itemId,
@@ -160,7 +161,7 @@ async function selectMapping(itemId, productId, element) {
     );
 
     const resolvedProductId = parseInt(
-        productId ??
+        fallbackProductId ??
         element?.dataset?.productId ??
         element?.getAttribute('data-product-id'),
         10,
@@ -256,7 +257,7 @@ async function searchProducts(input, itemId) {
                                 class="suggestion-item"
                                 data-item-id="${itemId}"
                                 data-product-id="${pid}"
-                                onclick="selectMapping(${itemId}, ${pid}, this)">
+                                onclick="selectMapping(event, ${itemId}, ${pid})">
                             <div class="suggestion-info">
                                 <div class="suggestion-name">${pname}</div>
                                 <div class="suggestion-details">${desc}</div>
@@ -968,7 +969,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 class="suggestion-item"
                                 data-item-id="{{$.item.ItemID}}"
                                 data-product-id="{{.SuggestedProduct.ProductID}}"
-                                onclick="selectMapping({{$.item.ItemID}}, {{.SuggestedProduct.ProductID}}, this)">
+                                onclick="selectMapping(event, {{$.item.ItemID}}, {{.SuggestedProduct.ProductID}})">
                             <div class="suggestion-info">
                                 <div class="suggestion-name">{{.SuggestedProduct.Name}}</div>
                                 <div class="suggestion-details">
