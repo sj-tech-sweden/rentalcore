@@ -1342,6 +1342,19 @@ func setupRoutes(r *gin.Engine,
 				apiDocuments.DELETE("/:id", documentHandler.DeleteDocument)
 			}
 
+			// PDF Processing API
+			apiPDF := api.Group("/pdf")
+			{
+				apiPDF.POST("/upload", pdfHandler.UploadPDF)
+				apiPDF.GET("/extraction/:upload_id", pdfHandler.GetExtractionResult)
+				apiPDF.POST("/mapping", pdfHandler.SaveProductMapping)
+				apiPDF.GET("/suggestions", pdfHandler.GetProductSuggestions)
+				apiPDF.PUT("/items/:item_id/mapping", pdfHandler.UpdateItemMapping)
+				apiPDF.POST("/auto-map/:extraction_id", pdfHandler.RunAutoMapping)
+				apiPDF.POST("/manual-map/:item_id", pdfHandler.SaveManualMapping)
+				apiPDF.GET("/products/search", pdfHandler.SearchProducts)
+			}
+
 			// Financial API
 			apiFinancial := api.Group("/financial")
 			{
