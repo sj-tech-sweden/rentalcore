@@ -151,12 +151,12 @@ func normalizeProductText(text string) string {
 	// Convert to lowercase
 	text = strings.ToLower(text)
 
-	// Remove special characters but keep spaces and numbers
+	// Replace non-alphanumeric characters with spaces to keep word boundaries
 	text = strings.Map(func(r rune) rune {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == ' ' {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
 			return r
 		}
-		return -1
+		return ' '
 	}, text)
 
 	// Normalize whitespace
