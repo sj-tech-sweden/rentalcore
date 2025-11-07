@@ -1809,26 +1809,97 @@
 
     function removeDeviceFromEditJob(jobID, deviceID) {
         if (confirm('Remove this device from the job?')) {
-            fetch(`/api/v1/jobs/${jobID}/devices/${deviceID}`, {
-                method: 'DELETE'
-            })
-            .then(response => {
-                if (response.ok) {
+            // First, fetch all devices to find the product ID of the device being removed
+            fetch(`/api/v1/jobs/${jobID}/devices`)
+                .then(response => response.json())
+                .then(data => {
+                    const devices = data.devices || [];
+                    const deviceToRemove = devices.find(d => {
+                        const device = d.device || d;
+                        return String(device.deviceID) === String(deviceID);
+                    });
+
+                    let productID = null;
+                    if (deviceToRemove) {
+                        const device = deviceToRemove.device || deviceToRemove;
+                        const product = device.product || {};
+                        productID = product.productID || product.ProductID;
+                    }
+
+                    // Now delete the device
+                    return fetch(`/api/v1/jobs/${jobID}/devices/${deviceID}`, {
+                        method: 'DELETE'
+                    }).then(response => {
+                        if (!response.ok) throw new Error('Failed to remove device');
+                        return productID;
+                    });
+                })
+                .then(productID => {
+                    // Decrease the quantity in product tree if we found the product
+                    if (productID && editProductSelections.has(String(productID))) {
+                        const selection = editProductSelections.get(String(productID));
+                        const newQuantity = Math.max(0, selection.quantity - 1);
+
+                        // Find the product in the tree to get full data
+                        const product = findProductInEditTreeById(productID);
+                        if (product) {
+                            setEditProductSelection(product, newQuantity);
+                        }
+
+                        // Update the input field directly
+                        const input = document.querySelector(`input[data-product-id="${productID}"]`);
+                        if (input) {
+                            input.value = newQuantity;
+                        }
+                    }
+
                     // Refresh the assigned devices display
                     refreshEditAssignedDevices(jobID);
                     // Refresh product availability after device removal
                     loadEditProductTree(jobID);
                     // Show success feedback
                     showToast('Device removed successfully', 'success');
-                } else {
-                    throw new Error('Failed to remove device');
-                }
-            })
-            .catch(error => {
-                console.error('Error removing device:', error);
-                showToast('Error removing device', 'error');
-            });
+                })
+                .catch(error => {
+                    console.error('Error removing device:', error);
+                    showToast('Error removing device', 'error');
+                });
         }
+    }
+
+    // Helper function to find a product in the edit tree by ID
+    function findProductInEditTreeById(productID) {
+        if (!editProductTreeData || editProductTreeData.length === 0) return null;
+
+        for (const category of editProductTreeData) {
+            // Check products at category level
+            if (category.products) {
+                const product = category.products.find(p => p.id === productID);
+                if (product) return product;
+            }
+
+            // Check subcategories
+            if (category.subcategories) {
+                for (const subcat of category.subcategories) {
+                    if (subcat.products) {
+                        const product = subcat.products.find(p => p.id === productID);
+                        if (product) return product;
+                    }
+
+                    // Check sub-subcategories
+                    if (subcat.subcategories) {
+                        for (const subsubcat of subcat.subcategories) {
+                            if (subsubcat.products) {
+                                const product = subsubcat.products.find(p => p.id === productID);
+                                if (product) return product;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     // Show job devices overview
