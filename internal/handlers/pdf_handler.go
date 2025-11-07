@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -908,6 +909,10 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 		return
 	}
 
+	if err := h.persistExtractionMappings(c, extraction.ExtractionID); err != nil {
+		log.Printf("warning: failed to persist mappings for extraction %d: %v", extraction.ExtractionID, err)
+	}
+
 	warningMsg, assignErr := h.assignProductsToJob(&job, extraction.ExtractionID)
 	if assignErr != nil {
 		h.DB.Delete(&job)
@@ -1043,4 +1048,38 @@ func formatDateInput(t *time.Time) string {
 		return ""
 	}
 	return t.Format("2006-01-02")
+}
+func (h *PDFHandler) persistExtractionMappings(c *gin.Context, extractionID uint64) error {
+	var mappedItems []models.PDFExtractionItem
+	if err := h.DB.Where("extraction_id = ? AND mapped_product_id IS NOT NULL", extractionID).
+		Find(&mappedItems).Error; err != nil {
+		return err
+	}
+
+	if len(mappedItems) == 0 {
+		return nil
+	}
+
+	userID := int64(0)
+	if uid, exists := c.Get("userID"); exists {
+		if id, ok := uid.(int64); ok {
+			userID = id
+		}
+	}
+
+	for _, item := range mappedItems {
+		if !item.MappedProductID.Valid {
+			continue
+		}
+		text := strings.TrimSpace(item.RawProductText)
+		if text == "" {
+			continue
+		}
+
+		if err := h.Mapper.SaveMapping(text, int(item.MappedProductID.Int64), userID); err != nil {
+			log.Printf("warning: failed to save mapping for extraction item %d: %v", item.ItemID, err)
+		}
+	}
+
+	return nil
 }
