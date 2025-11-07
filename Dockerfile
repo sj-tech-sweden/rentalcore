@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git
@@ -16,13 +16,8 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the WASM decoder
-RUN cd web/scanner/wasm && \
-    chmod +x build.sh && \
-    GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o decoder.wasm ../decoder && \
-    cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./wasm_exec.js 2>/dev/null || \
-    cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./wasm_exec.js && \
-    echo "WASM decoder built successfully"
+# Note: WASM decoder files are pre-built and included in the repo
+# web/static/scanner/wasm/decoder.wasm and wasm_exec.js
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server cmd/server/main.go
