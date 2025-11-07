@@ -442,7 +442,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.79** (Latest) - Right-Aligned Input Controls
+### **v2.80** (Latest) - Smart Device Removal with Product Tree Sync
+- ✅ **Auto-Decrement Quantity**: Removing assigned devices decreases product tree quantity automatically
+- ✅ **Prevents Re-Assignment**: No more accidental device re-adds when removing from list
+- ✅ **Product Tree Sync**: Input fields update in real-time when devices removed
+- ✅ **Helper Function**: Added product finder to traverse tree structure efficiently
+- ✅ **Consistent Design**: Both Edit and New Job modals share identical product tree styling
+
+### **v2.79** - Right-Aligned Input Controls
 - ✅ **Improved Layout**: Input and availability now right-aligned next to product name
 - ✅ **Better Visual Flow**: Product name on left, controls grouped on right
 - ✅ **Cleaner Spacing**: Natural gap between product name and input controls
