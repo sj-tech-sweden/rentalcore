@@ -144,12 +144,25 @@ async function runAutoMapping(autoTrigger = false) {
     }
 }
 
-async function selectMapping(eventOrElement, fallbackItemId, fallbackProductId) {
-    let element = eventOrElement;
-    if (eventOrElement && typeof eventOrElement.preventDefault === 'function') {
-        eventOrElement.preventDefault();
-        eventOrElement.stopPropagation?.();
-        element = eventOrElement.currentTarget || eventOrElement.target;
+async function selectMapping(arg1, arg2, arg3) {
+    let element = null;
+    let fallbackItemId = null;
+    let fallbackProductId = null;
+
+    if (arg1 && typeof arg1.preventDefault === 'function') {
+        arg1.preventDefault();
+        arg1.stopPropagation?.();
+        element = arg1.currentTarget || arg1.target;
+        fallbackItemId = arg2 ?? null;
+        fallbackProductId = arg3 ?? null;
+    } else {
+        fallbackItemId = arg1 ?? null;
+        fallbackProductId = arg2 ?? null;
+        element = arg3 ?? null;
+    }
+
+    if (!element && fallbackItemId != null) {
+        element = document.querySelector(`.mapping-item[data-item-id="${fallbackItemId}"] .suggestion-item[data-product-id="${fallbackProductId}"]`);
     }
 
     const resolvedItemId = parseInt(
