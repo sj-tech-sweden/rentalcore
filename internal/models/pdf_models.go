@@ -31,21 +31,21 @@ func (PDFUpload) TableName() string {
 
 // PDFExtraction represents OCR extraction results
 type PDFExtraction struct {
-	ExtractionID    uint64          `gorm:"primaryKey;column:extraction_id;autoIncrement" json:"extraction_id"`
-	UploadID        uint64          `gorm:"column:upload_id;not null;uniqueIndex:unique_upload_extraction" json:"upload_id"`
-	RawText         sql.NullString  `gorm:"column:raw_text;type:longtext" json:"raw_text"`
-	ExtractedData   sql.NullString  `gorm:"column:extracted_data;type:json" json:"extracted_data"` // JSON field
-	ConfidenceScore sql.NullFloat64 `gorm:"column:confidence_score" json:"confidence_score"`
-	PageCount       int             `gorm:"column:page_count;default:1" json:"page_count"`
-	ExtractionMethod string         `gorm:"column:extraction_method;default:'unipdf'" json:"extraction_method"`
-	ExtractedAt     time.Time       `gorm:"column:extracted_at;default:CURRENT_TIMESTAMP" json:"extracted_at"`
-	CustomerName    sql.NullString  `gorm:"column:customer_name" json:"customer_name"`
-	CustomerID      sql.NullInt64   `gorm:"column:customer_id" json:"customer_id"`
-	DocumentDate    sql.NullTime    `gorm:"column:document_date;type:date" json:"document_date"`
-	DocumentNumber  sql.NullString  `gorm:"column:document_number" json:"document_number"`
-	TotalAmount     sql.NullFloat64 `gorm:"column:total_amount" json:"total_amount"`
-	DiscountAmount  sql.NullFloat64 `gorm:"column:discount_amount" json:"discount_amount"`
-	Metadata        sql.NullString  `gorm:"column:metadata;type:json" json:"metadata"` // JSON field
+	ExtractionID     uint64          `gorm:"primaryKey;column:extraction_id;autoIncrement" json:"extraction_id"`
+	UploadID         uint64          `gorm:"column:upload_id;not null;uniqueIndex:unique_upload_extraction" json:"upload_id"`
+	RawText          sql.NullString  `gorm:"column:raw_text;type:longtext" json:"raw_text"`
+	ExtractedData    sql.NullString  `gorm:"column:extracted_data;type:json" json:"extracted_data"` // JSON field
+	ConfidenceScore  sql.NullFloat64 `gorm:"column:confidence_score" json:"confidence_score"`
+	PageCount        int             `gorm:"column:page_count;default:1" json:"page_count"`
+	ExtractionMethod string          `gorm:"column:extraction_method;default:'unipdf'" json:"extraction_method"`
+	ExtractedAt      time.Time       `gorm:"column:extracted_at;default:CURRENT_TIMESTAMP" json:"extracted_at"`
+	CustomerName     sql.NullString  `gorm:"column:customer_name" json:"customer_name"`
+	CustomerID       sql.NullInt64   `gorm:"column:customer_id" json:"customer_id"`
+	DocumentDate     sql.NullTime    `gorm:"column:document_date;type:date" json:"document_date"`
+	DocumentNumber   sql.NullString  `gorm:"column:document_number" json:"document_number"`
+	TotalAmount      sql.NullFloat64 `gorm:"column:total_amount" json:"total_amount"`
+	DiscountAmount   sql.NullFloat64 `gorm:"column:discount_amount" json:"discount_amount"`
+	Metadata         sql.NullString  `gorm:"column:metadata;type:json" json:"metadata"` // JSON field
 }
 
 // TableName specifies the table name for PDFExtraction
@@ -77,18 +77,18 @@ func (PDFExtractionItem) TableName() string {
 
 // PDFProductMapping represents saved mappings between PDF text and products
 type PDFProductMapping struct {
-	MappingID      uint64          `gorm:"primaryKey;column:mapping_id;autoIncrement" json:"mapping_id"`
-	PDFProductText string          `gorm:"column:pdf_product_text;not null;uniqueIndex:unique_pdf_text_product;index:idx_pdf_mappings_text" json:"pdf_product_text"`
-	NormalizedText sql.NullString  `gorm:"column:normalized_text;index:idx_pdf_mappings_normalized" json:"normalized_text"`
-	ProductID      int             `gorm:"column:product_id;not null;uniqueIndex:unique_pdf_text_product;index:idx_pdf_mappings_product" json:"product_id"`
-	MappingType    string          `gorm:"column:mapping_type;type:enum('exact','fuzzy','manual');default:'manual';index:idx_pdf_mappings_type" json:"mapping_type"`
+	MappingID       uint64          `gorm:"primaryKey;column:mapping_id;autoIncrement" json:"mapping_id"`
+	PDFProductText  string          `gorm:"column:pdf_product_text;not null;uniqueIndex:unique_pdf_text_product;index:idx_pdf_mappings_text" json:"pdf_product_text"`
+	NormalizedText  sql.NullString  `gorm:"column:normalized_text;index:idx_pdf_mappings_normalized" json:"normalized_text"`
+	ProductID       int             `gorm:"column:product_id;not null;uniqueIndex:unique_pdf_text_product;index:idx_pdf_mappings_product" json:"product_id"`
+	MappingType     string          `gorm:"column:mapping_type;type:enum('exact','fuzzy','manual');default:'manual';index:idx_pdf_mappings_type" json:"mapping_type"`
 	ConfidenceScore sql.NullFloat64 `gorm:"column:confidence_score" json:"confidence_score"`
-	UsageCount     int             `gorm:"column:usage_count;default:0" json:"usage_count"`
-	LastUsedAt     sql.NullTime    `gorm:"column:last_used_at" json:"last_used_at"`
-	CreatedBy      sql.NullInt64   `gorm:"column:created_by" json:"created_by"`
-	CreatedAt      time.Time       `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt      time.Time       `gorm:"column:updated_at;default:CURRENT_TIMESTAMP" json:"updated_at"`
-	IsActive       bool            `gorm:"column:is_active;default:true" json:"is_active"`
+	UsageCount      int             `gorm:"column:usage_count;default:0" json:"usage_count"`
+	LastUsedAt      sql.NullTime    `gorm:"column:last_used_at" json:"last_used_at"`
+	CreatedBy       sql.NullInt64   `gorm:"column:created_by" json:"created_by"`
+	CreatedAt       time.Time       `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt       time.Time       `gorm:"column:updated_at;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	IsActive        bool            `gorm:"column:is_active;default:true" json:"is_active"`
 }
 
 // TableName specifies the table name for PDFProductMapping
@@ -98,25 +98,27 @@ func (PDFProductMapping) TableName() string {
 
 // PDFExtractionResponse is the API response structure for extracted data
 type PDFExtractionResponse struct {
-	UploadID        uint64                 `json:"upload_id"`
-	ExtractionID    uint64                 `json:"extraction_id"`
-	CustomerName    string                 `json:"customer_name,omitempty"`
-	CustomerID      *int                   `json:"customer_id,omitempty"`
-	DocumentNumber  string                 `json:"document_number,omitempty"`
-	DocumentDate    string                 `json:"document_date,omitempty"`
-	TotalAmount     float64                `json:"total_amount,omitempty"`
-	DiscountAmount  float64                `json:"discount_amount,omitempty"`
-	Items           []PDFExtractionItem    `json:"items"`
-	RawText         string                 `json:"raw_text,omitempty"`
-	ConfidenceScore float64                `json:"confidence_score,omitempty"`
+	UploadID        uint64                     `json:"upload_id"`
+	ExtractionID    uint64                     `json:"extraction_id"`
+	CustomerName    string                     `json:"customer_name,omitempty"`
+	CustomerID      *int                       `json:"customer_id,omitempty"`
+	DocumentNumber  string                     `json:"document_number,omitempty"`
+	DocumentDate    string                     `json:"document_date,omitempty"`
+	StartDate       string                     `json:"start_date,omitempty"`
+	EndDate         string                     `json:"end_date,omitempty"`
+	TotalAmount     float64                    `json:"total_amount,omitempty"`
+	DiscountAmount  float64                    `json:"discount_amount,omitempty"`
+	Items           []PDFExtractionItem        `json:"items"`
+	RawText         string                     `json:"raw_text,omitempty"`
+	ConfidenceScore float64                    `json:"confidence_score,omitempty"`
 	Suggestions     []ProductMappingSuggestion `json:"suggestions,omitempty"`
 }
 
 // ProductMappingSuggestion represents a suggested product mapping
 type ProductMappingSuggestion struct {
-	ItemID          uint64  `json:"item_id"`
-	RawProductText  string  `json:"raw_product_text"`
+	ItemID           uint64   `json:"item_id"`
+	RawProductText   string   `json:"raw_product_text"`
 	SuggestedProduct *Product `json:"suggested_product,omitempty"`
-	Confidence      float64 `json:"confidence"`
-	MappingType     string  `json:"mapping_type"` // 'exact', 'fuzzy', 'previous'
+	Confidence       float64  `json:"confidence"`
+	MappingType      string   `json:"mapping_type"` // 'exact', 'fuzzy', 'previous'
 }

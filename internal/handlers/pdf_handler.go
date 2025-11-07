@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -93,7 +94,7 @@ func (h *PDFHandler) UploadPDF(c *gin.Context) {
 func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 	// Update status to processing
 	h.DB.Model(&models.PDFUpload{}).Where("upload_id = ?", uploadID).Updates(map[string]interface{}{
-		"processing_status":    "processing",
+		"processing_status":     "processing",
 		"processing_started_at": time.Now(),
 	})
 
@@ -145,6 +146,19 @@ func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 		extraction.DocumentDate = sql.NullTime{Time: parsedData.DocumentDate, Valid: true}
 	}
 
+	metadata := map[string]interface{}{}
+	if !parsedData.StartDate.IsZero() {
+		metadata["start_date"] = parsedData.StartDate.Format(time.RFC3339)
+	}
+	if !parsedData.EndDate.IsZero() {
+		metadata["end_date"] = parsedData.EndDate.Format(time.RFC3339)
+	}
+	if len(metadata) > 0 {
+		if metaBytes, err := json.Marshal(metadata); err == nil {
+			extraction.Metadata = sql.NullString{String: string(metaBytes), Valid: true}
+		}
+	}
+
 	// Save extraction
 	if err := h.DB.Create(&extraction).Error; err != nil {
 		h.markProcessingFailed(uploadID, fmt.Sprintf("Failed to save extraction: %v", err))
@@ -176,7 +190,7 @@ func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 
 	// Mark as completed
 	h.DB.Model(&models.PDFUpload{}).Where("upload_id = ?", uploadID).Updates(map[string]interface{}{
-		"processing_status":      "completed",
+		"processing_status":       "completed",
 		"processing_completed_at": time.Now(),
 	})
 }
@@ -184,9 +198,9 @@ func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 // markProcessingFailed marks upload as failed
 func (h *PDFHandler) markProcessingFailed(uploadID uint64, errorMsg string) {
 	h.DB.Model(&models.PDFUpload{}).Where("upload_id = ?", uploadID).Updates(map[string]interface{}{
-		"processing_status":      "failed",
+		"processing_status":       "failed",
 		"processing_completed_at": time.Now(),
-		"error_message":          errorMsg,
+		"error_message":           errorMsg,
 	})
 }
 
@@ -229,6 +243,17 @@ func (h *PDFHandler) GetExtractionResult(c *gin.Context) {
 	}
 	if extraction.DocumentDate.Valid {
 		response.DocumentDate = extraction.DocumentDate.Time.Format("2006-01-02")
+	}
+	if extraction.Metadata.Valid {
+		var meta map[string]string
+		if err := json.Unmarshal([]byte(extraction.Metadata.String), &meta); err == nil {
+			if start, ok := meta["start_date"]; ok {
+				response.StartDate = start
+			}
+			if end, ok := meta["end_date"]; ok {
+				response.EndDate = end
+			}
+		}
 	}
 	if extraction.TotalAmount.Valid {
 		response.TotalAmount = extraction.TotalAmount.Float64
@@ -353,12 +378,38 @@ func (h *PDFHandler) ShowReviewScreen(c *gin.Context) {
 	var items []models.PDFExtractionItem
 	h.DB.Where("extraction_id = ?", extraction.ExtractionID).Order("line_number").Find(&items)
 
+	mappedProducts := make(map[uint64]models.Product)
+	productIDs := make([]int64, 0)
+	for _, item := range items {
+		if item.MappedProductID.Valid {
+			productIDs = append(productIDs, item.MappedProductID.Int64)
+		}
+	}
+
+	if len(productIDs) > 0 {
+		var products []models.Product
+		if err := h.DB.Where("productID IN ?", productIDs).Find(&products).Error; err == nil {
+			productLookup := make(map[int64]models.Product, len(products))
+			for _, product := range products {
+				productLookup[int64(product.ProductID)] = product
+			}
+			for _, item := range items {
+				if item.MappedProductID.Valid {
+					if product, ok := productLookup[item.MappedProductID.Int64]; ok {
+						mappedProducts[item.ItemID] = product
+					}
+				}
+			}
+		}
+	}
+
 	// Prepare response data
 	data := gin.H{
-		"upload":       upload,
-		"extraction":   extraction,
-		"items":        items,
-		"pageTitle":    "PDF Extraction Review",
+		"upload":         upload,
+		"extraction":     extraction,
+		"items":          items,
+		"mappedProducts": mappedProducts,
+		"pageTitle":      "PDF Extraction Review",
 	}
 
 	// Add optional fields
@@ -370,6 +421,21 @@ func (h *PDFHandler) ShowReviewScreen(c *gin.Context) {
 	}
 	if extraction.DocumentDate.Valid {
 		data["documentDate"] = extraction.DocumentDate.Time.Format("2006-01-02")
+	}
+	if extraction.Metadata.Valid {
+		var meta map[string]string
+		if err := json.Unmarshal([]byte(extraction.Metadata.String), &meta); err == nil {
+			if startStr, ok := meta["start_date"]; ok {
+				if t, err := time.Parse(time.RFC3339, startStr); err == nil {
+					data["startDate"] = t
+				}
+			}
+			if endStr, ok := meta["end_date"]; ok {
+				if t, err := time.Parse(time.RFC3339, endStr); err == nil {
+					data["endDate"] = t
+				}
+			}
+		}
 	}
 	if extraction.TotalAmount.Valid {
 		data["totalAmount"] = extraction.TotalAmount.Float64
@@ -425,10 +491,10 @@ func (h *PDFHandler) ShowMappingScreen(c *gin.Context) {
 	}
 
 	data := gin.H{
-		"extraction":  extraction,
-		"upload":      upload,
-		"items":       itemsWithSuggestions,
-		"pageTitle":   "PDF Product Mapping",
+		"extraction": extraction,
+		"upload":     upload,
+		"items":      itemsWithSuggestions,
+		"pageTitle":  "PDF Product Mapping",
 	}
 
 	c.HTML(http.StatusOK, "pdf_mapping.html", data)
@@ -473,10 +539,10 @@ func (h *PDFHandler) RunAutoMapping(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":            true,
-		"auto_mapped":        autoMappedCount,
-		"low_confidence":     lowConfidenceCount,
-		"message":            fmt.Sprintf("Auto-mapped %d items with high confidence, %d items need manual review", autoMappedCount, lowConfidenceCount),
+		"success":        true,
+		"auto_mapped":    autoMappedCount,
+		"low_confidence": lowConfidenceCount,
+		"message":        fmt.Sprintf("Auto-mapped %d items with high confidence, %d items need manual review", autoMappedCount, lowConfidenceCount),
 	})
 }
 

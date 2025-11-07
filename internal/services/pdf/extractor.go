@@ -201,24 +201,68 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 	totalRegex := regexp.MustCompile(`(?i)(?:gesamt|total|summe|sum)[\s:]*€?\s*([0-9,]+\.?\d*)`)
 	discountRegex := regexp.MustCompile(`(?i)(?:rabatt|discount|nachlass)[\s:]*€?\s*([0-9,]+\.?\d*)`)
 
-	// Parse line items with multiple patterns for flexibility
-	// Pattern 1: Full format with prices: "1  2x  LED PAR 64  €50.00  €100.00"
+	// Parse line items with multiple patterns for flexibility (legacy one-line rows)
 	itemRegexFull := regexp.MustCompile(`^(\d+)\s+(\d+)x?\s+(.+?)\s+€?\s*([0-9.,]+)\s+€?\s*([0-9.,]+)\s*$`)
-	// Pattern 2: Without position: "2x  LED PAR 64  €50.00  €100.00"
 	itemRegexNoPosPrice := regexp.MustCompile(`^(\d+)x?\s+(.+?)\s+€?\s*([0-9.,]+)\s+€?\s*([0-9.,]+)\s*$`)
-	// Pattern 3: Only quantity and description: "2x LED PAR 64"
 	itemRegexSimple := regexp.MustCompile(`^(\d+)x?\s+(.+?)\s*$`)
-	// Pattern 4: Position and description (common in tables): "0045  LD Systems Stinger Sub 18A G3"
 	itemRegexPosDesc := regexp.MustCompile(`^(\d+)\s{2,}(.+?)\s*$`)
 
-	for i, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" || len(line) < 3 {
+	posRegex := regexp.MustCompile(`^0*\d{1,4}$`)
+	quantityRegex := regexp.MustCompile(`^\d+([xX])?$`)
+	priceRegex := regexp.MustCompile(`^[0-9]{1,3}(?:\.[0-9]{3})*(?:[,\.][0-9]{2})?$`)
+	unitKeywords := []string{"stück", "stk", "stk.", "set", "paket", "tag", "tage", "std", "st.", "h", "hour", "pcs", "pauschale"}
+
+	// Categories to skip (these are section headers)
+	categoryKeywords := []string{"tontechnik", "lichttechnik", "sonstiges", "medientechnik", "videotechnik"}
+
+	// Summary/total lines to skip
+	summaryKeywords := []string{
+		"zwischensumme", "übertrag", "gesamtbetrag", "gesamtsumme",
+		"netto", "brutto", "rabatt", "abzgl", "mwst", "ust",
+		"zahlungsziel", "tage ohne abzug", "umsatzsteuer",
+		"wir freuen", "auftragserteilung",
+	}
+
+	pendingDocumentNumber := false
+	pendingStartDate := false
+	pendingEndDate := false
+
+	for i := 0; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+		if line == "" {
 			continue
 		}
 
-		// Skip lines with irrelevant keywords
 		lineLower := strings.ToLower(line)
+
+		if pendingDocumentNumber && data.DocumentNumber == "" {
+			if value := e.extractDocumentNumberValue(line); value != "" {
+				data.DocumentNumber = value
+				pendingDocumentNumber = false
+				continue
+			}
+		}
+
+		if pendingStartDate {
+			if parsed, ok := e.parseDateValue(line, dateRegex); ok {
+				data.StartDate = parsed
+				if data.DocumentDate.IsZero() {
+					data.DocumentDate = parsed
+				}
+				pendingStartDate = false
+				continue
+			}
+		}
+
+		if pendingEndDate {
+			if parsed, ok := e.parseDateValue(line, dateRegex); ok {
+				data.EndDate = parsed
+				pendingEndDate = false
+				continue
+			}
+		}
+
+		// Skip lines with irrelevant keywords
 		isIrrelevant := false
 		for _, keyword := range irrelevantKeywords {
 			if strings.Contains(lineLower, keyword) {
@@ -271,9 +315,38 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 			}
 		}
 
-		// Extract invoice/offer number
+		// Detect date labels for job period
+		if strings.Contains(lineLower, "gültig bis") {
+			if parsed, ok := e.parseDateValue(line, dateRegex); ok {
+				data.EndDate = parsed
+			} else {
+				pendingEndDate = true
+			}
+			continue
+		}
+
+		if strings.Contains(lineLower, "datum") && strings.Contains(lineLower, ":") {
+			if parsed, ok := e.parseDateValue(line, dateRegex); ok {
+				data.StartDate = parsed
+				if data.DocumentDate.IsZero() {
+					data.DocumentDate = parsed
+				}
+			} else {
+				pendingStartDate = true
+			}
+			continue
+		}
+
+		// Extract invoice/offer number (same line)
 		if matches := invoiceNumberRegex.FindStringSubmatch(line); len(matches) > 1 {
 			data.DocumentNumber = strings.TrimSpace(matches[1])
+			pendingDocumentNumber = false
+			continue
+		}
+
+		if e.isDocumentNumberLabel(lineLower) {
+			pendingDocumentNumber = true
+			continue
 		}
 
 		// Extract total amount
@@ -292,12 +365,26 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 			}
 		}
 
+		if containsKeyword(lineLower, summaryKeywords) {
+			continue
+		}
+		if containsKeyword(lineLower, categoryKeywords) {
+			continue
+		}
+
 		// Skip irrelevant lines for item extraction
 		if isIrrelevant {
 			continue
 		}
 
-		// Try to extract line items with multiple patterns
+		// Try parsing stacked (multi-line) line items first
+		if item, consumed := e.parseStackedLineItem(lines, i, posRegex, quantityRegex, priceRegex, summaryKeywords, unitKeywords); item != nil {
+			data.Items = append(data.Items, *item)
+			i = consumed
+			continue
+		}
+
+		// Try to extract line items with legacy single-line patterns
 		var item *ParsedLineItem
 
 		// Pattern 1: Full format with position, quantity, description, prices
@@ -368,6 +455,10 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 		}
 	}
 
+	if data.StartDate.IsZero() && !data.DocumentDate.IsZero() {
+		data.StartDate = data.DocumentDate
+	}
+
 	// Calculate confidence score based on extracted data
 	confidence := e.calculateConfidence(data)
 	data.ConfidenceScore = confidence
@@ -397,6 +488,248 @@ func (e *PDFExtractor) calculateConfidence(data *ParsedInvoiceData) float64 {
 	}
 
 	return (score / maxScore) * 100.0
+}
+
+func (e *PDFExtractor) parseStackedLineItem(
+	lines []string,
+	startIdx int,
+	posRegex, quantityRegex, priceRegex *regexp.Regexp,
+	summaryKeywords []string,
+	unitKeywords []string,
+) (*ParsedLineItem, int) {
+	line := strings.TrimSpace(lines[startIdx])
+	if !posRegex.MatchString(line) {
+		return nil, startIdx
+	}
+
+	lineNumber, err := strconv.Atoi(strings.TrimLeft(line, "0"))
+	if err != nil {
+		return nil, startIdx
+	}
+
+	descParts := []string{}
+	j := startIdx + 1
+
+	for j < len(lines) {
+		next := strings.TrimSpace(lines[j])
+		if next == "" {
+			j++
+			continue
+		}
+
+		nextLower := strings.ToLower(next)
+		if containsKeyword(nextLower, summaryKeywords) {
+			return nil, startIdx
+		}
+
+		if posRegex.MatchString(next) && len(descParts) == 0 {
+			return nil, startIdx
+		}
+
+		if quantityRegex.MatchString(next) {
+			break
+		}
+
+		descParts = append(descParts, next)
+		j++
+	}
+
+	if len(descParts) == 0 || j >= len(lines) {
+		return nil, startIdx
+	}
+
+	quantity := parseQuantityValue(strings.TrimSpace(lines[j]))
+	if quantity == 0 {
+		return nil, startIdx
+	}
+	j++
+
+	// Optional unit line
+	for j < len(lines) {
+		unitCandidate := strings.TrimSpace(lines[j])
+		if unitCandidate == "" {
+			j++
+			continue
+		}
+
+		if isUnitWord(unitCandidate, unitKeywords) {
+			j++
+		}
+		break
+	}
+
+	var unitPrice float64
+	var lineTotal float64
+	priceValuesFound := 0
+
+	for j < len(lines) {
+		candidate := strings.TrimSpace(lines[j])
+		if candidate == "" {
+			j++
+			continue
+		}
+
+		candidateLower := strings.ToLower(candidate)
+		if containsKeyword(candidateLower, summaryKeywords) || posRegex.MatchString(candidate) {
+			break
+		}
+
+		if priceRegex.MatchString(candidate) || strings.Contains(candidateLower, "€") {
+			value, err := parseEuroAmount(candidate)
+			if err == nil {
+				if priceValuesFound == 0 {
+					unitPrice = value
+				} else if priceValuesFound == 1 {
+					lineTotal = value
+				} else {
+					break
+				}
+				priceValuesFound++
+				j++
+				continue
+			}
+		}
+
+		break
+	}
+
+	if lineTotal == 0 && unitPrice > 0 && quantity > 0 {
+		lineTotal = unitPrice * float64(quantity)
+	}
+	if unitPrice == 0 && lineTotal > 0 && quantity > 0 {
+		unitPrice = lineTotal / float64(quantity)
+	}
+
+	if unitPrice == 0 && lineTotal == 0 {
+		return nil, startIdx
+	}
+
+	description := strings.Join(descParts, " - ")
+	if !e.isValidProductDescription(description) {
+		return nil, startIdx
+	}
+
+	item := &ParsedLineItem{
+		LineNumber:   lineNumber,
+		Quantity:     quantity,
+		ProductText:  description,
+		UnitPrice:    unitPrice,
+		LineTotal:    lineTotal,
+		OriginalLine: startIdx + 1,
+	}
+
+	return item, j - 1
+}
+
+func parseQuantityValue(line string) int {
+	line = strings.TrimSpace(line)
+	line = strings.TrimSuffix(line, "x")
+	line = strings.TrimSuffix(line, "X")
+	if line == "" {
+		return 0
+	}
+	value, err := strconv.Atoi(line)
+	if err != nil || value < 0 {
+		return 0
+	}
+	if value == 0 {
+		return 1
+	}
+	return value
+}
+
+func isUnitWord(word string, unitKeywords []string) bool {
+	word = strings.ToLower(strings.TrimSpace(word))
+	for _, keyword := range unitKeywords {
+		if word == keyword {
+			return true
+		}
+	}
+	return false
+}
+
+func parseEuroAmount(value string) (float64, error) {
+	clean := strings.TrimSpace(strings.ToLower(value))
+	clean = strings.ReplaceAll(clean, "€", "")
+	clean = strings.ReplaceAll(clean, "eur", "")
+	clean = strings.ReplaceAll(clean, " ", "")
+	clean = strings.ReplaceAll(clean, "\u00a0", "")
+
+	if strings.Contains(clean, ",") {
+		clean = strings.ReplaceAll(clean, ".", "")
+		clean = strings.ReplaceAll(clean, ",", ".")
+	} else {
+		clean = strings.ReplaceAll(clean, ",", "")
+	}
+
+	return strconv.ParseFloat(clean, 64)
+}
+
+func containsKeyword(value string, keywords []string) bool {
+	for _, keyword := range keywords {
+		if strings.Contains(value, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+func (e *PDFExtractor) isDocumentNumberLabel(line string) bool {
+	labelKeywords := []string{"angebots", "rechnung", "auftrag", "angebot"}
+	if !strings.Contains(line, ":") {
+		return false
+	}
+
+	found := false
+	for _, keyword := range labelKeywords {
+		if strings.Contains(line, keyword) {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return false
+	}
+
+	parts := strings.SplitN(line, ":", 2)
+	if len(parts) < 2 {
+		return true
+	}
+
+	value := strings.TrimSpace(parts[1])
+	return value == ""
+}
+
+func (e *PDFExtractor) extractDocumentNumberValue(line string) string {
+	if strings.Contains(line, ":") {
+		return ""
+	}
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return ""
+	}
+
+	if regexp.MustCompile(`^[A-Za-z0-9\-\/]+$`).MatchString(line) {
+		return line
+	}
+
+	return ""
+}
+
+func (e *PDFExtractor) parseDateValue(line string, dateRegex *regexp.Regexp) (time.Time, bool) {
+	matches := dateRegex.FindStringSubmatch(line)
+	if len(matches) <= 3 {
+		return time.Time{}, false
+	}
+
+	day, _ := strconv.Atoi(matches[1])
+	month, _ := strconv.Atoi(matches[2])
+	year, _ := strconv.Atoi(matches[3])
+	if year < 100 {
+		year += 2000
+	}
+
+	return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), true
 }
 
 // isValidProductDescription checks if a string is a valid product name
@@ -431,9 +764,9 @@ func (e *PDFExtractor) isValidProductDescription(description string) bool {
 
 	// Should not be typical address patterns
 	addressPatterns := []string{
-		`^\d{5}\s+\w+$`,                    // "35708 Haiger"
-		`(?i)^(straße|str\.|strasse)\s+`,   // "Straße 123"
-		`(?i)postfach`,                      // Postbox
+		`^\d{5}\s+\w+$`,                  // "35708 Haiger"
+		`(?i)^(straße|str\.|strasse)\s+`, // "Straße 123"
+		`(?i)postfach`,                   // Postbox
 	}
 	for _, pattern := range addressPatterns {
 		if regexp.MustCompile(pattern).MatchString(description) {

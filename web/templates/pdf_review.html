@@ -154,6 +154,18 @@
                     <div class="info-value">{{.documentDate}}</div>
                 </div>
                 {{end}}
+                {{if .startDate}}
+                <div class="info-item">
+                    <div class="info-label"><i class="bi bi-calendar-event"></i> Start Date</div>
+                    <div class="info-value">{{.startDate.Format "02.01.2006"}}</div>
+                </div>
+                {{end}}
+                {{if .endDate}}
+                <div class="info-item">
+                    <div class="info-label"><i class="bi bi-calendar-check"></i> End Date</div>
+                    <div class="info-value">{{.endDate.Format "02.01.2006"}}</div>
+                </div>
+                {{end}}
 
                 {{if .totalAmount}}
                 <div class="info-item">
@@ -212,6 +224,7 @@
                     <tr>
                         <th style="width: 60px;">Line</th>
                         <th>Product Description</th>
+                        <th style="width: 220px;">Mapped Product</th>
                         <th style="width: 100px; text-align: center;">Quantity</th>
                         <th style="width: 120px; text-align: right;">Unit Price</th>
                         <th style="width: 120px; text-align: right;">Line Total</th>
@@ -226,6 +239,14 @@
                             {{if .LineNumber.Valid}}#{{.LineNumber.Int64}}{{else}}-{{end}}
                         </td>
                         <td style="font-weight: 500;">{{.RawProductText}}</td>
+                        <td>
+                            {{with $product := index $.mappedProducts .ItemID}}
+                                <div style="font-weight: 600;">{{$product.Name}}</div>
+                                <div style="font-size: 12px; color: var(--rc-text-secondary);">ID {{$product.ProductID}}</div>
+                            {{else}}
+                                <span style="color: var(--rc-text-secondary);">—</span>
+                            {{end}}
+                        </td>
                         <td style="text-align: center; font-family: 'JetBrains Mono', monospace;">
                             {{if .Quantity.Valid}}{{.Quantity.Int64}}x{{else}}-{{end}}
                         </td>
