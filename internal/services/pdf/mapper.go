@@ -69,51 +69,34 @@ func (m *ProductMapper) FindBestMatch(productText string) (*models.PDFProductMap
 func (m *ProductMapper) SaveMapping(pdfText string, productID int, userID int64) error {
 	normalized := normalizeProductText(pdfText)
 
-	tx := m.DB.Begin()
+	confidence := 100.0
+	lastUsed := time.Now()
+	normalizedVal := nullStringPtr(sql.NullString{String: normalized, Valid: normalized != ""})
+	createdBy := nullIntPtr(sql.NullInt64{Int64: userID, Valid: userID > 0})
 
-	var existing models.PDFProductMapping
-	err := tx.Where("(pdf_product_text = ? OR normalized_text = ?) AND is_active = ?", pdfText, normalized, true).
-		First(&existing).Error
+	query := `
+		INSERT INTO pdf_product_mappings
+			(pdf_product_text, normalized_text, product_id, mapping_type, confidence_score, usage_count, last_used_at, created_by, is_active)
+		VALUES
+			(?, ?, ?, 'manual', ?, 1, ?, ?, 1)
+		ON DUPLICATE KEY UPDATE
+			normalized_text = VALUES(normalized_text),
+			product_id = VALUES(product_id),
+			mapping_type = 'manual',
+			confidence_score = VALUES(confidence_score),
+			usage_count = usage_count + 1,
+			last_used_at = VALUES(last_used_at),
+			is_active = 1
+	`
 
-	if err == nil {
-		updates := map[string]interface{}{
-			"product_id":       productID,
-			"mapping_type":     "manual",
-			"confidence_score": sql.NullFloat64{Float64: 100.0, Valid: true},
-			"usage_count":      gorm.Expr("usage_count + 1"),
-			"last_used_at":     time.Now(),
-			"updated_at":       time.Now(),
-		}
-		if err := tx.Model(&existing).Updates(updates).Error; err != nil {
-			tx.Rollback()
-			return err
-		}
-		return tx.Commit().Error
-	}
-
-	if err != gorm.ErrRecordNotFound {
-		tx.Rollback()
-		return err
-	}
-
-	mapping := models.PDFProductMapping{
-		PDFProductText:  pdfText,
-		NormalizedText:  sql.NullString{String: normalized, Valid: normalized != ""},
-		ProductID:       productID,
-		MappingType:     "manual",
-		ConfidenceScore: sql.NullFloat64{Float64: 100.0, Valid: true},
-		UsageCount:      1,
-		LastUsedAt:      sql.NullTime{Time: time.Now(), Valid: true},
-		CreatedBy:       sql.NullInt64{Int64: userID, Valid: true},
-		IsActive:        true,
-	}
-
-	if err := tx.Create(&mapping).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+	return m.DB.Exec(query,
+		pdfText,
+		normalizedVal,
+		productID,
+		confidence,
+		lastUsed,
+		createdBy,
+	).Error
 }
 
 // GetAllMappings retrieves all active mappings
@@ -144,6 +127,20 @@ func (m *ProductMapper) markMappingUsage(mapping *models.PDFProductMapping) (*mo
 	}
 
 	return mapping, &product, 100.0, nil
+}
+
+func nullStringPtr(value sql.NullString) interface{} {
+	if value.Valid {
+		return value.String
+	}
+	return nil
+}
+
+func nullIntPtr(value sql.NullInt64) interface{} {
+	if value.Valid {
+		return value.Int64
+	}
+	return nil
 }
 
 // normalizeProductText normalizes text for comparison
