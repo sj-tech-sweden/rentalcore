@@ -442,7 +442,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.81** (Latest) - Live Revenue Recalculation
+### **v2.82** (Latest) - Fixed Revenue Calculation Logic
+- ✅ **Correct Price Structure**: Fixed revenue calculation to use proper nested device structure
+- ✅ **Custom Price Support**: Properly checks custom_price before falling back to product price
+- ✅ **Multi-Property Handling**: Handles both itemcostperday and itemCostPerDay properties
+- ✅ **Debug Logging**: Added console logging to trace price calculations
+- ✅ **Accurate Totals**: Revenue now correctly sums all device prices (e.g., 30.00 instead of 0.00)
+
+### **v2.81** - Live Revenue Recalculation
 - ✅ **Real-Time Revenue Updates**: Revenue automatically recalculates when devices are removed
 - ✅ **Price Change Sync**: Revenue updates instantly when device prices are edited
 - ✅ **Auto-Summation**: Automatically sums all device prices for accurate totals
