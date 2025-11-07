@@ -908,7 +908,7 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 		return
 	}
 
-	assignErr := h.assignProductsToJob(&job, extraction.ExtractionID)
+	warningMsg, assignErr := h.assignProductsToJob(&job, extraction.ExtractionID)
 	if assignErr != nil {
 		h.DB.Delete(&job)
 		c.JSON(http.StatusBadRequest, gin.H{"error": assignErr.Error()})
@@ -918,11 +918,16 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 	h.DB.Model(&models.PDFUpload{}).Where("upload_id = ?", upload.UploadID).
 		Update("job_id", job.JobID)
 
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"success":  true,
 		"job_id":   job.JobID,
 		"jobs_url": fmt.Sprintf("/jobs?editJob=%d", job.JobID),
-	})
+	}
+	if warningMsg != "" {
+		response["warning"] = warningMsg
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *PDFHandler) ensureCustomerForExtraction(extraction *models.PDFExtraction) (uint, error) {
@@ -980,14 +985,14 @@ func truncateString(value string, max int) string {
 	return value[:max-3] + "..."
 }
 
-func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) error {
+func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (string, error) {
 	if h.JobHandler == nil {
-		return nil
+		return "", nil
 	}
 
 	var items []models.PDFExtractionItem
 	if err := h.DB.Where("extraction_id = ?", extractionID).Find(&items).Error; err != nil {
-		return err
+		return "", err
 	}
 
 	productCounts := make(map[uint]int)
@@ -1004,7 +1009,7 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) e
 	}
 
 	if len(productCounts) == 0 {
-		return nil
+		return "", nil
 	}
 
 	selections := make([]JobProductSelection, 0, len(productCounts))
@@ -1019,10 +1024,17 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) e
 	}
 
 	if len(selections) == 0 {
-		return nil
+		return "", nil
 	}
 
-	return h.JobHandler.ApplyProductSelections(job, selections)
+	if err := h.JobHandler.ApplyProductSelections(job, selections); err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "not enough available devices") {
+			return err.Error(), nil
+		}
+		return "", err
+	}
+
+	return "", nil
 }
 
 func formatDateInput(t *time.Time) string {

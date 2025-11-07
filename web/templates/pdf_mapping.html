@@ -145,6 +145,12 @@ async function runAutoMapping(autoTrigger = false) {
 }
 
 async function selectMapping(itemId, productId, element) {
+    if (typeof Event !== 'undefined' && element instanceof Event) {
+        element.preventDefault();
+        element.stopPropagation?.();
+        element = element.currentTarget || element.target;
+    }
+
     const resolvedItemId = parseInt(
         itemId ??
         element?.dataset?.itemId ??
@@ -179,9 +185,7 @@ async function selectMapping(itemId, productId, element) {
     if (parent) {
         parent.querySelectorAll('.suggestion-item').forEach(el => el.classList.remove('selected'));
     }
-    if (element) {
-        element.classList.add('selected');
-    }
+    element?.classList.add('selected');
 
     try {
         const response = await fetch(`/api/v1/pdf/manual-map/${resolvedItemId}`, {
@@ -421,12 +425,19 @@ async function finalizeMappings(closeAfter = true) {
         }
 
         if (closeAfter) {
+            if (result.warning) {
+                alert(`Job created, but manual review is required:\n${result.warning}`);
+            }
             const redirectTarget = result.jobs_url || result.job_url || (result.job_id ? `/jobs?editJob=${result.job_id}` : '/jobs');
             window.location.href = redirectTarget;
             return;
         }
 
-        showStatusMessage('success', `Job #${result.job_id} updated. You can continue reviewing mappings.`);
+        if (result.warning) {
+            showStatusMessage('info', result.warning);
+        } else {
+            showStatusMessage('success', `Job #${result.job_id} updated. You can continue reviewing mappings.`);
+        }
         updateStats();
     } catch (error) {
         console.error('Finalize error:', error);
