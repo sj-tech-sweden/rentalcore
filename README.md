@@ -442,7 +442,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v2.80** (Latest) - Smart Device Removal with Product Tree Sync
+### **v2.81** (Latest) - Live Revenue Recalculation
+- ✅ **Real-Time Revenue Updates**: Revenue automatically recalculates when devices are removed
+- ✅ **Price Change Sync**: Revenue updates instantly when device prices are edited
+- ✅ **Auto-Summation**: Automatically sums all device prices for accurate totals
+- ✅ **Form Integration**: Updates revenue input field in real-time during editing
+- ✅ **Verified Styling**: Confirmed Edit and New Job modals have identical product tree designs
+
+### **v2.80** - Smart Device Removal with Product Tree Sync
 - ✅ **Auto-Decrement Quantity**: Removing assigned devices decreases product tree quantity automatically
 - ✅ **Prevents Re-Assignment**: No more accidental device re-adds when removing from list
 - ✅ **Product Tree Sync**: Input fields update in real-time when devices removed
