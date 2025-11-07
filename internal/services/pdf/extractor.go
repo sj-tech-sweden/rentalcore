@@ -182,10 +182,22 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 
 	lines := strings.Split(text, "\n")
 
+	// Blacklist for irrelevant content (addresses, cities, etc.)
+	irrelevantKeywords := []string{
+		"straße", "strasse", "str.", "plz", "postleitzahl",
+		"telefon", "tel.", "fax", "email", "e-mail", "web", "www",
+		"ust-id", "steuernummer", "amtsgericht", "geschäftsführer",
+		"bankverbindung", "iban", "bic", "swift",
+		// Common German cities that might appear
+		"haiger", "dillenburg", "herborn", "wetzlar", "siegen",
+		"gießen", "marburg", "köln", "frankfurt", "münchen",
+	}
+
 	// Regular expressions for common invoice patterns
 	customerRegex := regexp.MustCompile(`(?i)(?:kunde|customer|rechnung an|bill to|empfänger)[\s:]+(.+)`)
 	dateRegex := regexp.MustCompile(`(\d{1,2})[\./-](\d{1,2})[\./-](\d{2,4})`)
-	invoiceNumberRegex := regexp.MustCompile(`(?i)(?:rechnung|invoice|angebot|offer)[\s#:]+([A-Z0-9\-]+)`)
+	dateRangeRegex := regexp.MustCompile(`(?i)(?:zeitraum|period|vom|from)[\s:]*(\d{1,2})[\./-](\d{1,2})[\./-](\d{2,4})[\s]*(?:bis|to|-|–)[\s]*(\d{1,2})[\./-](\d{1,2})[\./-](\d{2,4})`)
+	invoiceNumberRegex := regexp.MustCompile(`(?i)(?:rechnung|invoice|angebot|offer|auftrag|order)[\s#:Nr.]+([A-Z0-9\-]+)`)
 	totalRegex := regexp.MustCompile(`(?i)(?:gesamt|total|summe|sum)[\s:]*€?\s*([0-9,]+\.?\d*)`)
 	discountRegex := regexp.MustCompile(`(?i)(?:rabatt|discount|nachlass)[\s:]*€?\s*([0-9,]+\.?\d*)`)
 
@@ -205,20 +217,58 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 			continue
 		}
 
+		// Skip lines with irrelevant keywords
+		lineLower := strings.ToLower(line)
+		isIrrelevant := false
+		for _, keyword := range irrelevantKeywords {
+			if strings.Contains(lineLower, keyword) {
+				isIrrelevant = true
+				break
+			}
+		}
+
+		// Skip postal codes (5 digits), phone numbers, IBANs
+		if regexp.MustCompile(`^\d{5}$`).MatchString(line) || // PLZ
+			regexp.MustCompile(`^[\d\s\-\+\(\)]{8,}$`).MatchString(line) || // Phone
+			regexp.MustCompile(`^[A-Z]{2}\d{2}`).MatchString(line) { // IBAN
+			isIrrelevant = true
+		}
+
 		// Extract customer name
 		if matches := customerRegex.FindStringSubmatch(line); len(matches) > 1 {
 			data.CustomerName = strings.TrimSpace(matches[1])
 		}
 
-		// Extract document date
-		if matches := dateRegex.FindStringSubmatch(line); len(matches) > 3 {
-			day, _ := strconv.Atoi(matches[1])
-			month, _ := strconv.Atoi(matches[2])
-			year, _ := strconv.Atoi(matches[3])
-			if year < 100 {
-				year += 2000 // Assume 2000s for 2-digit years
+		// Extract date range (job period: start - end date)
+		if matches := dateRangeRegex.FindStringSubmatch(line); len(matches) > 6 {
+			startDay, _ := strconv.Atoi(matches[1])
+			startMonth, _ := strconv.Atoi(matches[2])
+			startYear, _ := strconv.Atoi(matches[3])
+			if startYear < 100 {
+				startYear += 2000
 			}
-			data.DocumentDate = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+			data.StartDate = time.Date(startYear, time.Month(startMonth), startDay, 0, 0, 0, 0, time.UTC)
+
+			endDay, _ := strconv.Atoi(matches[4])
+			endMonth, _ := strconv.Atoi(matches[5])
+			endYear, _ := strconv.Atoi(matches[6])
+			if endYear < 100 {
+				endYear += 2000
+			}
+			data.EndDate = time.Date(endYear, time.Month(endMonth), endDay, 0, 0, 0, 0, time.UTC)
+		}
+
+		// Extract document date (fallback if no range found)
+		if data.DocumentDate.IsZero() {
+			if matches := dateRegex.FindStringSubmatch(line); len(matches) > 3 {
+				day, _ := strconv.Atoi(matches[1])
+				month, _ := strconv.Atoi(matches[2])
+				year, _ := strconv.Atoi(matches[3])
+				if year < 100 {
+					year += 2000 // Assume 2000s for 2-digit years
+				}
+				data.DocumentDate = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+			}
 		}
 
 		// Extract invoice/offer number
@@ -240,6 +290,11 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 			if discount, err := strconv.ParseFloat(discountStr, 64); err == nil {
 				data.DiscountAmount = discount
 			}
+		}
+
+		// Skip irrelevant lines for item extraction
+		if isIrrelevant {
+			continue
 		}
 
 		// Try to extract line items with multiple patterns
@@ -284,8 +339,8 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 			lineNumber, _ := strconv.Atoi(matches[1])
 			description := strings.TrimSpace(matches[2])
 
-			// Only add if description is meaningful (not just numbers)
-			if len(description) > 5 && !regexp.MustCompile(`^\d+$`).MatchString(description) {
+			// Validate description is a meaningful product name
+			if e.isValidProductDescription(description) {
 				item = &ParsedLineItem{
 					LineNumber:   lineNumber,
 					Quantity:     1, // Default to 1 if not specified
@@ -298,8 +353,8 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 			quantity, _ := strconv.Atoi(matches[1])
 			description := strings.TrimSpace(matches[2])
 
-			// Only add if description is meaningful
-			if len(description) > 5 {
+			// Validate description is a meaningful product name
+			if e.isValidProductDescription(description) {
 				item = &ParsedLineItem{
 					Quantity:     quantity,
 					ProductText:  description,
@@ -344,12 +399,59 @@ func (e *PDFExtractor) calculateConfidence(data *ParsedInvoiceData) float64 {
 	return (score / maxScore) * 100.0
 }
 
+// isValidProductDescription checks if a string is a valid product name
+func (e *PDFExtractor) isValidProductDescription(description string) bool {
+	// Minimum length for a product name
+	if len(description) < 8 {
+		return false
+	}
+
+	// Must not be just numbers
+	if regexp.MustCompile(`^\d+$`).MatchString(description) {
+		return false
+	}
+
+	// Must not be a city name only (single word that's a city)
+	cityNames := []string{
+		"haiger", "dillenburg", "herborn", "wetzlar", "siegen",
+		"gießen", "marburg", "köln", "frankfurt", "münchen",
+		"berlin", "hamburg", "dortmund", "essen", "düsseldorf",
+	}
+	descLower := strings.ToLower(strings.TrimSpace(description))
+	for _, city := range cityNames {
+		if descLower == city {
+			return false
+		}
+	}
+
+	// Must contain at least one letter
+	if !regexp.MustCompile(`[a-zA-Z]`).MatchString(description) {
+		return false
+	}
+
+	// Should not be typical address patterns
+	addressPatterns := []string{
+		`^\d{5}\s+\w+$`,                    // "35708 Haiger"
+		`(?i)^(straße|str\.|strasse)\s+`,   // "Straße 123"
+		`(?i)postfach`,                      // Postbox
+	}
+	for _, pattern := range addressPatterns {
+		if regexp.MustCompile(pattern).MatchString(description) {
+			return false
+		}
+	}
+
+	return true
+}
+
 // ParsedInvoiceData represents structured data extracted from invoice
 type ParsedInvoiceData struct {
 	CustomerName    string
 	CustomerID      *int
 	DocumentNumber  string
 	DocumentDate    time.Time
+	StartDate       time.Time // Job start date
+	EndDate         time.Time // Job end date
 	TotalAmount     float64
 	DiscountAmount  float64
 	Items           []ParsedLineItem

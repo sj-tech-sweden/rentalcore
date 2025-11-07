@@ -4391,7 +4391,11 @@ function showToast(message, type) {
                 const data = await response.json();
 
                 if (response.ok && data.extraction_id) {
-                    displayExtractionResults(data);
+                    // Redirect to review page immediately after successful extraction
+                    document.getElementById('pdfUploadStatus').innerHTML = '<div class="rc-alert rc-alert-success"><i class="bi bi-check-circle"></i> PDF processed! Redirecting to review page...</div>';
+                    setTimeout(() => {
+                        window.location.href = `/pdf/review/${uploadID}`;
+                    }, 800);
                 } else {
                     setTimeout(() => pollExtractionResults(uploadID, attempts + 1), 500);
                 }
@@ -4399,66 +4403,6 @@ function showToast(message, type) {
                 console.error('Polling error:', error);
                 setTimeout(() => pollExtractionResults(uploadID, attempts + 1), 500);
             }
-        }
-
-        function displayExtractionResults(data) {
-            const statusDiv = document.getElementById('pdfUploadStatus');
-
-            let html = '<div class="rc-alert rc-alert-success"><i class="bi bi-check-circle"></i> PDF processed successfully!</div>';
-            html += '<div style="margin-top: 16px;">';
-            html += '<h4 style="margin-bottom: 12px;">Extracted Data:</h4>';
-
-            if (data.customer_name) {
-                html += `<p><strong>Customer:</strong> ${data.customer_name}</p>`;
-            }
-            if (data.document_number) {
-                html += `<p><strong>Document #:</strong> ${data.document_number}</p>`;
-            }
-            if (data.total_amount) {
-                html += `<p><strong>Total:</strong> €${data.total_amount.toFixed(2)}</p>`;
-            }
-
-            if (data.items && data.items.length > 0) {
-                html += '<p><strong>Products:</strong></p><ul style="margin-left: 20px;">';
-                data.items.forEach(item => {
-                    // Handle sql.NullInt64/Float64 objects from API
-                    const qty = (item.quantity && typeof item.quantity === 'object')
-                        ? (item.quantity.Int64 || 1)
-                        : (item.quantity || 1);
-
-                    const unitPrice = (item.unit_price && typeof item.unit_price === 'object')
-                        ? (item.unit_price.Valid ? item.unit_price.Float64 : null)
-                        : item.unit_price;
-
-                    const lineTotal = (item.line_total && typeof item.line_total === 'object')
-                        ? (item.line_total.Valid ? item.line_total.Float64 : null)
-                        : item.line_total;
-
-                    html += `<li><strong>${item.raw_product_text}</strong>`;
-                    html += ` - Qty: ${qty}`;
-                    if (unitPrice && unitPrice > 0) {
-                        html += ` @ €${unitPrice.toFixed(2)}`;
-                    }
-                    if (lineTotal && lineTotal > 0) {
-                        html += ` = €${lineTotal.toFixed(2)}`;
-                    }
-                    if (item.mapping_status === 'auto_mapped') {
-                        html += ' <span style="color: var(--success);">✓ Auto-Mapped</span>';
-                    } else {
-                        html += ' <span style="color: var(--warning);">⚠ Needs Mapping</span>';
-                    }
-                    html += '</li>';
-                });
-                html += '</ul>';
-            }
-
-            html += '<div style="margin-top: 16px; display: flex; gap: 8px;">';
-            html += `<a href="/pdf/review/${data.upload_id}" class="rc-btn rc-btn-primary"><i class="bi bi-eye"></i> Review & Map Products</a>`;
-            html += '<button class="rc-btn rc-btn-outline" onclick="closePDFUploadModal()">Close</button>';
-            html += '</div>';
-            html += '</div>';
-
-            statusDiv.innerHTML = html;
         }
 
         function applyPDFDataToForm(data) {
