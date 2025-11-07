@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"go-barcode-webapp/internal/models"
+
+	"github.com/ledongthuc/pdf"
 )
 
 // PDFExtractor handles PDF text extraction and data parsing
@@ -84,13 +86,40 @@ func (e *PDFExtractor) SaveUploadedFile(file *multipart.FileHeader) (*models.PDF
 	return upload, nil
 }
 
-// ExtractText extracts text from a PDF file
-// NOTE: This is a placeholder - actual PDF text extraction requires external library
-// For production, use: github.com/ledongthuc/pdf or github.com/unidoc/unipdf/v3
+// ExtractText extracts text from a PDF file using ledongthuc/pdf library
 func (e *PDFExtractor) ExtractText(filePath string) (string, error) {
-	// TODO: Implement actual PDF text extraction
-	// For now, return a placeholder message
-	return "PDF text extraction requires implementation with pdf library", nil
+	file, reader, err := pdf.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open PDF: %v", err)
+	}
+	defer file.Close()
+
+	var textBuilder strings.Builder
+	numPages := reader.NumPage()
+
+	for pageNum := 1; pageNum <= numPages; pageNum++ {
+		page := reader.Page(pageNum)
+		if page.V.IsNull() {
+			continue
+		}
+
+		text, err := page.GetPlainText(nil)
+		if err != nil {
+			// Log error but continue with next page
+			fmt.Printf("Warning: failed to extract text from page %d: %v\n", pageNum, err)
+			continue
+		}
+
+		textBuilder.WriteString(text)
+		textBuilder.WriteString("\n")
+	}
+
+	extractedText := textBuilder.String()
+	if len(extractedText) == 0 {
+		return "", fmt.Errorf("no text could be extracted from PDF")
+	}
+
+	return extractedText, nil
 }
 
 // ParseInvoiceData parses invoice data from extracted text
