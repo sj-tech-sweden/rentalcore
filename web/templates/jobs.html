@@ -4421,17 +4421,25 @@ function showToast(message, type) {
             if (data.items && data.items.length > 0) {
                 html += '<p><strong>Products:</strong></p><ul style="margin-left: 20px;">';
                 data.items.forEach(item => {
-                    // Handle sql.NullInt64 objects from API
-                    const qty = item.quantity?.Int64 || item.quantity || '?';
-                    const unitPrice = item.unit_price?.Float64 || item.unit_price;
-                    const lineTotal = item.line_total?.Float64 || item.line_total;
+                    // Handle sql.NullInt64/Float64 objects from API
+                    const qty = (item.quantity && typeof item.quantity === 'object')
+                        ? (item.quantity.Int64 || 1)
+                        : (item.quantity || 1);
+
+                    const unitPrice = (item.unit_price && typeof item.unit_price === 'object')
+                        ? (item.unit_price.Valid ? item.unit_price.Float64 : null)
+                        : item.unit_price;
+
+                    const lineTotal = (item.line_total && typeof item.line_total === 'object')
+                        ? (item.line_total.Valid ? item.line_total.Float64 : null)
+                        : item.line_total;
 
                     html += `<li><strong>${item.raw_product_text}</strong>`;
                     html += ` - Qty: ${qty}`;
-                    if (unitPrice) {
+                    if (unitPrice && unitPrice > 0) {
                         html += ` @ €${unitPrice.toFixed(2)}`;
                     }
-                    if (lineTotal) {
+                    if (lineTotal && lineTotal > 0) {
                         html += ` = €${lineTotal.toFixed(2)}`;
                     }
                     if (item.mapping_status === 'auto_mapped') {
