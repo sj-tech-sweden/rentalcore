@@ -272,10 +272,17 @@ func (p *IntelligentParser) extractTotalAmount(lines []string) float64 {
 // extractDiscount extracts discount amount
 func (p *IntelligentParser) extractDiscount(lines []string) float64 {
 	for _, line := range lines {
-		for _, pattern := range p.DiscountPatterns {
-			matches := pattern.FindStringSubmatch(line)
-			if len(matches) > 1 {
-				return p.parseAmount(matches[1])
+		lineLower := strings.ToLower(line)
+		if !containsKeyword(lineLower, discountKeywords) {
+			continue
+		}
+		if token, ok := findAmountToken(line); ok {
+			amount := p.parseAmount(token)
+			if amount < 0 {
+				amount = -amount
+			}
+			if amount > 0 {
+				return amount
 			}
 		}
 	}
@@ -481,6 +488,8 @@ func (p *IntelligentParser) parseAmount(s string) float64 {
 	s = strings.ReplaceAll(s, "€", "")
 	s = strings.ReplaceAll(s, "$", "")
 	s = strings.ReplaceAll(s, "£", "")
+	s = strings.ReplaceAll(s, "\u00a0", "")
+	s = strings.ReplaceAll(s, " ", "")
 	s = strings.TrimSpace(s)
 
 	// Handle European format (1.234,56)

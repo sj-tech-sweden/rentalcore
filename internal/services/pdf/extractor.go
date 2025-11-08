@@ -199,7 +199,6 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 	dateRangeRegex := regexp.MustCompile(`(?i)(?:zeitraum|period|vom|from)[\s:]*(\d{1,2})[\./-](\d{1,2})[\./-](\d{2,4})[\s]*(?:bis|to|-|–)[\s]*(\d{1,2})[\./-](\d{1,2})[\./-](\d{2,4})`)
 	invoiceNumberRegex := regexp.MustCompile(`(?i)(?:rechnung|invoice|angebot|offer|auftrag|order)[\s#:Nr.]+([A-Z0-9\-]+)`)
 	totalRegex := regexp.MustCompile(`(?i)(?:gesamt|total|summe|sum)[\s:]*€?\s*([0-9,]+\.?\d*)`)
-	discountRegex := regexp.MustCompile(`(?i)(?:rabatt|discount|nachlass)[\s:]*€?\s*([0-9,]+\.?\d*)`)
 
 	// Parse line items with multiple patterns for flexibility (legacy one-line rows)
 	itemRegexFull := regexp.MustCompile(`^(\d+)\s+(\d+)x?\s+(.+?)\s+€?\s*([0-9.,]+)\s+€?\s*([0-9.,]+)\s*$`)
@@ -358,10 +357,15 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 		}
 
 		// Extract discount
-		if matches := discountRegex.FindStringSubmatch(line); len(matches) > 1 {
-			discountStr := strings.ReplaceAll(matches[1], ",", ".")
-			if discount, err := strconv.ParseFloat(discountStr, 64); err == nil {
-				data.DiscountAmount = discount
+		if containsKeyword(lineLower, discountKeywords) {
+			if token, ok := findAmountToken(line); ok {
+				discount := e.Parser.parseAmount(token)
+				if discount < 0 {
+					discount = -discount
+				}
+				if discount > 0 {
+					data.DiscountAmount = discount
+				}
 			}
 		}
 
