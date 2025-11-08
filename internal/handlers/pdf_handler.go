@@ -706,7 +706,11 @@ func (h *PDFHandler) SaveManualMapping(c *gin.Context) {
 		}
 	}
 
-	h.Mapper.SaveMapping(item.RawProductText, req.ProductID, userID)
+	if err := h.Mapper.SaveMapping(item.RawProductText, req.ProductID, userID); err != nil {
+		log.Printf("warning: failed to persist manual mapping for item %d: %v", item.ItemID, err)
+	}
+
+	h.recordMappingEvent(item.ExtractionID, item.ItemID, req.ProductID, item.RawProductText, userID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -1078,8 +1082,37 @@ func (h *PDFHandler) persistExtractionMappings(c *gin.Context, extractionID uint
 
 		if err := h.Mapper.SaveMapping(text, int(item.MappedProductID.Int64), userID); err != nil {
 			log.Printf("warning: failed to save mapping for extraction item %d: %v", item.ItemID, err)
+			continue
 		}
+
+		h.recordMappingEvent(item.ExtractionID, item.ItemID, int(item.MappedProductID.Int64), text, userID)
 	}
 
 	return nil
+}
+
+func (h *PDFHandler) recordMappingEvent(extractionID uint64, itemID uint64, productID int, rawText string, userID int64) {
+	event := models.PDFMappingEvent{
+		PDFProductText: rawText,
+		ProductID:      productID,
+	}
+
+	if extractionID > 0 {
+		event.ExtractionID = sql.NullInt64{Int64: int64(extractionID), Valid: true}
+	}
+	if itemID > 0 {
+		event.ItemID = sql.NullInt64{Int64: int64(itemID), Valid: true}
+	}
+
+	normalized := strings.TrimSpace(strings.ToLower(rawText))
+	if normalized != "" {
+		event.NormalizedText = sql.NullString{String: normalized, Valid: true}
+	}
+	if userID > 0 {
+		event.CreatedBy = sql.NullInt64{Int64: userID, Valid: true}
+	}
+
+	if err := h.DB.Create(&event).Error; err != nil {
+		log.Printf("warning: failed to record mapping event: %v", err)
+	}
 }

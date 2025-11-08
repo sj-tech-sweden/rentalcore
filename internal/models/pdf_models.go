@@ -143,3 +143,20 @@ type ProductMappingSuggestion struct {
 	Confidence       float64  `json:"confidence"`
 	MappingType      string   `json:"mapping_type"` // 'exact', 'fuzzy', 'previous'
 }
+
+// PDFMappingEvent represents a single mapping action (manual or persisted)
+type PDFMappingEvent struct {
+	EventID        uint64         `gorm:"primaryKey;column:event_id;autoIncrement" json:"event_id"`
+	ExtractionID   sql.NullInt64  `gorm:"column:extraction_id" json:"extraction_id"`
+	ItemID         sql.NullInt64  `gorm:"column:item_id" json:"item_id"`
+	PDFProductText string         `gorm:"column:pdf_product_text;not null" json:"pdf_product_text"`
+	NormalizedText sql.NullString `gorm:"column:normalized_text" json:"normalized_text"`
+	ProductID      int            `gorm:"column:product_id;not null" json:"product_id"`
+	CreatedBy      sql.NullInt64  `gorm:"column:created_by" json:"created_by"`
+	CreatedAt      time.Time      `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"created_at"`
+}
+
+// TableName specifies the table name for PDFMappingEvent
+func (PDFMappingEvent) TableName() string {
+	return "pdf_mapping_events"
+}

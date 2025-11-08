@@ -2090,6 +2090,28 @@ CREATE TABLE `pdf_customer_mappings` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `pdf_mapping_events`
+--
+
+CREATE TABLE `pdf_mapping_events` (
+  `event_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `extraction_id` bigint UNSIGNED DEFAULT NULL,
+  `item_id` bigint UNSIGNED DEFAULT NULL,
+  `pdf_product_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_text` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `product_id` int NOT NULL,
+  `created_by` bigint UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`event_id`),
+  KEY `idx_mapping_events_extraction` (`extraction_id`),
+  KEY `idx_mapping_events_product` (`product_id`),
+  KEY `idx_mapping_events_text` (`pdf_product_text`),
+  KEY `idx_mapping_events_normalized` (`normalized_text`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail for manual or auto PDF mappings';
+
+-- --------------------------------------------------------
+
+--
 -- Indizes der exportierten Tabellen
 --
 
