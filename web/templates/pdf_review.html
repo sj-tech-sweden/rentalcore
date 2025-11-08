@@ -15,20 +15,64 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        .extraction-card {
-            background: var(--rc-bg-card);
-            border: 1px solid var(--rc-border-color);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
+
+        body.review-body {
+            background: radial-gradient(circle at 10% 0%, rgba(90, 64, 37, 0.4), rgba(8, 6, 4, 0.96)),
+                        radial-gradient(circle at 90% 0%, rgba(48, 34, 21, 0.28), rgba(6, 5, 4, 0.9));
+            min-height: 100vh;
         }
-        .extraction-header {
+        .review-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px 80px;
+        }
+        .extraction-card {
+            background: var(--rc-card-bg, rgba(24, 20, 17, 0.92));
+            border: 1px solid var(--rc-border, rgba(255,255,255,0.08));
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--rc-shadow-lg, 0 25px 70px rgba(0,0,0,0.5));
+            backdrop-filter: blur(10px);
+        }
+        .review-hero {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+        .hero-block {
+            padding: 28px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(34, 26, 20, 0.96), rgba(10, 8, 6, 0.92));
+            border: 1px solid var(--rc-border, rgba(255,255,255,0.08));
+        }
+        .eyebrow {
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.3em;
+            color: var(--rc-text-secondary);
+        }
+        .hero-block h1 {
+            margin: 8px 0 12px;
+            font-size: 32px;
+        }
+        .hero-actions {
+            margin-top: 18px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--rc-border-color);
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+        .hero-stats .stat-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--rc-border, rgba(255,255,255,0.08));
+            border-radius: 16px;
+            padding: 16px;
         }
         .extraction-info {
             display: grid;
@@ -38,8 +82,9 @@
         }
         .info-item {
             padding: 12px;
-            background: var(--rc-bg-elevated);
-            border-radius: 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            border: 1px solid var(--rc-border, rgba(255,255,255,0.08));
         }
         .info-label {
             font-size: 12px;
@@ -59,7 +104,7 @@
             margin-top: 20px;
         }
         .items-table thead {
-            background: var(--rc-bg-elevated);
+            background: rgba(255,255,255,0.02);
             border-radius: 8px;
         }
         .items-table th {
@@ -73,10 +118,10 @@
         }
         .items-table td {
             padding: 15px;
-            border-bottom: 1px solid var(--rc-border-color);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         .items-table tr:hover {
-            background: var(--rc-bg-hover);
+            background: rgba(255,255,255,0.03);
         }
         .badge {
             display: inline-block;
@@ -87,52 +132,53 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .badge-auto { background: var(--rc-success-bg); color: var(--rc-success); }
-        .badge-pending { background: var(--rc-warning-bg); color: var(--rc-warning); }
-        .badge-confirmed { background: var(--rc-info-bg); color: var(--rc-info); }
-        .confidence-bar {
-            height: 6px;
-            background: var(--rc-bg-elevated);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 5px;
-        }
-        .confidence-fill {
-            height: 100%;
-            transition: width 0.3s ease;
-        }
-        .confidence-high { background: var(--rc-success); }
-        .confidence-medium { background: var(--rc-warning); }
-        .confidence-low { background: var(--rc-danger); }
+        .badge-auto { background: rgba(34,197,94,0.15); color: #4ade80; }
+        .badge-pending { background: rgba(234,179,8,0.18); color: #facc15; }
+        .badge-confirmed { background: rgba(192,85,36,0.2); color: #fb923c; }
         .action-buttons {
             display: flex;
             gap: 10px;
             margin-top: 25px;
         }
+    
     </style>
 </head>
-<body class="rc-animate-fade-in">
-    <div class="rc-container" style="max-width: 1400px; margin: 40px auto; padding: 0 20px;">
+<body class="rc-animate-fade-in review-body">
+    <div class="review-wrapper">
 
-        <!-- Header -->
-        <div class="extraction-card">
-            <div class="extraction-header">
-                <div>
-                    <h1 style="margin: 0 0 5px 0; font-size: 28px;">
-                        <i class="bi bi-file-earmark-pdf"></i> PDF Extraction Review
-                    </h1>
-                    <p style="margin: 0; color: var(--rc-text-secondary);">
-                        Review extracted data from PDF and proceed to mapping
-                    </p>
-                </div>
-                <div>
-                    <span class="badge badge-{{if eq .extraction.ExtractionMethod "text_based"}}auto{{else}}pending{{end}}">
-                        {{.extraction.ExtractionMethod}}
-                    </span>
+        <section class="review-hero">
+            <div class="hero-block">
+                <p class="eyebrow">Extraction #{{.extraction.ExtractionID}}</p>
+                <h1><i class="bi bi-file-earmark-text"></i> PDF Extraction Review</h1>
+                <p style="color: var(--rc-text-secondary); max-width: 520px;">Review detected customer details and line items before heading into the mapping workspace.</p>
+                <div class="hero-actions">
+                    <a href="/pdf/mapping/{{.extraction.ExtractionID}}" class="rc-btn rc-btn-primary">
+                        <i class="bi bi-diagram-3"></i> Go to Mapping
+                    </a>
+                    <a href="/pdf/uploads" class="rc-btn rc-btn-ghost">
+                        <i class="bi bi-arrow-left"></i> Back to Uploads
+                    </a>
                 </div>
             </div>
+            <div class="hero-block hero-stats">
+                <div class="stat-card">
+                    <div class="info-label">Items Detected</div>
+                    <div class="info-value">{{.totalItems}}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="info-label">Mapped Already</div>
+                    <div class="info-value">{{.mappedPercent}}%</div>
+                    <small style="color: var(--rc-text-secondary);">{{.mappedCount}} of {{.totalItems}}</small>
+                </div>
+                <div class="stat-card">
+                    <div class="info-label">Pending Review</div>
+                    <div class="info-value">{{.pendingCount}}</div>
+                </div>
+            </div>
+        </section>
 
-            <!-- Document Information -->
+        <!-- Document Information -->
+        <div class="extraction-card">
             <div class="extraction-info">
                 {{if .customerName}}
                 <div class="info-item">
@@ -188,26 +234,11 @@
                     </div>
                 </div>
 
-                <div class="info-item">
-                    <div class="info-label"><i class="bi bi-graph-up"></i> Confidence Score</div>
-                    <div class="info-value">
-                        {{if .extraction.ConfidenceScore.Valid}}
-                            {{printf "%.1f" .extraction.ConfidenceScore.Float64}}%
-                        {{else}}
-                            N/A
-                        {{end}}
-                    </div>
-                    {{if .extraction.ConfidenceScore.Valid}}
-                    <div class="confidence-bar">
-                        <div class="confidence-fill {{if ge .extraction.ConfidenceScore.Float64 80.0}}confidence-high{{else if ge .extraction.ConfidenceScore.Float64 60.0}}confidence-medium{{else}}confidence-low{{end}}"
-                             style="width: {{.extraction.ConfidenceScore.Float64}}%"></div>
-                    </div>
-                    {{end}}
-                </div>
+                
 
                 <div class="info-item">
                     <div class="info-label"><i class="bi bi-list-ol"></i> Line Items</div>
-                    <div class="info-value">{{len .items}}</div>
+                    <div class="info-value">{{.totalItems}}</div>
                 </div>
             </div>
         </div>

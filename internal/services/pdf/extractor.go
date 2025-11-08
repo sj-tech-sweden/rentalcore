@@ -359,17 +359,23 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 		// Extract discount
 		if containsKeyword(lineLower, discountKeywords) {
 			discount := 0.0
+			discountType := ""
 			if token, ok := findDecimalAmountToken(line); ok {
 				discount = e.Parser.parseAmount(token)
+				discountType = "amount"
 			}
 			if discount <= 0 {
 				if token, ok := findAmountAfterLine(lines, i, 3); ok {
 					discount = e.Parser.parseAmount(token)
+					discountType = "amount"
 				}
 			}
 			if discount <= 0 {
 				if pct, ok := findPercentage(line); ok && data.TotalAmount > 0 {
 					discount = data.TotalAmount * pct / 100
+					if pct > 0 {
+						discountType = "percent"
+					}
 				}
 			}
 			if discount < 0 {
@@ -377,6 +383,11 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 			}
 			if discount > 0 {
 				data.DiscountAmount = discount
+				if discountType != "" {
+					data.DiscountType = discountType
+				} else if data.DiscountType == "" {
+					data.DiscountType = "amount"
+				}
 			}
 		}
 
@@ -840,6 +851,7 @@ type ParsedInvoiceData struct {
 	EndDate         time.Time // Job end date
 	TotalAmount     float64
 	DiscountAmount  float64
+	DiscountType    string
 	Items           []ParsedLineItem
 	ConfidenceScore float64
 	RawText         string

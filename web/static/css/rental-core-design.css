@@ -55,6 +55,36 @@
     --text-inverse: #111111;    /* Dark gray for inverse text */
     --text-label: #CCCCCC;      /* Light gray for very small labels only */
     
+    /* RentalCore theme aliases */
+    --rc-text-primary: var(--text-primary);
+    --rc-text-secondary: var(--text-secondary);
+    --rc-primary: #c0552c;
+    --rc-primary-50: #f7ebe2;
+    --rc-primary-100: #f0d4c3;
+    --rc-primary-200: #e1b293;
+    --rc-primary-500: #c0552c;
+    --rc-primary-600: #9d4522;
+    --rc-primary-700: #7a351b;
+    --rc-success: var(--success);
+    --rc-success-200: #86efac;
+    --rc-warning-200: #fde68a;
+    --rc-info-200: #d9d4c6;
+    --rc-danger-200: #f3b0a6;
+    --rc-accent-200: #f4c7aa;
+    --rc-surface-50: #151312;
+    --rc-surface-100: #1b1917;
+    --rc-surface-200: #221f1c;
+    --rc-bg-card: rgba(16, 14, 12, 0.95);
+    --rc-card-bg: rgba(24, 20, 17, 0.9);
+    --rc-border: rgba(255, 255, 255, 0.08);
+    --rc-shadow-sm: 0 12px 28px rgba(0, 0, 0, 0.45);
+    --rc-shadow-lg: 0 28px 70px rgba(0, 0, 0, 0.6);
+    --rc-shadow-2xl: 0 48px 120px rgba(0, 0, 0, 0.65);
+    --rc-radius: var(--radius-md);
+    --rc-radius-sm: var(--radius-sm);
+    --rc-radius-lg: var(--radius-lg);
+    --rc-radius-full: 999px;
+    
     /* Design System Spacing Scale (4, 8, 12, 16, 20, 24, 32, 40, 48) */
     --space-1: 0.25rem;   /* 4px */
     --space-2: 0.5rem;    /* 8px */

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"go-barcode-webapp/internal/models"
 	"go-barcode-webapp/internal/services/pdf"
@@ -172,6 +173,9 @@ func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 	}
 	if !parsedData.EndDate.IsZero() {
 		metadata["end_date"] = parsedData.EndDate.Format(time.RFC3339)
+	}
+	if parsedData.DiscountType != "" {
+		metadata["discount_type"] = parsedData.DiscountType
 	}
 	if len(metadata) > 0 {
 		if metaBytes, err := json.Marshal(metadata); err == nil {
@@ -432,6 +436,28 @@ func (h *PDFHandler) ShowReviewScreen(c *gin.Context) {
 		"pageTitle":      "PDF Extraction Review",
 	}
 
+	totalItems := len(items)
+	mappedCount := 0
+	for _, item := range items {
+		if item.MappingStatus == "auto_mapped" || item.MappingStatus == "user_confirmed" {
+			mappedCount++
+			continue
+		}
+		if item.MappedProductID.Valid && item.MappingStatus == "pending" {
+			mappedCount++
+		}
+	}
+	pendingCount := totalItems - mappedCount
+	mappedPercent := 0
+	if totalItems > 0 {
+		mappedPercent = int(math.Round(float64(mappedCount) / float64(totalItems) * 100))
+	}
+
+	data["totalItems"] = totalItems
+	data["mappedCount"] = mappedCount
+	data["pendingCount"] = pendingCount
+	data["mappedPercent"] = mappedPercent
+
 	// Add optional fields
 	if extraction.CustomerName.Valid {
 		data["customerName"] = extraction.CustomerName.String
@@ -545,14 +571,35 @@ func (h *PDFHandler) ShowMappingScreen(c *gin.Context) {
 		}
 	}
 
+	totalItems := len(items)
+	mappedCount := 0
+	for _, item := range items {
+		if item.MappingStatus == "auto_mapped" || item.MappingStatus == "user_confirmed" {
+			mappedCount++
+			continue
+		}
+		if item.MappedProductID.Valid && item.MappingStatus == "pending" {
+			mappedCount++
+		}
+	}
+	pendingCount := totalItems - mappedCount
+	mappedPercent := 0
+	if totalItems > 0 {
+		mappedPercent = int(math.Round(float64(mappedCount) / float64(totalItems) * 100))
+	}
+
 	data := gin.H{
-		"extraction":   extraction,
-		"upload":       upload,
-		"items":        itemsWithSuggestions,
-		"pageTitle":    "PDF Product Mapping",
-		"startDate":    formatDateInput(startDate),
-		"endDate":      formatDateInput(endDate),
-		"discountType": discountType,
+		"extraction":    extraction,
+		"upload":        upload,
+		"items":         itemsWithSuggestions,
+		"pageTitle":     "PDF Product Mapping",
+		"startDate":     formatDateInput(startDate),
+		"endDate":       formatDateInput(endDate),
+		"discountType":  discountType,
+		"totalItems":    totalItems,
+		"mappedCount":   mappedCount,
+		"pendingCount":  pendingCount,
+		"mappedPercent": mappedPercent,
 	}
 
 	if extraction.TotalAmount.Valid {
@@ -1233,11 +1280,13 @@ var (
 	streetRegex     = regexp.MustCompile(`(?i)^[\p{L}\d\s\.-]+\d+[A-Za-z]?$`)
 	zipCityRegex    = regexp.MustCompile(`^(\d{4,5})\s+(.+)$`)
 	honorificsRegex = regexp.MustCompile(`(?i)\b(herrn|herr|frau|mr|mrs|ms)\b\.?`)
-	addressKeywords = []string{"angebotsnr", "kundennr", "rechnung", "invoice", "offer", "angebot"}
-	vendorNoise     = []string{
+	addressKeywords = []string{
+		"angebotsnr", "angebot nr", "kundennr", "kundennummer", "rechnung", "invoice", "customer no",
+	}
+	vendorNoise = []string{
 		"tsunami events", "ringstraße", "ringstrasse", "haiger", "sparkasse", "steuernummer",
 		"amtsgericht", "geschäftsführer", "geschaeftsfuehrer", "iban", "bic", "tel", "telefon",
-		"fax", "email", "info@", "www.", "tsunami-events", "tsunami events ug",
+		"fax", "email", "info@", "www.", "tsunami-events", "tsunami events ug", "haftungsbeschränkt",
 	}
 )
 
@@ -1251,8 +1300,11 @@ func (h *PDFHandler) buildCustomerPrefill(extraction *models.PDFExtraction) *cus
 		return nil
 	}
 	cleaned := filterRecipientLines(block)
-	prefill := &customerPrefill{RawLines: cleaned}
+	if len(cleaned) == 0 {
+		return nil
+	}
 
+	prefill := &customerPrefill{}
 	nameIdx := -1
 	for idx, line := range cleaned {
 		if containsHonorific(strings.ToLower(line)) {
@@ -1269,11 +1321,20 @@ func (h *PDFHandler) buildCustomerPrefill(extraction *models.PDFExtraction) *cus
 		}
 	}
 
-	if nameIdx > 0 {
-		prefill.CompanyName = strings.Join(cleaned[:nameIdx], " ")
+	recipientLines := cleaned
+	if nameIdx >= 0 {
+		recipientLines = cleaned[nameIdx:]
 	}
 
-	for _, line := range cleaned {
+	prefill.RawLines = append([]string(nil), recipientLines...)
+
+	if company := extractCompanyLine(cleaned, nameIdx); company != "" {
+		prefill.CompanyName = company
+	} else if extraction.CustomerName.Valid {
+		prefill.CompanyName = extraction.CustomerName.String
+	}
+
+	for _, line := range recipientLines {
 		if prefill.Street == "" && streetRegex.MatchString(line) {
 			prefill.Street = line
 			continue
@@ -1294,10 +1355,6 @@ func (h *PDFHandler) buildCustomerPrefill(extraction *models.PDFExtraction) *cus
 		}
 	}
 
-	if prefill.CompanyName == "" && extraction.CustomerName.Valid {
-		prefill.CompanyName = extraction.CustomerName.String
-	}
-
 	return prefill
 }
 
@@ -1309,6 +1366,8 @@ func captureRecipientBlock(lines []string) []string {
 }
 
 func captureBlockBeforeKeywords(lines []string) []string {
+	var best []string
+	bestScore := -1
 	for i, raw := range lines {
 		trimmed := strings.TrimSpace(raw)
 		if trimmed == "" {
@@ -1337,11 +1396,15 @@ func captureBlockBeforeKeywords(lines []string) []string {
 			}
 			block = trimRecipientBlock(block)
 			if len(block) > 0 {
-				return block
+				score := scoreRecipientBlock(block)
+				if score > bestScore {
+					bestScore = score
+					best = block
+				}
 			}
 		}
 	}
-	return nil
+	return best
 }
 
 func captureBlockByHonorific(lines []string) []string {
@@ -1481,6 +1544,62 @@ func optionalString(value string) *string {
 		return nil
 	}
 	return &trimmed
+}
+
+func extractCompanyLine(lines []string, honorificIdx int) string {
+	if honorificIdx <= 0 {
+		return ""
+	}
+	for i := honorificIdx - 1; i >= 0; i-- {
+		candidate := strings.TrimSpace(lines[i])
+		if candidate == "" || isVendorNoise(candidate) {
+			continue
+		}
+		lower := strings.ToLower(candidate)
+		if containsHonorific(lower) {
+			continue
+		}
+		if streetRegex.MatchString(candidate) || zipCityRegex.MatchString(candidate) || containsDigit(candidate) {
+			continue
+		}
+		return candidate
+	}
+	return ""
+}
+
+func scoreRecipientBlock(lines []string) int {
+	score := 0
+	for _, line := range lines {
+		lower := strings.ToLower(line)
+		if containsHonorific(lower) {
+			score += 4
+		}
+		if streetRegex.MatchString(line) {
+			score += 3
+		}
+		if zipCityRegex.MatchString(line) {
+			score += 3
+		}
+		if containsDigit(line) {
+			score++
+		}
+		if !isVendorNoise(line) {
+			score++
+		}
+	}
+	if len(lines) > 0 {
+		score += len(lines)
+	}
+	return score
+}
+
+func containsDigit(value string) bool {
+	for _, r := range value {
+		if unicode.IsDigit(r) {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *PDFHandler) computePriceOverrides(aggregates map[uint]*productPricingAggregate) (map[uint]float64, error) {

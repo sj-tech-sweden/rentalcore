@@ -75,17 +75,37 @@ function updateMappedSummary(itemId, product, confidence = 100) {
 }
 
 function updateStats() {
+    const container = document.getElementById('mappingContainer');
     const items = document.querySelectorAll('.mapping-item');
-    const mapped = document.querySelectorAll('.mapping-item.auto-mapped, .mapping-item[data-confirmed="true"]').length;
-    const total = items.length;
-    const pending = total - mapped;
+    let total = items.length;
+    let mapped = document.querySelectorAll('.mapping-item.auto-mapped, .mapping-item[data-confirmed="true"]').length;
+
+    if (total === 0 && container && container.dataset.totalItems) {
+        total = parseInt(container.dataset.totalItems, 10) || 0;
+    }
+    if (mapped === 0 && container && container.dataset.mappedCount) {
+        mapped = parseInt(container.dataset.mappedCount, 10) || 0;
+    }
+
+    const pending = Math.max(total - mapped, 0);
     const progress = total > 0 ? Math.round((mapped / total) * 100) : 0;
 
-    document.getElementById('totalItems').textContent = total;
-    document.getElementById('mappedItems').textContent = mapped;
-    document.getElementById('pendingItems').textContent = pending;
-    document.getElementById('progressPercent').textContent = progress + '%';
-    document.getElementById('progressBar').style.width = progress + '%';
+    const totalEl = document.getElementById('totalItems');
+    if (totalEl) totalEl.textContent = total;
+    const mappedEl = document.getElementById('mappedItems');
+    if (mappedEl) mappedEl.textContent = mapped;
+    const pendingEl = document.getElementById('pendingItems');
+    if (pendingEl) pendingEl.textContent = pending;
+    const progressEl = document.getElementById('progressPercent');
+    if (progressEl) progressEl.textContent = progress + '%';
+    const bar = document.getElementById('progressBar');
+    if (bar) bar.style.width = progress + '%';
+
+    if (container) {
+        container.dataset.totalItems = total;
+        container.dataset.mappedCount = mapped;
+        container.dataset.pendingCount = pending;
+    }
 }
 
 function setItemFilter(filter, chip) {
@@ -637,6 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setItemFilter('all', document.querySelector('.filter-chip[data-filter="all"]'));
     updateStats();
+    updateStats();
     updateCustomerBadge();
 });
 </script>
@@ -649,8 +670,8 @@ document.addEventListener('DOMContentLoaded', () => {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body.mapping-body {
-            background: radial-gradient(circle at 20% -5%, rgba(37, 99, 235, 0.35), rgba(5, 7, 15, 0.95)),
-                        radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.25), rgba(5, 7, 15, 0.9));
+            background: radial-gradient(circle at 20% -5%, rgba(90, 64, 37, 0.4), rgba(8, 6, 4, 0.96)),
+                        radial-gradient(circle at 80% 0%, rgba(48, 34, 21, 0.3), rgba(6, 5, 4, 0.92));
             color: var(--rc-text-primary);
             min-height: 100vh;
         }
@@ -660,12 +681,12 @@ document.addEventListener('DOMContentLoaded', () => {
             padding: 40px 20px 80px;
         }
         .mapping-card {
-            background: rgba(8, 9, 20, 0.78);
+            background: var(--rc-card-bg, rgba(24, 20, 17, 0.92));
             border-radius: 20px;
             padding: 28px;
             margin-bottom: 28px;
-            border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 25px 60px rgba(3,8,24,0.55);
+            border: 1px solid var(--rc-border, rgba(255,255,255,0.08));
+            box-shadow: var(--rc-shadow-lg, 0 25px 60px rgba(3,3,3,0.55));
             backdrop-filter: blur(12px);
         }
         .mapping-hero {
@@ -674,8 +695,8 @@ document.addEventListener('DOMContentLoaded', () => {
             gap: 28px;
             padding: 32px;
             border-radius: 26px;
-            background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(2,6,23,0.85));
-            border: 1px solid rgba(255,255,255,0.05);
+            background: linear-gradient(135deg, rgba(34, 26, 20, 0.96), rgba(10, 8, 6, 0.92));
+            border: 1px solid var(--rc-border, rgba(255,255,255,0.08));
             margin-bottom: 32px;
         }
         .mapping-hero h1 {
@@ -702,9 +723,9 @@ document.addEventListener('DOMContentLoaded', () => {
         .hero-insights .stat-card {
             text-align: left;
             padding: 18px;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid var(--rc-border, rgba(255,255,255,0.08));
             border-radius: 16px;
-            background: rgba(255,255,255,0.02);
+            background: rgba(255,255,255,0.03);
         }
         .mapping-toolbar {
             display: flex;
@@ -734,8 +755,8 @@ document.addEventListener('DOMContentLoaded', () => {
             gap: 18px;
         }
         .mapping-item {
-            background: rgba(15, 17, 35, 0.92);
-            border: 1px solid rgba(255,255,255,0.04);
+            background: rgba(21, 17, 14, 0.96);
+            border: 1px solid rgba(255,255,255,0.05);
             border-radius: 18px;
             padding: 20px;
             display: flex;
@@ -743,8 +764,8 @@ document.addEventListener('DOMContentLoaded', () => {
             gap: 14px;
         }
         .mapping-item.auto-mapped {
-            border-color: rgba(14,165,233,0.4);
-            box-shadow: 0 10px 30px rgba(14,165,233,0.2);
+            border-color: rgba(224,138,75,0.5);
+            box-shadow: 0 10px 30px rgba(224,138,75,0.25);
         }
         .mapping-section {
             border-top: 1px dashed rgba(255,255,255,0.08);
@@ -763,7 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
             padding: 12px;
             border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.06);
-            background: rgba(19,23,42,0.9);
+            background: rgba(30,24,20,0.9);
         }
         .suggestion-item.selected {
             border-color: var(--rc-success);
@@ -831,28 +852,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--rc-primary), var(--rc-success));
+            background: linear-gradient(90deg, var(--rc-primary, #c0552c), var(--rc-success, #22c55e));
         }
         .rc-modal {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(5,4,3,0.9);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 9999;
+            backdrop-filter: blur(6px);
         }
         .rc-modal.hidden {
             display: none;
         }
         .rc-modal-content {
-            background: var(--rc-bg-card);
+            background: rgba(6, 8, 20, 0.98);
             padding: 24px;
-            border-radius: 12px;
+            border-radius: 16px;
             width: min(600px, 90vw);
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+            box-shadow: 0 28px 80px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.05);
         }
         .rc-modal-header {
             display: flex;
@@ -871,7 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="eyebrow">Extraction #{{.extraction.ExtractionID}}</p>
                 <h1>Review & Map Products</h1>
                 <p style="color: var(--rc-text-secondary); max-width: 520px;">
-                    {{.upload.OriginalFilename}} • {{len .items}} detected line items ready for mapping. Adjust matches, confirm discounts, and create a customer in minutes.
+                    {{.upload.OriginalFilename}} • {{.totalItems}} detected line items ready for mapping. Adjust matches, confirm discounts, and create a customer in minutes.
                 </p>
                 <div class="hero-actions">
                     <button onclick="runAutoMapping()" class="rc-btn rc-btn-primary" id="autoMapBtn">
@@ -884,18 +907,14 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="hero-insights">
                 <div class="stat-card">
-                    <div class="stat-label">Confidence Score</div>
-                    <div class="stat-value">
-                        {{if .extraction.ConfidenceScore.Valid}}
-                            {{printf "%.0f%%" .extraction.ConfidenceScore.Float64}}
-                        {{else}}N/A{{end}}
-                    </div>
-                    <small style="color: var(--rc-text-secondary);">Based on OCR quality</small>
+                    <div class="stat-label">Items Detected</div>
+                    <div class="stat-value">{{.totalItems}}</div>
+                    <small style="color: var(--rc-text-secondary);">Ready for mapping</small>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Items Detected</div>
-                    <div class="stat-value">{{len .items}}</div>
-                    <small style="color: var(--rc-text-secondary);">Ready for mapping</small>
+                    <div class="stat-label">Mapped Already</div>
+                    <div class="stat-value">{{.mappedCount}}</div>
+                    <small style="color: var(--rc-text-secondary);">{{.pendingCount}} pending</small>
                 </div>
             </div>
         </section>
@@ -903,24 +922,24 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="mapping-card">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value" id="totalItems">{{len .items}}</div>
+                    <div class="stat-value" id="totalItems">{{.totalItems}}</div>
                     <div class="stat-label">Total Items</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="mappedItems">0</div>
+                    <div class="stat-value" id="mappedItems">{{.mappedCount}}</div>
                     <div class="stat-label">Mapped</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="pendingItems">{{len .items}}</div>
+                    <div class="stat-value" id="pendingItems">{{.pendingCount}}</div>
                     <div class="stat-label">Pending</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="progressPercent">0%</div>
+                    <div class="stat-value" id="progressPercent">{{.mappedPercent}}%</div>
                     <div class="stat-label">Progress</div>
                 </div>
             </div>
             <div class="progress-bar">
-                <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                <div class="progress-fill" id="progressBar" style="width: {{.mappedPercent}}%"></div>
             </div>
             <div id="mappingStatusMessage" class="status-message-container"></div>
         </div>
@@ -1027,7 +1046,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <!-- Mapping Items -->
-        <div id="mappingContainer">
+        <div id="mappingContainer"
+             data-total-items="{{.totalItems}}"
+             data-mapped-count="{{.mappedCount}}"
+             data-pending-count="{{.pendingCount}}">
             {{range .items}}
             <div class="mapping-item {{if or (eq .item.MappingStatus "auto_mapped") (eq .item.MappingStatus "user_confirmed")}}auto-mapped{{end}}"
                  data-item-id="{{.item.ItemID}}"
