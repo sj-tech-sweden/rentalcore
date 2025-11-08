@@ -1335,6 +1335,7 @@ func captureBlockBeforeKeywords(lines []string) []string {
 				block = append([]string{line}, block...)
 				collected++
 			}
+			block = trimRecipientBlock(block)
 			if len(block) > 0 {
 				return block
 			}
@@ -1374,7 +1375,7 @@ func captureBlockByHonorific(lines []string) []string {
 					break
 				}
 			}
-			best = block
+			best = trimRecipientBlock(block)
 			break
 		}
 	}
@@ -1417,6 +1418,46 @@ func isVendorNoise(line string) bool {
 
 func removeHonorifics(value string) string {
 	return strings.TrimSpace(honorificsRegex.ReplaceAllString(value, ""))
+}
+
+func trimRecipientBlock(lines []string) []string {
+	lines = trimLeadingNoise(lines)
+	if len(lines) == 0 {
+		return lines
+	}
+
+	index := -1
+	for i, line := range lines {
+		if containsHonorific(strings.ToLower(line)) {
+			index = i
+			break
+		}
+	}
+
+	if index >= 0 {
+		start := index
+		if index > 0 {
+			prev := strings.TrimSpace(lines[index-1])
+			if prev != "" && prev != "," && !isVendorNoise(prev) {
+				start = index - 1
+			}
+		}
+		return lines[start:]
+	}
+
+	return lines
+}
+
+func trimLeadingNoise(lines []string) []string {
+	for len(lines) > 0 {
+		head := strings.TrimSpace(lines[0])
+		if head == "" || head == "," || isVendorNoise(head) {
+			lines = lines[1:]
+			continue
+		}
+		break
+	}
+	return lines
 }
 
 func filterRecipientLines(lines []string) []string {
