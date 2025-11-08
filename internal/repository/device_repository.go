@@ -682,6 +682,8 @@ func (r *DeviceRepository) GetProductAvailabilityForJob(productID uint, jobID *u
 		conflictQuery := r.db.Table("jobdevices jd").
 			Select("CAST(jd.deviceID AS CHAR) AS device_id").
 			Joins("JOIN jobs j ON jd.jobID = j.jobID").
+			Joins("JOIN status s ON s.statusID = j.statusID").
+			Where("s.status IN ?", []string{"open", "in_progress"}).
 			Where("NOT (COALESCE(j.endDate, j.startDate) < ? OR j.startDate > ?)", end, start)
 
 		if jobIDVal != 0 {

@@ -973,12 +973,7 @@ func (h *PDFHandler) ensureCustomerForExtraction(extraction *models.PDFExtractio
 		}
 	}
 
-	var fallback models.Customer
-	if err := h.DB.Order("customerID").First(&fallback).Error; err == nil {
-		return fallback.CustomerID, nil
-	}
-
-	return 0, fmt.Errorf("no customers available to assign job")
+	return 0, fmt.Errorf("Please select a customer before creating this job")
 }
 
 func (h *PDFHandler) findDefaultJobStatus() (uint, error) {
