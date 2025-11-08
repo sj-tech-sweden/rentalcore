@@ -10,6 +10,12 @@ let customerSearchTimeout;
 let currentFilter = 'all';
 let startDateInput;
 let endDateInput;
+let discountValueInput;
+let discountTypeSelect;
+const totalAmount = {{if .totalAmount}}{{printf "%.2f" .totalAmount}}{{else}}null{{end}};
+const initialDiscountValue = {{if .discountAmount}}{{printf "%.2f" .discountAmount}}{{else}}null{{end}};
+const initialDiscountType = {{printf "%q" .discountType}};
+const customerPrefill = {{.customerPrefillJSON}};
 
 function showStatusMessage(type, message) {
     const container = document.getElementById('mappingStatusMessage');
@@ -103,6 +109,101 @@ function applyItemFilter() {
         }
         item.style.display = visible ? '' : 'none';
     });
+}
+
+function getDiscountPayload() {
+    const type = discountTypeSelect ? discountTypeSelect.value : 'amount';
+    if (!discountValueInput) {
+        return { value: null, type };
+    }
+    const raw = parseFloat(discountValueInput.value);
+    return {
+        value: Number.isFinite(raw) ? raw : null,
+        type,
+    };
+}
+
+function updateNetPreview() {
+    const netElement = document.getElementById('netAmountPreview');
+    if (!netElement) {
+        return;
+    }
+    const payload = getDiscountPayload();
+    const baseTotal = typeof totalAmount === 'number' && !Number.isNaN(totalAmount) ? totalAmount : 0;
+    let preview = baseTotal;
+    let displayDiscount = 0;
+    if (payload.value && payload.value > 0) {
+        if (payload.type === 'percent') {
+            displayDiscount = baseTotal * (payload.value / 100);
+            preview = baseTotal - displayDiscount;
+        } else {
+            displayDiscount = payload.value;
+            preview = baseTotal - displayDiscount;
+        }
+    }
+    if (preview < 0) {
+        preview = 0;
+    }
+    netElement.textContent = `€${preview.toFixed(2)}`;
+    const discountPreview = document.getElementById('discountPreviewValue');
+    if (discountPreview) {
+        discountPreview.textContent = `-€${displayDiscount.toFixed(2)}`;
+    }
+}
+
+let customerModal;
+
+function openCustomerCreationModal() {
+    if (!customerPrefill) {
+        showStatusMessage('error', 'No OCR data available for customer creation.');
+        return;
+    }
+    customerModal?.classList.remove('hidden');
+    document.getElementById('customerCompanyInput').value = customerPrefill.company_name || '';
+    document.getElementById('customerFirstNameInput').value = customerPrefill.first_name || '';
+    document.getElementById('customerLastNameInput').value = customerPrefill.last_name || '';
+    document.getElementById('customerStreetInput').value = customerPrefill.street || '';
+    document.getElementById('customerZipInput').value = customerPrefill.zip || '';
+    document.getElementById('customerCityInput').value = customerPrefill.city || '';
+}
+
+function closeCustomerCreationModal() {
+    customerModal?.classList.add('hidden');
+}
+
+async function submitCustomerCreation() {
+    if (!customerPrefill) {
+        return;
+    }
+    const payload = {
+        company_name: document.getElementById('customerCompanyInput').value.trim(),
+        first_name: document.getElementById('customerFirstNameInput').value.trim(),
+        last_name: document.getElementById('customerLastNameInput').value.trim(),
+        street: document.getElementById('customerStreetInput').value.trim(),
+        zip: document.getElementById('customerZipInput').value.trim(),
+        city: document.getElementById('customerCityInput').value.trim(),
+    };
+
+    try {
+        const response = await fetch(`/api/v1/pdf/customers/from-extraction/${extractionId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Failed to create customer');
+        }
+
+        selectedCustomerId = result.customer_id;
+        selectedCustomerName = result.display_name;
+        updateCustomerBadge();
+        closeCustomerCreationModal();
+        showStatusMessage('success', `Customer #${selectedCustomerId} created and linked.`);
+    } catch (error) {
+        console.error('Customer creation error:', error);
+        showStatusMessage('error', error.message || 'Failed to create customer');
+    }
 }
 
 async function runAutoMapping(autoTrigger = false) {
@@ -430,11 +531,15 @@ async function finalizeMappings(closeAfter = true) {
         return;
     }
 
-    const payload = {
-        start_date: startDateInput?.value || null,
-        end_date: endDateInput?.value || null,
-        customer_id: selectedCustomerId || null,
-    };
+	const payload = {
+		start_date: startDateInput?.value || null,
+		end_date: endDateInput?.value || null,
+		customer_id: selectedCustomerId || null,
+	};
+
+	const discountPayload = getDiscountPayload();
+	payload.discount_value = discountPayload.value;
+	payload.discount_type = discountPayload.type;
 
     try {
         const response = await fetch(`/api/v1/pdf/extractions/${extractionId}/finalize`, {
@@ -510,6 +615,19 @@ function rejectMapping(itemId) {
 document.addEventListener('DOMContentLoaded', () => {
     startDateInput = document.getElementById('jobStartDateInput');
     endDateInput = document.getElementById('jobEndDateInput');
+    discountValueInput = document.getElementById('discountValueInput');
+    discountTypeSelect = document.getElementById('discountTypeSelect');
+    customerModal = document.getElementById('customerCreationModal');
+
+    if (discountValueInput && initialDiscountValue !== null) {
+        discountValueInput.value = initialDiscountValue;
+    }
+    if (discountTypeSelect) {
+        discountTypeSelect.value = initialDiscountType || 'amount';
+    }
+    updateNetPreview();
+    discountValueInput?.addEventListener('input', updateNetPreview);
+    discountTypeSelect?.addEventListener('change', updateNetPreview);
 
     const sessionKey = `pdf_auto_map_${extractionId}`;
     if (!sessionStorage.getItem(sessionKey)) {
@@ -825,6 +943,33 @@ document.addEventListener('DOMContentLoaded', () => {
         .mapped-summary-card .mapped-summary-text {
             flex: 1;
         }
+        .rc-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .rc-modal.hidden {
+            display: none;
+        }
+        .rc-modal-content {
+            background: var(--rc-bg-card);
+            padding: 24px;
+            border-radius: 12px;
+            width: min(600px, 90vw);
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        }
+        .rc-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
     </style>
 </head>
 <body class="rc-animate-fade-in">
@@ -904,6 +1049,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class="bi bi-search search-icon"></i>
                         </div>
                         <div id="customerSearchResults" class="customer-search-results"></div>
+                        {{if .hasCustomerPrefill}}
+                        <button type="button" class="rc-btn rc-btn-outline" style="margin-top: 12px;" onclick="openCustomerCreationModal()">
+                            <i class="bi bi-person-plus"></i> Create Customer from OCR
+                        </button>
+                        <p class="rc-text-xs rc-text-muted" style="margin-top: 6px;">
+                            Prefills name and address using the parsed recipient block. Adjust details before saving.
+                        </p>
+                        {{end}}
                     </div>
                 </div>
                 <div>
@@ -927,34 +1080,39 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
 
-        {{if or .totalAmount .discountAmount .netAmount}}
         <div class="mapping-card">
             <h3 style="margin: 0 0 12px 0;"><i class="bi bi-receipt"></i> Invoice Summary</h3>
             <div class="stats-grid">
-                {{if .totalAmount}}
                 <div class="stat-card">
                     <div class="stat-label">Parsed Total</div>
-                    <div class="stat-value">€{{printf "%.2f" .totalAmount}}</div>
+                    <div class="stat-value">€{{if .totalAmount}}{{printf "%.2f" .totalAmount}}{{else}}0.00{{end}}</div>
                 </div>
-                {{end}}
-                {{if .discountAmount}}
                 <div class="stat-card">
                     <div class="stat-label">Parsed Discount</div>
-                    <div class="stat-value" style="color: var(--rc-success);">-€{{printf "%.2f" .discountAmount}}</div>
+                    <div class="stat-value" id="discountPreviewValue" style="color: var(--rc-success);">-€{{if .discountAmount}}{{printf "%.2f" .discountAmount}}{{else}}0.00{{end}}</div>
                 </div>
-                {{end}}
-                {{if .netAmount}}
                 <div class="stat-card">
                     <div class="stat-label">Net After Discount</div>
-                    <div class="stat-value">€{{printf "%.2f" .netAmount}}</div>
+                    <div class="stat-value" id="netAmountPreview">€{{if .netAmount}}{{printf "%.2f" .netAmount}}{{else}}{{if .totalAmount}}{{printf "%.2f" .totalAmount}}{{else}}0.00{{end}}{{end}}</div>
                 </div>
-                {{end}}
+            </div>
+            <div class="rc-grid rc-grid-2 rc-grid-gap-md" style="margin-top: 16px;">
+                <div class="rc-form-group">
+                    <label class="rc-label">Discount Type</label>
+                    <select class="rc-input" id="discountTypeSelect">
+                        <option value="amount">Amount (€)</option>
+                        <option value="percent">Percent (%)</option>
+                    </select>
+                </div>
+                <div class="rc-form-group">
+                    <label class="rc-label">Discount Value</label>
+                    <input type="number" class="rc-input" id="discountValueInput" step="0.01" min="0" placeholder="0.00">
+                </div>
             </div>
             <p class="rc-text-xs rc-text-muted" style="margin-top: 8px;">
-                Parsed totals are used to override per-device prices when they differ from catalog values.
+                Adjust the discount before saving. For percentages we still store the effective euro amount for future OCR comparisons.
             </p>
         </div>
-        {{end}}
 
         <div class="mapping-toolbar">
             <span style="font-weight: 600;">Filter:</span>
@@ -1083,6 +1241,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     </div>
 
+
+
+    <div id="customerCreationModal" class="rc-modal hidden">
+        <div class="rc-modal-content">
+            <div class="rc-modal-header">
+                <h3 style="margin: 0;">Create Customer from OCR</h3>
+                <button class="rc-btn rc-btn-link" onclick="closeCustomerCreationModal()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="rc-grid rc-grid-2 rc-grid-gap-md">
+                <div class="rc-form-group">
+                    <label class="rc-label">Company</label>
+                    <input type="text" class="rc-input" id="customerCompanyInput" placeholder="Company or Organization">
+                </div>
+                <div class="rc-form-group">
+                    <label class="rc-label">First Name</label>
+                    <input type="text" class="rc-input" id="customerFirstNameInput" placeholder="First name">
+                </div>
+                <div class="rc-form-group">
+                    <label class="rc-label">Last Name</label>
+                    <input type="text" class="rc-input" id="customerLastNameInput" placeholder="Last name">
+                </div>
+                <div class="rc-form-group">
+                    <label class="rc-label">Street</label>
+                    <input type="text" class="rc-input" id="customerStreetInput" placeholder="Street and house number">
+                </div>
+                <div class="rc-form-group">
+                    <label class="rc-label">ZIP</label>
+                    <input type="text" class="rc-input" id="customerZipInput" placeholder="Postal code">
+                </div>
+                <div class="rc-form-group">
+                    <label class="rc-label">City</label>
+                    <input type="text" class="rc-input" id="customerCityInput" placeholder="City">
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="rc-btn rc-btn-secondary" onclick="closeCustomerCreationModal()">Cancel</button>
+                <button class="rc-btn rc-btn-success" onclick="submitCustomerCreation()">
+                    <i class="bi bi-save"></i> Create & Link Customer
+                </button>
+            </div>
+        </div>
+    </div>
 
 
     <script src="/static/js/rental-core-design.js"></script>

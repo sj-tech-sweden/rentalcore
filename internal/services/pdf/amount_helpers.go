@@ -53,8 +53,9 @@ func findTokenWithRegex(line string, rx *regexp.Regexp) (string, bool) {
 	}
 	for i := len(indexes) - 1; i >= 0; i-- {
 		idx := indexes[i]
-		if idx[1] < len(line) {
-			next, _ := utf8.DecodeRuneInString(line[idx[1]:])
+		rest := strings.TrimLeft(line[idx[1]:], " \t")
+		if len(rest) > 0 {
+			next, _ := utf8.DecodeRuneInString(rest)
 			if next == '%' {
 				continue
 			}

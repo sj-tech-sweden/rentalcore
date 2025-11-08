@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"math"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -533,13 +535,24 @@ func (h *PDFHandler) ShowMappingScreen(c *gin.Context) {
 		startDate = &value
 	}
 
+	discountType := "amount"
+	if extraction.Metadata.Valid {
+		var meta map[string]string
+		if err := json.Unmarshal([]byte(extraction.Metadata.String), &meta); err == nil {
+			if dt := strings.TrimSpace(meta["discount_type"]); dt != "" {
+				discountType = dt
+			}
+		}
+	}
+
 	data := gin.H{
-		"extraction": extraction,
-		"upload":     upload,
-		"items":      itemsWithSuggestions,
-		"pageTitle":  "PDF Product Mapping",
-		"startDate":  formatDateInput(startDate),
-		"endDate":    formatDateInput(endDate),
+		"extraction":   extraction,
+		"upload":       upload,
+		"items":        itemsWithSuggestions,
+		"pageTitle":    "PDF Product Mapping",
+		"startDate":    formatDateInput(startDate),
+		"endDate":      formatDateInput(endDate),
+		"discountType": discountType,
 	}
 
 	if extraction.TotalAmount.Valid {
@@ -570,6 +583,18 @@ func (h *PDFHandler) ShowMappingScreen(c *gin.Context) {
 		if err := h.DB.First(&customer, extraction.CustomerID.Int64).Error; err == nil {
 			data["selectedCustomerName"] = customer.GetDisplayName()
 		}
+	}
+
+	if prefill := h.buildCustomerPrefill(&extraction); prefill != nil {
+		data["hasCustomerPrefill"] = true
+		if raw, err := json.Marshal(prefill); err == nil {
+			data["customerPrefillJSON"] = template.JS(raw)
+		} else {
+			data["customerPrefillJSON"] = template.JS("null")
+		}
+	} else {
+		data["customerPrefillJSON"] = template.JS("null")
+		data["hasCustomerPrefill"] = false
 	}
 
 	c.HTML(http.StatusOK, "pdf_mapping.html", data)
@@ -789,6 +814,71 @@ func (h *PDFHandler) SaveCustomerMapping(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
+// CreateCustomerFromExtraction creates a CRM customer based on OCR data
+func (h *PDFHandler) CreateCustomerFromExtraction(c *gin.Context) {
+	extractionID := c.Param("extraction_id")
+
+	var extraction models.PDFExtraction
+	if err := h.DB.First(&extraction, extractionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Extraction not found"})
+		return
+	}
+
+	var req struct {
+		CompanyName string `json:"company_name"`
+		FirstName   string `json:"first_name"`
+		LastName    string `json:"last_name"`
+		Street      string `json:"street"`
+		Zip         string `json:"zip"`
+		City        string `json:"city"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		return
+	}
+
+	if strings.TrimSpace(req.CompanyName) == "" && strings.TrimSpace(req.LastName) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Company or last name is required"})
+		return
+	}
+
+	customer := &models.Customer{}
+	customer.CompanyName = optionalString(req.CompanyName)
+	customer.FirstName = optionalString(req.FirstName)
+	customer.LastName = optionalString(req.LastName)
+	customer.Street = optionalString(req.Street)
+	customer.ZIP = optionalString(req.Zip)
+	customer.City = optionalString(req.City)
+
+	if err := h.JobHandler.customerRepo.Create(customer); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create customer"})
+		return
+	}
+
+	displayName := customer.GetDisplayName()
+	updates := map[string]interface{}{
+		"customer_id": sql.NullInt64{Int64: int64(customer.CustomerID), Valid: true},
+	}
+	if displayName != "" {
+		updates["customer_name"] = sql.NullString{String: displayName, Valid: true}
+	}
+
+	if err := h.DB.Model(&models.PDFExtraction{}).Where("extraction_id = ?", extraction.ExtractionID).Updates(updates).Error; err != nil {
+		log.Printf("warning: failed to update extraction with new customer: %v", err)
+	}
+
+	if h.CustomerMapper != nil && displayName != "" {
+		_ = h.CustomerMapper.SaveMapping(displayName, int(customer.CustomerID), 1)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":      true,
+		"customer_id":  customer.CustomerID,
+		"display_name": displayName,
+	})
+}
+
 // FinalizeExtraction creates or links a job for the PDF extraction
 // POST /api/v1/pdf/extractions/:extraction_id/finalize
 func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
@@ -807,9 +897,11 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 	}
 
 	var req struct {
-		StartDate  string `json:"start_date"`
-		EndDate    string `json:"end_date"`
-		CustomerID *int   `json:"customer_id"`
+		StartDate     string   `json:"start_date"`
+		EndDate       string   `json:"end_date"`
+		CustomerID    *int     `json:"customer_id"`
+		DiscountValue *float64 `json:"discount_value"`
+		DiscountType  string   `json:"discount_type"`
 	}
 
 	if c.Request.ContentLength > 0 {
@@ -829,6 +921,48 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 		log.Printf("warning: failed to persist mappings for extraction %d: %v", extraction.ExtractionID, err)
 	}
 
+	var meta map[string]string
+	if extraction.Metadata.Valid {
+		_ = json.Unmarshal([]byte(extraction.Metadata.String), &meta)
+	}
+	if meta == nil {
+		meta = map[string]string{}
+	}
+
+	discountType := strings.TrimSpace(meta["discount_type"])
+	if discountType != "percent" {
+		discountType = "amount"
+	}
+
+	if req.DiscountType != "" {
+		candidate := strings.ToLower(strings.TrimSpace(req.DiscountType))
+		if candidate == "percent" {
+			discountType = "percent"
+		} else {
+			discountType = "amount"
+		}
+	}
+
+	if req.DiscountValue != nil {
+		if *req.DiscountValue > 0 {
+			extraction.DiscountAmount = sql.NullFloat64{Float64: *req.DiscountValue, Valid: true}
+		} else {
+			extraction.DiscountAmount = sql.NullFloat64{}
+		}
+		if err := h.DB.Model(&models.PDFExtraction{}).
+			Where("extraction_id = ?", extraction.ExtractionID).
+			Update("discount_amount", extraction.DiscountAmount).Error; err != nil {
+			log.Printf("warning: failed to update extraction discount: %v", err)
+		}
+	}
+
+	meta["discount_type"] = discountType
+
+	discountValue := 0.0
+	if extraction.DiscountAmount.Valid {
+		discountValue = extraction.DiscountAmount.Float64
+	}
+
 	// If job already linked, keep it in sync with the latest mappings
 	if upload.JobID.Valid {
 		var job models.Job
@@ -838,6 +972,16 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": assignErr.Error()})
 				return
 			}
+
+			if err := h.DB.Model(&models.Job{}).Where("job_id = ?", job.JobID).
+				Updates(map[string]interface{}{
+					"discount":      discountValue,
+					"discount_type": discountType,
+				}).Error; err != nil {
+				log.Printf("warning: failed to persist updated discount for job %d: %v", job.JobID, err)
+			}
+
+			_ = h.JobHandler.jobRepo.CalculateAndUpdateRevenue(job.JobID)
 
 			response := gin.H{
 				"success":  true,
@@ -862,14 +1006,6 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	}
-
-	var meta map[string]string
-	if extraction.Metadata.Valid {
-		_ = json.Unmarshal([]byte(extraction.Metadata.String), &meta)
-	}
-	if meta == nil {
-		meta = map[string]string{}
 	}
 
 	parseMetaDate := func(value string) *time.Time {
@@ -918,19 +1054,15 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 		revenue = extraction.TotalAmount.Float64
 	}
 
-	discount := 0.0
-	if extraction.DiscountAmount.Valid {
-		discount = extraction.DiscountAmount.Float64
-	}
-
 	desc := fmt.Sprintf("Generated from %s (Extraction %d)", upload.OriginalFilename, extraction.ExtractionID)
 	truncatedDesc := truncateString(desc, 48)
 
 	job := models.Job{
-		CustomerID: customerID,
-		StatusID:   statusID,
-		Discount:   discount,
-		Revenue:    revenue,
+		CustomerID:   customerID,
+		StatusID:     statusID,
+		Discount:     discountValue,
+		DiscountType: discountType,
+		Revenue:      revenue,
 	}
 	job.Description = &truncatedDesc
 	if startDate != nil {
@@ -1085,6 +1217,133 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (
 	}
 
 	return "", nil
+}
+
+type customerPrefill struct {
+	CompanyName string   `json:"company_name,omitempty"`
+	FirstName   string   `json:"first_name,omitempty"`
+	LastName    string   `json:"last_name,omitempty"`
+	Street      string   `json:"street,omitempty"`
+	Zip         string   `json:"zip,omitempty"`
+	City        string   `json:"city,omitempty"`
+	RawLines    []string `json:"raw_lines,omitempty"`
+}
+
+var (
+	streetRegex     = regexp.MustCompile(`(?i)^[\p{L}\d\s\.-]+\d+[A-Za-z]?$`)
+	zipCityRegex    = regexp.MustCompile(`^(\d{4,5})\s+(.+)$`)
+	honorificsRegex = regexp.MustCompile(`(?i)\b(herrn|herr|frau|mr|mrs|ms)\b\.?`)
+)
+
+func (h *PDFHandler) buildCustomerPrefill(extraction *models.PDFExtraction) *customerPrefill {
+	if extraction == nil || !extraction.RawText.Valid {
+		return nil
+	}
+	lines := strings.Split(extraction.RawText.String, "\n")
+	block := captureRecipientBlock(lines)
+	if len(block) == 0 {
+		return nil
+	}
+	prefill := &customerPrefill{RawLines: block}
+
+	for idx, line := range block {
+		lower := strings.ToLower(line)
+		if prefill.FirstName == "" && (strings.Contains(lower, "herr") || strings.Contains(lower, "frau")) {
+			clean := strings.TrimSpace(removeHonorifics(line))
+			parts := strings.Fields(clean)
+			if len(parts) >= 1 {
+				if len(parts) >= 2 {
+					prefill.FirstName = parts[0]
+					prefill.LastName = strings.Join(parts[1:], " ")
+				} else {
+					prefill.LastName = parts[0]
+				}
+			}
+			if idx > 0 && prefill.CompanyName == "" {
+				prefill.CompanyName = strings.Join(block[:idx], " ")
+			}
+			continue
+		}
+		if prefill.Street == "" && streetRegex.MatchString(line) {
+			prefill.Street = line
+			continue
+		}
+		if prefill.Zip == "" {
+			if matches := zipCityRegex.FindStringSubmatch(line); len(matches) == 3 {
+				prefill.Zip = matches[1]
+				prefill.City = matches[2]
+			}
+		}
+	}
+
+	if prefill.CompanyName == "" && extraction.CustomerName.Valid {
+		prefill.CompanyName = extraction.CustomerName.String
+	}
+
+	return prefill
+}
+
+func captureRecipientBlock(lines []string) []string {
+	best := []string{}
+	for i, raw := range lines {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			continue
+		}
+		lower := strings.ToLower(trimmed)
+		if strings.Contains(lower, "herr") || strings.Contains(lower, "frau") || strings.Contains(lower, "mr") || strings.Contains(lower, "mrs") {
+			start := i
+			for start > 0 {
+				prev := strings.TrimSpace(lines[start-1])
+				if prev == "" {
+					break
+				}
+				start--
+			}
+			block := make([]string, 0, 8)
+			for j := start; j < len(lines); j++ {
+				t := strings.TrimSpace(lines[j])
+				if t == "" {
+					if len(block) > 0 {
+						break
+					}
+					continue
+				}
+				block = append(block, t)
+				if len(block) >= 10 {
+					break
+				}
+			}
+			if len(block) > len(best) {
+				best = block
+			}
+			break
+		}
+	}
+	if len(best) == 0 {
+		for _, raw := range lines {
+			trimmed := strings.TrimSpace(raw)
+			if trimmed != "" {
+				best = append(best, trimmed)
+			}
+			if len(best) >= 6 {
+				break
+			}
+		}
+	}
+	return best
+}
+
+func removeHonorifics(value string) string {
+	return honorificsRegex.ReplaceAllString(value, "")
+}
+
+func optionalString(value string) *string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
 }
 
 func (h *PDFHandler) computePriceOverrides(aggregates map[uint]*productPricingAggregate) (map[uint]float64, error) {
