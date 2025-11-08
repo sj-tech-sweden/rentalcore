@@ -276,17 +276,17 @@ func (p *IntelligentParser) extractDiscount(lines []string, totalAmount float64)
 		if !containsKeyword(lineLower, discountKeywords) {
 			continue
 		}
+		if pct, ok := findPercentage(line); ok && totalAmount > 0 {
+			amount := totalAmount * pct / 100
+			if amount > 0 {
+				return amount
+			}
+		}
 		if token, ok := findAmountToken(line); ok {
 			amount := p.parseAmount(token)
 			if amount < 0 {
 				amount = -amount
 			}
-			if amount > 0 {
-				return amount
-			}
-		}
-		if pct, ok := findPercentage(line); ok && totalAmount > 0 {
-			amount := totalAmount * pct / 100
 			if amount > 0 {
 				return amount
 			}
