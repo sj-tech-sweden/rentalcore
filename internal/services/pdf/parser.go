@@ -271,7 +271,7 @@ func (p *IntelligentParser) extractTotalAmount(lines []string) float64 {
 
 // extractDiscount extracts discount amount
 func (p *IntelligentParser) extractDiscount(lines []string, totalAmount float64) float64 {
-	for _, line := range lines {
+	for idx, line := range lines {
 		lineLower := strings.ToLower(line)
 		if !containsKeyword(lineLower, discountKeywords) {
 			continue
@@ -291,8 +291,30 @@ func (p *IntelligentParser) extractDiscount(lines []string, totalAmount float64)
 				return amount
 			}
 		}
+		if token, ok := findAmountInSubsequentLines(lines, idx, 3); ok {
+			amount := p.parseAmount(token)
+			if amount < 0 {
+				amount = -amount
+			}
+			if amount > 0 {
+				return amount
+			}
+		}
 	}
 	return 0
+}
+
+func findAmountInSubsequentLines(lines []string, startIdx, lookahead int) (string, bool) {
+	for j := 1; j <= lookahead && startIdx+j < len(lines); j++ {
+		candidate := strings.TrimSpace(lines[startIdx+j])
+		if candidate == "" {
+			continue
+		}
+		if token, ok := findDecimalAmountToken(candidate); ok {
+			return token, true
+		}
+	}
+	return "", false
 }
 
 // parseLineItems parses line items from document

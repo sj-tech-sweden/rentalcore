@@ -363,6 +363,11 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 				discount = e.Parser.parseAmount(token)
 			}
 			if discount <= 0 {
+				if token, ok := findAmountAfterLine(lines, i, 3); ok {
+					discount = e.Parser.parseAmount(token)
+				}
+			}
+			if discount <= 0 {
 				if pct, ok := findPercentage(line); ok && data.TotalAmount > 0 {
 					discount = data.TotalAmount * pct / 100
 				}
@@ -707,6 +712,19 @@ func containsKeyword(value string, keywords []string) bool {
 		}
 	}
 	return false
+}
+
+func findAmountAfterLine(lines []string, startIdx, lookahead int) (string, bool) {
+	for j := 1; j <= lookahead && startIdx+j < len(lines); j++ {
+		candidate := strings.TrimSpace(lines[startIdx+j])
+		if candidate == "" {
+			continue
+		}
+		if token, ok := findDecimalAmountToken(candidate); ok {
+			return token, true
+		}
+	}
+	return "", false
 }
 
 func (e *PDFExtractor) isDocumentNumberLabel(line string) bool {

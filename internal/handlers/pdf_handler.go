@@ -1233,6 +1233,8 @@ var (
 	streetRegex     = regexp.MustCompile(`(?i)^[\p{L}\d\s\.-]+\d+[A-Za-z]?$`)
 	zipCityRegex    = regexp.MustCompile(`^(\d{4,5})\s+(.+)$`)
 	honorificsRegex = regexp.MustCompile(`(?i)\b(herrn|herr|frau|mr|mrs|ms)\b\.?`)
+	addressKeywords = []string{"angebotsnr", "kundennr", "rechnung", "invoice", "offer", "angebot"}
+	vendorNoise     = []string{"tel", "telefon", "fax", "email", "info@", "iban", "bic", "sparkasse", "www.", "tsunami events"}
 )
 
 func (h *PDFHandler) buildCustomerPrefill(extraction *models.PDFExtraction) *customerPrefill {
@@ -1244,26 +1246,30 @@ func (h *PDFHandler) buildCustomerPrefill(extraction *models.PDFExtraction) *cus
 	if len(block) == 0 {
 		return nil
 	}
-	prefill := &customerPrefill{RawLines: block}
+	cleaned := filterRecipientLines(block)
+	prefill := &customerPrefill{RawLines: cleaned}
 
-	for idx, line := range block {
-		lower := strings.ToLower(line)
-		if prefill.FirstName == "" && (strings.Contains(lower, "herr") || strings.Contains(lower, "frau")) {
+	nameIdx := -1
+	for idx, line := range cleaned {
+		if containsHonorific(strings.ToLower(line)) {
+			nameIdx = idx
 			clean := strings.TrimSpace(removeHonorifics(line))
 			parts := strings.Fields(clean)
-			if len(parts) >= 1 {
-				if len(parts) >= 2 {
-					prefill.FirstName = parts[0]
-					prefill.LastName = strings.Join(parts[1:], " ")
-				} else {
-					prefill.LastName = parts[0]
-				}
+			if len(parts) >= 2 {
+				prefill.FirstName = strings.Title(parts[0])
+				prefill.LastName = strings.Title(strings.Join(parts[1:], " "))
+			} else if len(parts) == 1 {
+				prefill.LastName = strings.Title(parts[0])
 			}
-			if idx > 0 && prefill.CompanyName == "" {
-				prefill.CompanyName = strings.Join(block[:idx], " ")
-			}
-			continue
+			break
 		}
+	}
+
+	if nameIdx > 0 {
+		prefill.CompanyName = strings.Join(cleaned[:nameIdx], " ")
+	}
+
+	for _, line := range cleaned {
 		if prefill.Street == "" && streetRegex.MatchString(line) {
 			prefill.Street = line
 			continue
@@ -1271,7 +1277,15 @@ func (h *PDFHandler) buildCustomerPrefill(extraction *models.PDFExtraction) *cus
 		if prefill.Zip == "" {
 			if matches := zipCityRegex.FindStringSubmatch(line); len(matches) == 3 {
 				prefill.Zip = matches[1]
-				prefill.City = matches[2]
+				prefill.City = strings.Title(matches[2])
+			}
+		}
+		if nameIdx == -1 && !containsHonorific(strings.ToLower(line)) && prefill.LastName == "" {
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				prefill.FirstName = strings.Title(parts[0])
+				prefill.LastName = strings.Title(strings.Join(parts[1:], " "))
+				nameIdx = 0
 			}
 		}
 	}
@@ -1284,6 +1298,45 @@ func (h *PDFHandler) buildCustomerPrefill(extraction *models.PDFExtraction) *cus
 }
 
 func captureRecipientBlock(lines []string) []string {
+	if block := captureBlockBeforeKeywords(lines); len(block) > 0 {
+		return block
+	}
+	return captureBlockByHonorific(lines)
+}
+
+func captureBlockBeforeKeywords(lines []string) []string {
+	for i, raw := range lines {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			continue
+		}
+		lower := strings.ToLower(trimmed)
+		if containsAny(lower, addressKeywords) {
+			block := []string{}
+			collected := 0
+			for j := i - 1; j >= 0 && collected < 10; j-- {
+				line := strings.TrimSpace(lines[j])
+				if line == "" {
+					if len(block) > 0 {
+						break
+					}
+					continue
+				}
+				if isVendorNoise(line) {
+					continue
+				}
+				block = append([]string{line}, block...)
+				collected++
+			}
+			if len(block) > 0 {
+				return block
+			}
+		}
+	}
+	return nil
+}
+
+func captureBlockByHonorific(lines []string) []string {
 	best := []string{}
 	for i, raw := range lines {
 		trimmed := strings.TrimSpace(raw)
@@ -1291,7 +1344,7 @@ func captureRecipientBlock(lines []string) []string {
 			continue
 		}
 		lower := strings.ToLower(trimmed)
-		if strings.Contains(lower, "herr") || strings.Contains(lower, "frau") || strings.Contains(lower, "mr") || strings.Contains(lower, "mrs") {
+		if containsHonorific(lower) {
 			start := i
 			for start > 0 {
 				prev := strings.TrimSpace(lines[start-1])
@@ -1300,7 +1353,7 @@ func captureRecipientBlock(lines []string) []string {
 				}
 				start--
 			}
-			block := make([]string, 0, 8)
+			block := make([]string, 0, 10)
 			for j := start; j < len(lines); j++ {
 				t := strings.TrimSpace(lines[j])
 				if t == "" {
@@ -1314,16 +1367,14 @@ func captureRecipientBlock(lines []string) []string {
 					break
 				}
 			}
-			if len(block) > len(best) {
-				best = block
-			}
+			best = block
 			break
 		}
 	}
 	if len(best) == 0 {
 		for _, raw := range lines {
 			trimmed := strings.TrimSpace(raw)
-			if trimmed != "" {
+			if trimmed != "" && !isVendorNoise(trimmed) {
 				best = append(best, trimmed)
 			}
 			if len(best) >= 6 {
@@ -1334,8 +1385,46 @@ func captureRecipientBlock(lines []string) []string {
 	return best
 }
 
+func containsAny(value string, keywords []string) bool {
+	for _, kw := range keywords {
+		if strings.Contains(value, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsHonorific(value string) bool {
+	return strings.Contains(value, "herr") || strings.Contains(value, "frau") || strings.Contains(value, "mr") || strings.Contains(value, "mrs") || strings.Contains(value, "ms")
+}
+
+func isVendorNoise(line string) bool {
+	lower := strings.ToLower(line)
+	for _, kw := range vendorNoise {
+		if strings.Contains(lower, kw) {
+			return true
+		}
+	}
+	return false
+}
+
 func removeHonorifics(value string) string {
-	return honorificsRegex.ReplaceAllString(value, "")
+	return strings.TrimSpace(honorificsRegex.ReplaceAllString(value, ""))
+}
+
+func filterRecipientLines(lines []string) []string {
+	result := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || isVendorNoise(trimmed) {
+			continue
+		}
+		result = append(result, trimmed)
+	}
+	if len(result) == 0 {
+		return lines
+	}
+	return result
 }
 
 func optionalString(value string) *string {
