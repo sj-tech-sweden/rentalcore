@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"math"
+	"mime"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +19,7 @@ import (
 	"unicode"
 
 	"go-barcode-webapp/internal/models"
+	"go-barcode-webapp/internal/repository"
 	"go-barcode-webapp/internal/services/pdf"
 
 	"github.com/gin-gonic/gin"
@@ -28,16 +33,25 @@ type PDFHandler struct {
 	Mapper         *pdf.ProductMapper
 	CustomerMapper *pdf.CustomerMapper
 	JobHandler     *JobHandler
+	AttachmentRepo *repository.JobAttachmentRepository
+	attachmentDir  string
 }
 
 // NewPDFHandler creates a new PDF handler
-func NewPDFHandler(db *gorm.DB, uploadDir string, jobHandler *JobHandler) *PDFHandler {
+func NewPDFHandler(db *gorm.DB, uploadDir string, jobHandler *JobHandler, attachmentRepo *repository.JobAttachmentRepository) *PDFHandler {
+	attachmentDir := filepath.Join(uploadDir, "job_attachments")
+	if err := os.MkdirAll(attachmentDir, 0755); err != nil {
+		log.Printf("warning: failed to ensure attachment directory %s: %v", attachmentDir, err)
+	}
+
 	return &PDFHandler{
 		DB:             db,
 		Extractor:      pdf.NewPDFExtractor(uploadDir),
 		Mapper:         pdf.NewProductMapper(db),
 		CustomerMapper: pdf.NewCustomerMapper(db),
 		JobHandler:     jobHandler,
+		AttachmentRepo: attachmentRepo,
+		attachmentDir:  attachmentDir,
 	}
 }
 
@@ -88,6 +102,10 @@ func (h *PDFHandler) UploadPDF(c *gin.Context) {
 	if err := h.DB.Create(upload).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save upload record"})
 		return
+	}
+
+	if upload.JobID.Valid {
+		h.attachUploadToJob(upload, uint(upload.JobID.Int64))
 	}
 
 	// Start processing asynchronously
@@ -1030,6 +1048,8 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 
 			_ = h.JobHandler.jobRepo.CalculateAndUpdateRevenue(job.JobID)
 
+			h.attachUploadToJob(&upload, job.JobID)
+
 			response := gin.H{
 				"success":  true,
 				"job_id":   job.JobID,
@@ -1135,6 +1155,8 @@ func (h *PDFHandler) FinalizeExtraction(c *gin.Context) {
 
 	h.DB.Model(&models.PDFUpload{}).Where("upload_id = ?", upload.UploadID).
 		Update("job_id", job.JobID)
+
+	h.attachUploadToJob(&upload, job.JobID)
 
 	response := gin.H{
 		"success":  true,
@@ -1692,6 +1714,121 @@ func (h *PDFHandler) applyCustomPriceOverrides(job *models.Job, overrides map[ui
 	}
 
 	return nil
+}
+
+func (h *PDFHandler) attachUploadToJob(upload *models.PDFUpload, jobID uint) {
+	if h.AttachmentRepo == nil || upload == nil || jobID == 0 {
+		return
+	}
+
+	sourcePath := strings.TrimSpace(upload.FilePath)
+	if sourcePath == "" {
+		return
+	}
+
+	if _, err := os.Stat(sourcePath); err != nil {
+		log.Printf("warning: cannot attach OCR upload %d to job %d: %v", upload.UploadID, jobID, err)
+		return
+	}
+
+	if err := os.MkdirAll(h.attachmentDir, 0755); err != nil {
+		log.Printf("warning: cannot create attachment directory %s: %v", h.attachmentDir, err)
+		return
+	}
+
+	destFilename := h.buildAttachmentFilename(upload, jobID)
+	if existing, err := h.AttachmentRepo.GetByFilename(destFilename); err == nil && existing != nil {
+		if existing.JobID == jobID {
+			return
+		}
+	}
+
+	destPath := filepath.Join(h.attachmentDir, destFilename)
+	if err := copyFile(sourcePath, destPath); err != nil {
+		log.Printf("warning: failed to copy OCR upload %d for job %d: %v", upload.UploadID, jobID, err)
+		return
+	}
+
+	info, err := os.Stat(destPath)
+	if err != nil {
+		log.Printf("warning: failed to stat attachment copy for job %d: %v", jobID, err)
+		return
+	}
+
+	ext := strings.ToLower(filepath.Ext(upload.OriginalFilename))
+	mimeType := mime.TypeByExtension(ext)
+	if mimeType == "" {
+		mimeType = "application/pdf"
+	}
+
+	attachment := &models.JobAttachment{
+		JobID:            jobID,
+		Filename:         destFilename,
+		OriginalFilename: upload.OriginalFilename,
+		FilePath:         destPath,
+		FileSize:         info.Size(),
+		MimeType:         mimeType,
+		Description:      fmt.Sprintf("Imported from OCR upload #%d", upload.UploadID),
+		UploadedAt:       time.Now(),
+		IsActive:         true,
+	}
+
+	if uploader := convertNullInt64ToUintPtr(upload.UploadedBy); uploader != nil {
+		attachment.UploadedBy = uploader
+	}
+
+	if err := h.AttachmentRepo.Create(attachment); err != nil {
+		log.Printf("warning: failed to create attachment record for job %d: %v", jobID, err)
+		_ = os.Remove(destPath)
+	}
+}
+
+func (h *PDFHandler) buildAttachmentFilename(upload *models.PDFUpload, jobID uint) string {
+	base := strings.TrimSuffix(upload.OriginalFilename, filepath.Ext(upload.OriginalFilename))
+	safeBase := sanitizeFilenameBase(base)
+	if safeBase == "" {
+		safeBase = "document"
+	}
+	return fmt.Sprintf("job%d_upload%d_%s%s", jobID, upload.UploadID, safeBase, filepath.Ext(upload.OriginalFilename))
+}
+
+var filenameSanitizer = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+
+func sanitizeFilenameBase(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+	sanitized := filenameSanitizer.ReplaceAllString(trimmed, "_")
+	return strings.Trim(sanitized, "_")
+}
+
+func copyFile(src, dst string) error {
+	source, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	target, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer target.Close()
+
+	if _, err := io.Copy(target, source); err != nil {
+		return err
+	}
+
+	return target.Sync()
+}
+
+func convertNullInt64ToUintPtr(value sql.NullInt64) *uint {
+	if !value.Valid || value.Int64 <= 0 {
+		return nil
+	}
+	u := uint(value.Int64)
+	return &u
 }
 
 func formatDateInput(t *time.Time) string {

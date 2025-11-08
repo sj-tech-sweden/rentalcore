@@ -354,7 +354,7 @@ func main() {
 	companyHandler := handlers.NewCompanyHandler(db.DB, companyProvider)
 	monitoringHandler := handlers.NewMonitoringHandler(db.DB, monitoring.GlobalErrorTracker, perfMonitor, cacheManager)
 	jobAttachmentHandler := handlers.NewJobAttachmentHandler(jobAttachmentRepo, jobRepo)
-	pdfHandler := handlers.NewPDFHandler(db.DB, "uploads", jobHandler)
+	pdfHandler := handlers.NewPDFHandler(db.DB, "uploads", jobHandler, jobAttachmentRepo)
 
 	// Initialize RBAC middleware for role-based access control
 	rbacMiddleware := middleware.NewRBACMiddleware(db.DB)

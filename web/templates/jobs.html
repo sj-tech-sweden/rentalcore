@@ -285,6 +285,40 @@
     <!-- JavaScript -->
     <script src="/static/js/rental-core-design.js?v={{.timestamp}}"></script>
     <script>
+    async function fetchJSON(url, options = {}) {
+        const config = {
+            credentials: 'same-origin',
+            ...options,
+        };
+
+        const headers = new Headers(options.headers || {});
+        if (!headers.has('Accept')) {
+            headers.set('Accept', 'application/json');
+        }
+        if (!headers.has('X-Requested-With')) {
+            headers.set('X-Requested-With', 'XMLHttpRequest');
+        }
+        config.headers = headers;
+
+        const response = await fetch(url, config);
+        const payload = await response.text();
+
+        if (!response.ok) {
+            throw new Error(payload || `HTTP ${response.status}`);
+        }
+
+        const contentType = response.headers.get('content-type') || "";
+        if (!contentType.includes('application/json')) {
+            throw new Error(payload ? payload.substring(0, 200) : 'Unexpected non-JSON response');
+        }
+
+        try {
+            return JSON.parse(payload);
+        } catch (err) {
+            throw new Error(`Invalid JSON response: ${err.message}`);
+        }
+    }
+
     // Job Details Modal
     function showJobDetails(jobID) {
         const modal = document.getElementById('jobDetailsModal');
@@ -303,15 +337,7 @@
         `;
         
         // Fetch job details
-        fetch('/api/v1/jobs/' + jobID)
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(`HTTP ${response.status}: ${text}`);
-                    });
-                }
-                return response.json();
-            })
+        fetchJSON('/api/v1/jobs/' + jobID)
             .then(job => {
                 console.log('Job data received:', job);
                 const jobData = job.job || job;
@@ -438,8 +464,7 @@
         `;
         
         // Fetch job devices
-        fetch('/api/v1/jobs/' + jobID + '/devices')
-            .then(response => response.json())
+        fetchJSON('/api/v1/jobs/' + jobID + '/devices')
             .then(data => {
                 console.log('Devices API response:', data);
                 const devices = data.devices || data || [];
@@ -2503,8 +2528,7 @@ function showToast(message, type) {
     // Job Details Attachments Functions
     async function loadJobDetailsAttachments(jobID) {
         try {
-            const response = await fetch(`/api/jobs/${jobID}/attachments`);
-            const attachments = await response.json();
+            const attachments = await fetchJSON(`/api/jobs/${jobID}/attachments`);
 
             const countBadge = document.getElementById('attachmentCount');
             const container = document.getElementById('jobDetailsAttachmentsList');
@@ -2568,7 +2592,7 @@ function showToast(message, type) {
                     <div class="rc-card-body">
                         <div class="rc-alert rc-alert-error">
                             <i class="bi bi-exclamation-triangle"></i>
-                            Error loading attachments.
+                            Error loading attachments: ${error.message}
                         </div>
                     </div>
                 `;
