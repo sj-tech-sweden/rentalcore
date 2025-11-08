@@ -198,7 +198,7 @@ func (e *PDFExtractor) ParseInvoiceData(text string) (*ParsedInvoiceData, error)
 	dateRegex := regexp.MustCompile(`(\d{1,2})[\./-](\d{1,2})[\./-](\d{2,4})`)
 	dateRangeRegex := regexp.MustCompile(`(?i)(?:zeitraum|period|vom|from)[\s:]*(\d{1,2})[\./-](\d{1,2})[\./-](\d{2,4})[\s]*(?:bis|to|-|–)[\s]*(\d{1,2})[\./-](\d{1,2})[\./-](\d{2,4})`)
 	invoiceNumberRegex := regexp.MustCompile(`(?i)(?:rechnung|invoice|angebot|offer|auftrag|order)[\s#:Nr.]+([A-Z0-9\-]+)`)
-	totalRegex := regexp.MustCompile(`(?i)(?:gesamt|total|summe|sum)[\s:]*€?\s*([0-9,]+\.?\d*)`)
+	totalRegex := regexp.MustCompile(`(?i)(?:gesamt|total|summe|sum)[^0-9-]*([-+]?\s*[0-9][0-9\.\s,]*)`)
 
 	// Parse line items with multiple patterns for flexibility (legacy one-line rows)
 	itemRegexFull := regexp.MustCompile(`^(\d+)\s+(\d+)x?\s+(.+?)\s+€?\s*([0-9.,]+)\s+€?\s*([0-9.,]+)\s*$`)
