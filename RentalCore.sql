@@ -1114,8 +1114,8 @@ CREATE TABLE `job_attachments` (
 
 CREATE TABLE `job_edit_sessions` (
   `session_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `job_id` int UNSIGNED NOT NULL,
-  `user_id` int UNSIGNED NOT NULL,
+  `job_id` int NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
   `username` varchar(255) NOT NULL,
   `display_name` varchar(255) NOT NULL,
   `started_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
