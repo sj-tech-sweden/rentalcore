@@ -453,7 +453,12 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.30** (Latest) - Live Job Editing Presence (Issue #21)
+### **v3.31** (Latest) - Job Presence Schema Fix
+- ✅ **Migration Compatibility**: Aligns the new `job_edit_sessions` table with existing `jobs`/`users` column types so MySQL accepts the foreign keys without manual tweaks.
+- ✅ **Init SQL Updated**: Fresh installations now ship with the corrected schema.
+- ✅ **Applied in Production**: The running MySQL instance is already migrated via `026_add_job_edit_sessions.up.sql`.
+
+### **v3.30** - Live Job Editing Presence (Issue #21)
 - ✅ **Real-Time Presence Warnings**: Users now see immediate slide-in alerts when someone else starts editing the same job, preventing conflicting updates.
 - ✅ **Session Tracking**: Backed by a dedicated `job_edit_sessions` table with automatic expiry, so stale editors disappear within minutes.
 - ✅ **Automatic Cleanup Hooks**: Edit modal opens start a heartbeat, and closing/refreshing the modal clears the session to keep signals accurate.
