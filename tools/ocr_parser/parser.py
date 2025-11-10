@@ -170,6 +170,10 @@ class OCRParser:
             if self._is_numeric_value(line):
                 current["numeric_parts"].append(line)
             else:
+                # Skip standalone unit keywords (like "Stück", "Tag") - they belong to quantity, not description
+                if line.lower() in [kw.lower() for kw in UNIT_KEYWORDS]:
+                    continue
+
                 # Only add text lines if the item is not yet complete
                 # A complete item has description + enough numeric values
                 if self._is_item_incomplete(current) or not current["description_parts"]:
