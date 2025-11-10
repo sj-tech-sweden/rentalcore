@@ -1,6 +1,7 @@
 package pdf
 
 import (
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -44,7 +45,7 @@ func NewIntelligentParser() *IntelligentParser {
 		},
 		ItemPatterns: []*regexp.Regexp{
 			// Pattern 0: Pos | Qty | Description | Unit Price | Discount | Total
-			regexp.MustCompile(`^(\d+)\s+(\d+)\s*x?\s+(.+?)\s+€?\s*([0-9.,]+)\s+([0-9.,]+)\s*(%|prozent|percent)?\s+€?\s*([0-9.,]+)$`),
+			regexp.MustCompile(`^(\d+)\s+(\d+)\s*x?\s+(.+?)\s+€?\s*([0-9.,]+)\s+([+-]?[0-9.,]+)\s*(%|prozent|percent)?\s+€?\s*([0-9.,]+)$`),
 			// Pattern 1: Pos | Qty | Description | Unit Price | Total
 			regexp.MustCompile(`(\d+)\s+(\d+)\s*x?\s+(.+?)\s+€?\s*([0-9.,]+)\s+€?\s*([0-9.,]+)`),
 			// Pattern 2: Description | Qty | Price | Total
@@ -434,22 +435,34 @@ func (p *IntelligentParser) parseItemFromMatches(matches []string, lineNum int, 
 	switch len(matches) {
 	case 8: // Pos, qty, desc, unit, discount, indicator, total
 		item.Quantity, _ = strconv.Atoi(matches[2])
+		if item.Quantity <= 0 {
+			item.Quantity = 1
+		}
 		item.ProductName = strings.TrimSpace(matches[3])
 		item.UnitPrice = p.parseAmount(matches[4])
-		discountValue := p.parseAmount(matches[5])
+		discountValue := math.Abs(p.parseAmount(matches[5]))
 		discountIndicator := strings.TrimSpace(strings.ToLower(matches[6]))
-		item.LineTotal = p.parseAmount(matches[7])
-		if item.LineTotal <= 0 && item.UnitPrice > 0 && item.Quantity > 0 {
-			linePrice := item.UnitPrice * float64(item.Quantity)
-			if discountIndicator != "" || discountValue <= 100 {
-				item.LineTotal = linePrice * (1 - (discountValue / 100))
-			} else {
-				item.LineTotal = linePrice - discountValue
-			}
-			if item.LineTotal < 0 {
-				item.LineTotal = 0
+		rawTotal := p.parseAmount(matches[7])
+		item.LineTotal = rawTotal
+
+		linePrice := item.UnitPrice * float64(item.Quantity)
+		if discountValue > 0 && linePrice > 0 {
+			discountAmount := p.calculateLineDiscount(linePrice, discountValue, discountIndicator)
+			if discountAmount > 0 {
+				discountedTotal := linePrice - discountAmount
+				if discountedTotal < 0 {
+					discountedTotal = 0
+				}
+				if rawTotal == 0 || math.Abs(rawTotal-linePrice) < 0.01 || discountedTotal < rawTotal-0.01 {
+					item.LineTotal = discountedTotal
+				}
 			}
 		}
+
+		if item.LineTotal <= 0 && linePrice > 0 {
+			item.LineTotal = linePrice
+		}
+
 		item.ConfidenceScore = 92.0
 	case 6: // Full pattern: pos, qty, desc, unit price, total
 		item.Quantity, _ = strconv.Atoi(matches[2])
@@ -528,6 +541,29 @@ func (p *IntelligentParser) parseItemIntelligently(line string, lineNum int) *Pa
 	}
 
 	return item
+}
+
+func (p *IntelligentParser) calculateLineDiscount(linePrice, discountValue float64, indicator string) float64 {
+	if linePrice <= 0 || discountValue <= 0 {
+		return 0
+	}
+
+	indicator = strings.TrimSpace(strings.ToLower(indicator))
+	if indicator != "" {
+		if strings.Contains(indicator, "%") || strings.Contains(indicator, "prozent") || strings.Contains(indicator, "percent") {
+			return linePrice * (discountValue / 100)
+		}
+	}
+
+	if discountValue > 0 && discountValue < 1 {
+		return linePrice * discountValue
+	}
+
+	if discountValue > linePrice {
+		return linePrice
+	}
+
+	return discountValue
 }
 
 // parseAmount parses a monetary amount from string

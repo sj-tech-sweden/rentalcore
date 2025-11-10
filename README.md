@@ -453,7 +453,11 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.33** (Latest) - OCR Duplicate Safeguards & Discounts (Issue #30)
+### **v3.34** (Latest) - Discount Parsing Reliability
+- ✅ **Per-Line Discounts Applied**: OCR now detects signed discount columns and forces recalculated device totals whenever the exported total still equals the pre-discount amount, so custom prices always inherit the actual quoted rates.
+- 🛠️ **More Forgiving Regex**: Handles negative discount cells and stray percent markers, ensuring future PDF layouts keep lowering device prices without manual tweaks.
+
+### **v3.33** - OCR Duplicate Safeguards & Discounts (Issue #30)
 - ✅ **Duplicate Detection**: PDF mapping screen now warns when an identical job (same customer + product mix) already exists, with live re-checks and a public API hook for future automations.
 - 🛠️ **Ready-to-Check Counts**: Server-side mapping summaries now feed the duplicate detector immediately, so alerts appear as soon as products are mapped without reloading the page.
 - ✅ **Accurate Shortage Errors**: Device assignment failures mention the actual product name instead of opaque IDs, making shortages actionable.
