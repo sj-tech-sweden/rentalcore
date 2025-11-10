@@ -325,51 +325,68 @@ class OCRParser:
 
     def parse_customer_name(self, lines: List[str]) -> Optional[str]:
         """Extract customer name from document text."""
-        customer_keywords = [
-            "kunde:",
-            "auftraggeber:",
-            "rechnungsempfänger:",
-            "lieferadresse:",
-            "kundenname:",
-        ]
+        # Look for recipient address block (after sender, before items table)
+        # Typical pattern:
+        # [Herrn|Frau] Name
+        # Straße XX
+        # PLZ Ort
 
-        for i, line in enumerate(lines):
+        table_start = self._find_table_start(lines)
+        if table_start == -1:
+            table_start = len(lines)
+
+        # Search in the first 40 lines before the table
+        search_end = min(40, table_start)
+
+        for i in range(search_end):
+            line = lines[i].strip()
             lower = line.lower()
 
-            # Check if this line contains a customer keyword
-            for keyword in customer_keywords:
-                if keyword in lower:
-                    # Check if name is on same line (after keyword)
-                    parts = line.split(":", 1)
-                    if len(parts) > 1:
-                        name = parts[1].strip()
-                        # Filter out numbers, dates, and other non-name text
-                        if name and not re.match(r"^\d+", name) and len(name) > 2:
-                            return name
+            # Skip sender blocks (containing company info like "Tsunami Events UG")
+            if any(skip in lower for skip in ["tel.:", "fax:", "email:", "@", "http", "www.", "steuernummer", "amtsgericht", "iban", "bic"]):
+                continue
 
-                    # Name might be on next line(s)
-                    if i + 1 < len(lines):
-                        next_line = lines[i + 1].strip()
-                        # Skip empty lines, numbers, dates
-                        if next_line and not re.match(r"^\d+", next_line) and len(next_line) > 2:
-                            # Check if it looks like a name/company (not a field label)
-                            if ":" not in next_line and not any(skip in next_line.lower() for skip in ["telefon", "email", "fax", "straße", "plz"]):
-                                return next_line
+            # Look for recipient indicator words
+            if line.startswith(("Herrn ", "Frau ", "Herr ")):
+                # Extract name after salutation
+                name = line.split(None, 1)
+                if len(name) > 1:
+                    return name[1].strip()
 
-        # Fallback: look for company-like patterns before the items table
-        # (lines with capital letters, multiple words, no numbers at start)
-        table_start = self._find_table_start(lines)
-        if table_start > 5:
-            for i in range(5, min(table_start, 30)):
-                line = lines[i].strip()
-                # Look for lines that could be company names
-                # Must be 3+ words or single capitalized word 5+ chars
-                if line and len(line) > 4:
-                    words = line.split()
-                    if len(words) >= 2 and not re.match(r"^\d", line):
-                        # Skip common header words
-                        if not any(skip in line.lower() for skip in ["rechnung", "angebot", "datum", "seite", "pos.", "bezeichnung", "menge", "preis"]):
-                            return line
+            # Look for address block pattern: Name, then Street, then PLZ+City
+            # Name should be 2+ words, not a field label, not starting with number
+            if line and len(line) > 3 and not line.endswith(":"):
+                words = line.split()
+
+                # Check if this could be a name (2+ words, capitalized, no numbers at start)
+                if len(words) >= 2 and not re.match(r"^\d", line):
+                    # Check next 2 lines for address pattern
+                    if i + 2 < len(lines):
+                        next1 = lines[i + 1].strip()
+                        next2 = lines[i + 2].strip()
+
+                        # next1 should look like a street (contains "straße", "weg", "platz" or just text)
+                        # next2 should look like PLZ + City (starts with 5 digits)
+                        has_street = any(word in next1.lower() for word in ["straße", "strasse", "weg", "platz", "gasse", "allee"])
+                        has_plz = re.match(r"^\d{5}\s+\w+", next2)
+
+                        if (has_street or (next1 and len(next1) > 3 and not ":" in next1)) and has_plz:
+                            # Skip if this looks like sender info
+                            if not any(sender in lower for sender in ["tsunami", "events", "ringstraße 12", "haiger"]):
+                                return line
+
+        # Fallback: Look for "Kundennr.:" field and get text before it
+        for i, line in enumerate(lines):
+            if "kundennr" in line.lower() and ":" in line:
+                # Search backwards for the name
+                for j in range(i - 1, max(0, i - 10), -1):
+                    candidate = lines[j].strip()
+                    if candidate and len(candidate) > 3:
+                        words = candidate.split()
+                        if len(words) >= 2 and not re.match(r"^\d", candidate):
+                            # Check if this is not a field label
+                            if ":" not in candidate and not any(skip in candidate.lower() for skip in ["angebot", "rechnung", "datum", "gültig", "seite"]):
+                                return candidate
 
         return None
 
