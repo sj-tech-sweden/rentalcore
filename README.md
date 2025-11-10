@@ -453,7 +453,11 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.35** (Latest) - Forced Percent Discounts
+### **v3.36** (Latest) - Line Discount Awareness
+- ✅ **Column Parser Upgrade**: OCR now understands the `Rabatt %` column (even when exporters jam the numbers together), so per-product rebates persist as real totals instead of collapsing into faux line totals.
+- 🆕 **Review Discount Column**: The extraction review table highlights the exact euro amount removed from each item, making it obvious which lines were discounted before mapping or job creation.
+
+### **v3.35** - Forced Percent Discounts
 - ✅ **Column-Aware Discounts**: Line-item discount columns are now always interpreted as percentages even when the PDF omits the `%` symbol, so individual product rebates no longer get misread as absolute totals.
 - 🛠️ **Safer Overrides**: Percent math executes before trusting exported totals, preventing the discount cell from being mistaken for the final line total when vendors shuffle columns.
 

@@ -432,6 +432,13 @@ func (h *PDFHandler) ShowReviewScreen(c *gin.Context) {
 	var items []models.PDFExtractionItem
 	h.DB.Where("extraction_id = ?", extraction.ExtractionID).Order("line_number").Find(&items)
 
+	itemDiscounts := make(map[uint64]float64)
+	for _, item := range items {
+		if discount := calculateExtractionItemDiscount(&item); discount > 0 {
+			itemDiscounts[item.ItemID] = discount
+		}
+	}
+
 	mappedProducts := make(map[uint64]models.Product)
 	productIDs := make([]int64, 0)
 	for _, item := range items {
@@ -462,6 +469,7 @@ func (h *PDFHandler) ShowReviewScreen(c *gin.Context) {
 		"upload":         upload,
 		"extraction":     extraction,
 		"items":          items,
+		"itemDiscounts":  itemDiscounts,
 		"mappedProducts": mappedProducts,
 		"pageTitle":      "PDF Extraction Review",
 	}
@@ -1845,6 +1853,34 @@ func summarizeExtractionItems(items []models.PDFExtractionItem) (map[uint]int, i
 	}
 
 	return counts, mapped, unmapped
+}
+
+func calculateExtractionItemDiscount(item *models.PDFExtractionItem) float64 {
+	if item == nil || !item.UnitPrice.Valid || item.UnitPrice.Float64 <= 0 {
+		return 0
+	}
+
+	qty := 1
+	if item.Quantity.Valid && item.Quantity.Int64 > 0 {
+		qty = int(item.Quantity.Int64)
+	}
+
+	lineTotal := 0.0
+	if item.LineTotal.Valid && item.LineTotal.Float64 > 0 {
+		lineTotal = item.LineTotal.Float64
+	}
+
+	expected := item.UnitPrice.Float64 * float64(qty)
+	if expected <= 0 {
+		return 0
+	}
+
+	discount := expected - lineTotal
+	if discount <= 0.005 {
+		return 0
+	}
+
+	return discount
 }
 
 func (h *PDFHandler) detectDuplicateJobs(customerID uint, productCounts map[uint]int, excludeJobID uint) ([]duplicateJobMatch, error) {

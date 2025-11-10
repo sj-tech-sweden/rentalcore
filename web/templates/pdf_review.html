@@ -373,6 +373,7 @@
 
             {{if .items}}
             <div class="items-table-wrapper">
+                {{$discounts := .itemDiscounts}}
                 <table class="items-table">
                     <thead>
                         <tr>
@@ -381,6 +382,7 @@
                             <th style="width: 220px;">Mapped Product</th>
                             <th style="width: 100px; text-align: center;">Quantity</th>
                             <th style="width: 120px; text-align: right;">Unit Price</th>
+                            <th style="width: 120px; text-align: right;">Discount</th>
                             <th style="width: 120px; text-align: right;">Line Total</th>
                             <th style="width: 150px; text-align: center;">Status</th>
                             <th style="width: 100px; text-align: center;">Confidence</th>
@@ -406,6 +408,13 @@
                             </td>
                             <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">
                                 {{if .UnitPrice.Valid}}{{printf "%.2f" .UnitPrice.Float64}} EUR{{else}}-{{end}}
+                            </td>
+                            <td style="text-align: right; font-family: 'JetBrains Mono', monospace; color: #f97316;">
+                                {{with $discount := index $discounts .ItemID}}
+                                    -{{printf "%.2f" $discount}} EUR
+                                {{else}}
+                                    —
+                                {{end}}
                             </td>
                             <td style="text-align: right; font-weight: 600; font-family: 'JetBrains Mono', monospace;">
                                 {{if .LineTotal.Valid}}{{printf "%.2f" .LineTotal.Float64}} EUR{{else}}-{{end}}
@@ -458,6 +467,16 @@
                             <div class="item-card-field">
                                 <span>Unit Price</span>
                                 <span>{{if .UnitPrice.Valid}}€{{printf "%.2f" .UnitPrice.Float64}}{{else}}-{{end}}</span>
+                            </div>
+                            <div class="item-card-field">
+                                <span>Discount</span>
+                                <span>
+                                    {{with $discount := index $.itemDiscounts .ItemID}}
+                                        -€{{printf "%.2f" $discount}}
+                                    {{else}}
+                                        —
+                                    {{end}}
+                                </span>
                             </div>
                             <div class="item-card-field">
                                 <span>Line Total</span>

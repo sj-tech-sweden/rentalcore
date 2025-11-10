@@ -323,39 +323,71 @@ func findAmountInSubsequentLines(lines []string, startIdx, lookahead int) (strin
 // parseLineItems parses line items from document
 func (p *IntelligentParser) parseLineItems(lines []string) ([]ParsedItem, error) {
 	var items []ParsedItem
-	lineNum := 0
+	sequenceNumber := 0
 
-	// Detect table boundaries
 	tableStart, tableEnd := p.detectTableBoundaries(lines)
+	discountColumnActive := false
 
 	for i := tableStart; i <= tableEnd && i < len(lines); i++ {
 		line := strings.TrimSpace(lines[i])
-
-		// Skip empty lines and headers
-		if len(line) < 5 || p.isHeaderLine(line) {
+		if line == "" {
+			if discountColumnActive {
+				discountColumnActive = false
+			}
 			continue
 		}
 
-		// Try each pattern
-		for _, pattern := range p.ItemPatterns {
-			matches := pattern.FindStringSubmatch(line)
-			if len(matches) > 0 {
-				item := p.parseItemFromMatches(matches, lineNum, line)
-				if item != nil {
+		lineLower := strings.ToLower(line)
+		if p.isHeaderLine(line) {
+			if strings.Contains(lineLower, "rabatt") {
+				discountColumnActive = true
+			}
+			continue
+		}
+
+		if discountColumnActive {
+			if strings.HasPrefix(lineLower, "zwischensumme") || strings.HasPrefix(lineLower, "gesamtbetrag") || strings.HasPrefix(lineLower, "vielen dank") || strings.HasPrefix(lineLower, "wir ") {
+				discountColumnActive = false
+			} else {
+				if item := p.parseDiscountColumnLine(line, i); item != nil {
+					if item.LineNumber == 0 {
+						item.LineNumber = sequenceNumber + 1
+					}
 					items = append(items, *item)
-					lineNum++
-					break
+					sequenceNumber++
+					continue
 				}
 			}
 		}
 
-		// If no pattern matched, try intelligent line parsing
-		if len(items) == 0 || items[len(items)-1].LineNumber != lineNum {
-			item := p.parseItemIntelligently(line, lineNum)
-			if item != nil {
-				items = append(items, *item)
-				lineNum++
+		if strings.HasPrefix(lineLower, "übertrag") {
+			continue
+		}
+
+		if len(line) < 5 {
+			continue
+		}
+
+		matched := false
+		for _, pattern := range p.ItemPatterns {
+			matches := pattern.FindStringSubmatch(line)
+			if len(matches) > 0 {
+				item := p.parseItemFromMatches(matches, sequenceNumber, line)
+				if item != nil {
+					items = append(items, *item)
+					sequenceNumber++
+					matched = true
+					break
+				}
 			}
+		}
+		if matched {
+			continue
+		}
+
+		if item := p.parseItemIntelligently(line, sequenceNumber); item != nil {
+			items = append(items, *item)
+			sequenceNumber++
 		}
 	}
 
@@ -401,6 +433,146 @@ func (p *IntelligentParser) detectTableBoundaries(lines []string) (int, int) {
 	}
 
 	return start, end
+}
+
+func insertAlphaNumericSpacing(line string) string {
+	var builder strings.Builder
+	prevType := 0
+	for _, r := range line {
+		currType := 0
+		switch {
+		case unicode.IsLetter(r):
+			currType = 1
+		case unicode.IsDigit(r) || r == ',' || r == '.':
+			currType = 2
+		}
+		if builder.Len() > 0 && currType != 0 && prevType != 0 && currType != prevType {
+			builder.WriteRune(' ')
+		}
+		builder.WriteRune(r)
+		if currType == 0 {
+			prevType = 0
+		} else {
+			prevType = currType
+		}
+	}
+	return builder.String()
+}
+
+var defaultUnitTokens = []string{
+	"stück", "stk", "st", "set", "sets", "pcs", "person", "personen",
+	"tag", "tage", "std", "stunden", "hour", "hours", "case", "crew",
+}
+
+func isUnitToken(token string) bool {
+	token = strings.TrimSpace(strings.ToLower(token))
+	if token == "" {
+		return false
+	}
+	for _, kw := range defaultUnitTokens {
+		if token == kw {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *IntelligentParser) parseDiscountColumnLine(rawLine string, lineNum int) *ParsedItem {
+	normalized := insertAlphaNumericSpacing(rawLine)
+	amountMatches := amountTokenRegex.FindAllStringIndex(normalized, -1)
+	if len(amountMatches) < 3 {
+		return nil
+	}
+
+	totalIdx := amountMatches[len(amountMatches)-1]
+	discountIdx := amountMatches[len(amountMatches)-2]
+	unitIdx := amountMatches[len(amountMatches)-3]
+
+	totalStr := normalized[totalIdx[0]:totalIdx[1]]
+	discountStr := normalized[discountIdx[0]:discountIdx[1]]
+	unitStr := normalized[unitIdx[0]:unitIdx[1]]
+
+	prefix := strings.TrimSpace(normalized[:unitIdx[0]])
+	if prefix == "" {
+		return nil
+	}
+
+	tokens := strings.Fields(prefix)
+	if len(tokens) < 2 {
+		return nil
+	}
+
+	// Remove trailing unit words and capture quantity
+	endIdx := len(tokens)
+	for endIdx > 1 {
+		last := strings.TrimSpace(tokens[endIdx-1])
+		if isUnitToken(last) {
+			endIdx--
+			continue
+		}
+		break
+	}
+
+	if endIdx <= 1 {
+		return nil
+	}
+
+	qtyToken := tokens[endIdx-1]
+	quantity, err := strconv.Atoi(strings.TrimSuffix(qtyToken, "."))
+	if err != nil || quantity <= 0 {
+		return nil
+	}
+	endIdx--
+
+	if endIdx <= 1 {
+		return nil
+	}
+
+	lineNumberToken := strings.TrimSuffix(tokens[0], ".")
+	lineNumber, err := strconv.Atoi(lineNumberToken)
+	if err != nil {
+		lineNumber = lineNum + 1
+	}
+
+	descriptionTokens := tokens[1:endIdx]
+	description := strings.TrimSpace(strings.Join(descriptionTokens, " "))
+	if description == "" {
+		return nil
+	}
+
+	unitPrice := p.parseAmount(unitStr)
+	discountPercent := p.parseAmount(discountStr)
+	total := p.parseAmount(totalStr)
+	if unitPrice <= 0 {
+		return nil
+	}
+
+	linePrice := unitPrice * float64(quantity)
+	if discountPercent > 0 {
+		discountAmount := p.calculateLineDiscount(linePrice, discountPercent, "", true)
+		lineTotal := linePrice - discountAmount
+		if lineTotal < 0 {
+			lineTotal = 0
+		}
+		total = lineTotal
+	}
+
+	if total == 0 && linePrice > 0 && discountPercent == 0 {
+		total = linePrice
+	}
+
+	item := &ParsedItem{
+		LineNumber:      lineNumber,
+		RawText:         rawLine,
+		DetectedType:    ItemTypeProduct,
+		ProductName:     description,
+		Quantity:        quantity,
+		UnitPrice:       unitPrice,
+		LineTotal:       total,
+		ConfidenceScore: 93.0,
+	}
+
+	return item
 }
 
 // isHeaderLine checks if a line is a table header
