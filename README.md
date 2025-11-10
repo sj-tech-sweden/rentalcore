@@ -453,7 +453,11 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.36** (Latest) - Line Discount Awareness
+### **v3.37** (Latest) - Split-Line Discount Support
+- ✅ **Descriptor Pairing**: OCR now links multi-line item descriptions with their numeric rows, so products that list text on one line and the `Menge/Einzel/Rabatt/Gesamt` block on the next keep their discounts intact.
+- 🛠️ **Fallback Parsing**: When the PDF jams quantity + unit together (e.g., `1Stück250,00`), the parser still splits out the percentage column before computing the discounted line total.
+
+### **v3.36** - Line Discount Awareness
 - ✅ **Column Parser Upgrade**: OCR now understands the `Rabatt %` column (even when exporters jam the numbers together), so per-product rebates persist as real totals instead of collapsing into faux line totals.
 - 🆕 **Review Discount Column**: The extraction review table highlights the exact euro amount removed from each item, making it obvious which lines were discounted before mapping or job creation.
 

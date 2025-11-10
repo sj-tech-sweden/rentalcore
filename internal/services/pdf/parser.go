@@ -327,6 +327,7 @@ func (p *IntelligentParser) parseLineItems(lines []string) ([]ParsedItem, error)
 
 	tableStart, tableEnd := p.detectTableBoundaries(lines)
 	discountColumnActive := false
+	var pendingDescriptor *lineDescriptor
 
 	for i := tableStart; i <= tableEnd && i < len(lines); i++ {
 		line := strings.TrimSpace(lines[i])
@@ -346,10 +347,16 @@ func (p *IntelligentParser) parseLineItems(lines []string) ([]ParsedItem, error)
 		}
 
 		if discountColumnActive {
+			if descriptor := p.extractLineDescriptor(line); descriptor != nil {
+				pendingDescriptor = descriptor
+				continue
+			}
 			if strings.HasPrefix(lineLower, "zwischensumme") || strings.HasPrefix(lineLower, "gesamtbetrag") || strings.HasPrefix(lineLower, "vielen dank") || strings.HasPrefix(lineLower, "wir ") {
 				discountColumnActive = false
+				pendingDescriptor = nil
 			} else {
-				if item := p.parseDiscountColumnLine(line, i); item != nil {
+				if item := p.parseDiscountColumnLine(line, i, pendingDescriptor); item != nil {
+					pendingDescriptor = nil
 					if item.LineNumber == 0 {
 						item.LineNumber = sequenceNumber + 1
 					}
@@ -374,6 +381,7 @@ func (p *IntelligentParser) parseLineItems(lines []string) ([]ParsedItem, error)
 			if len(matches) > 0 {
 				item := p.parseItemFromMatches(matches, sequenceNumber, line)
 				if item != nil {
+					pendingDescriptor = nil
 					items = append(items, *item)
 					sequenceNumber++
 					matched = true
@@ -386,6 +394,7 @@ func (p *IntelligentParser) parseLineItems(lines []string) ([]ParsedItem, error)
 		}
 
 		if item := p.parseItemIntelligently(line, sequenceNumber); item != nil {
+			pendingDescriptor = nil
 			items = append(items, *item)
 			sequenceNumber++
 		}
@@ -477,7 +486,40 @@ func isUnitToken(token string) bool {
 	return false
 }
 
-func (p *IntelligentParser) parseDiscountColumnLine(rawLine string, lineNum int) *ParsedItem {
+type lineDescriptor struct {
+	lineNumber  int
+	description string
+}
+
+var descriptorLineRegex = regexp.MustCompile(`^(\d+)\s+(.+)$`)
+
+func (p *IntelligentParser) extractLineDescriptor(line string) *lineDescriptor {
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" {
+		return nil
+	}
+	if amountTokenRegex.FindStringIndex(trimmed) != nil {
+		return nil
+	}
+	matches := descriptorLineRegex.FindStringSubmatch(trimmed)
+	if len(matches) != 3 {
+		return nil
+	}
+	lineNumber, err := strconv.Atoi(strings.TrimSuffix(matches[1], "."))
+	if err != nil || lineNumber <= 0 {
+		return nil
+	}
+	description := strings.TrimSpace(matches[2])
+	if description == "" {
+		return nil
+	}
+	return &lineDescriptor{
+		lineNumber:  lineNumber,
+		description: description,
+	}
+}
+
+func (p *IntelligentParser) parseDiscountColumnLine(rawLine string, lineNum int, descriptor *lineDescriptor) *ParsedItem {
 	normalized := insertAlphaNumericSpacing(rawLine)
 	amountMatches := amountTokenRegex.FindAllStringIndex(normalized, -1)
 	if len(amountMatches) < 3 {
@@ -493,49 +535,56 @@ func (p *IntelligentParser) parseDiscountColumnLine(rawLine string, lineNum int)
 	unitStr := normalized[unitIdx[0]:unitIdx[1]]
 
 	prefix := strings.TrimSpace(normalized[:unitIdx[0]])
-	if prefix == "" {
+	if prefix == "" && descriptor == nil {
 		return nil
 	}
 
 	tokens := strings.Fields(prefix)
-	if len(tokens) < 2 {
-		return nil
-	}
 
-	// Remove trailing unit words and capture quantity
-	endIdx := len(tokens)
-	for endIdx > 1 {
-		last := strings.TrimSpace(tokens[endIdx-1])
-		if isUnitToken(last) {
-			endIdx--
-			continue
+	lineNumber := 0
+	tokenStart := 0
+	if descriptor == nil && len(tokens) > 1 {
+		if value, err := strconv.Atoi(strings.TrimSuffix(tokens[0], ".")); err == nil && value > 0 {
+			lineNumber = value
+			tokenStart = 1
 		}
-		break
 	}
-
-	if endIdx <= 1 {
-		return nil
+	if lineNumber == 0 && descriptor != nil {
+		lineNumber = descriptor.lineNumber
 	}
-
-	qtyToken := tokens[endIdx-1]
-	quantity, err := strconv.Atoi(strings.TrimSuffix(qtyToken, "."))
-	if err != nil || quantity <= 0 {
-		return nil
-	}
-	endIdx--
-
-	if endIdx <= 1 {
-		return nil
-	}
-
-	lineNumberToken := strings.TrimSuffix(tokens[0], ".")
-	lineNumber, err := strconv.Atoi(lineNumberToken)
-	if err != nil {
+	if lineNumber == 0 {
 		lineNumber = lineNum + 1
 	}
 
-	descriptionTokens := tokens[1:endIdx]
+	quantity := 0
+	qtyIndex := -1
+	for idx := len(tokens) - 1; idx >= tokenStart; idx-- {
+		token := strings.TrimSpace(strings.TrimSuffix(tokens[idx], "."))
+		if token == "" || isUnitToken(token) {
+			continue
+		}
+		if val, err := strconv.Atoi(token); err == nil && val > 0 {
+			quantity = val
+			qtyIndex = idx
+			break
+		}
+	}
+	if quantity == 0 {
+		if descriptor == nil {
+			return nil
+		}
+		quantity = 1
+		qtyIndex = len(tokens)
+	}
+
+	descriptionTokens := []string{}
+	if qtyIndex > tokenStart {
+		descriptionTokens = tokens[tokenStart:qtyIndex]
+	}
 	description := strings.TrimSpace(strings.Join(descriptionTokens, " "))
+	if description == "" && descriptor != nil {
+		description = descriptor.description
+	}
 	if description == "" {
 		return nil
 	}
