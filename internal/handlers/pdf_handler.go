@@ -152,25 +152,24 @@ func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 		return
 	}
 
-	// Parse invoice data
-	parsedData, err := h.Extractor.ParseInvoiceData(rawText)
+	// Parse invoice data using Python parser
+	parsedDoc, err := h.Extractor.ParseDocumentIntelligently(rawText)
 	if err != nil {
 		h.markProcessingFailed(uploadID, fmt.Sprintf("Data parsing failed: %v", err))
 		return
 	}
 
 	// Attempt customer auto-mapping
-	if parsedData.CustomerName != "" && h.CustomerMapper != nil {
-		if _, customer, confidence, err := h.CustomerMapper.FindBestMatch(parsedData.CustomerName); err == nil && customer != nil && confidence >= 70 {
-			customerID := int(customer.CustomerID)
-			parsedData.CustomerID = &customerID
+	var customerID *int
+	if parsedDoc.CustomerName != "" && h.CustomerMapper != nil {
+		if _, customer, confidence, err := h.CustomerMapper.FindBestMatch(parsedDoc.CustomerName); err == nil && customer != nil && confidence >= 70 {
+			id := int(customer.CustomerID)
+			customerID = &id
 		}
 	}
 
-	parsedData.RawText = rawText
-
 	// Convert to JSON
-	extractedDataJSON, err := parsedData.ToJSON()
+	extractedDataJSON, err := json.Marshal(parsedDoc)
 	if err != nil {
 		h.markProcessingFailed(uploadID, fmt.Sprintf("JSON conversion failed: %v", err))
 		return
@@ -180,35 +179,26 @@ func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 	extraction := models.PDFExtraction{
 		UploadID:         uploadID,
 		RawText:          sql.NullString{String: rawText, Valid: true},
-		ExtractedData:    sql.NullString{String: extractedDataJSON, Valid: true},
-		ConfidenceScore:  sql.NullFloat64{Float64: parsedData.ConfidenceScore, Valid: true},
+		ExtractedData:    sql.NullString{String: string(extractedDataJSON), Valid: true},
+		ConfidenceScore:  sql.NullFloat64{Float64: parsedDoc.ConfidenceScore, Valid: true},
 		PageCount:        1, // TODO: Get actual page count
-		ExtractionMethod: "regex_parser",
-		CustomerName:     sql.NullString{String: parsedData.CustomerName, Valid: parsedData.CustomerName != ""},
-		DocumentNumber:   sql.NullString{String: parsedData.DocumentNumber, Valid: parsedData.DocumentNumber != ""},
-		TotalAmount:      sql.NullFloat64{Float64: parsedData.TotalAmount, Valid: parsedData.TotalAmount > 0},
-		DiscountAmount:   sql.NullFloat64{Float64: parsedData.DiscountAmount, Valid: parsedData.DiscountAmount > 0},
+		ExtractionMethod: "python_parser",
+		CustomerName:     sql.NullString{String: parsedDoc.CustomerName, Valid: parsedDoc.CustomerName != ""},
+		DocumentNumber:   sql.NullString{String: parsedDoc.DocumentNumber, Valid: parsedDoc.DocumentNumber != ""},
+		TotalAmount:      sql.NullFloat64{Float64: parsedDoc.TotalAmount, Valid: parsedDoc.TotalAmount > 0},
+		DiscountAmount:   sql.NullFloat64{Float64: parsedDoc.DiscountAmount, Valid: parsedDoc.DiscountAmount > 0},
 	}
-	if parsedData.CustomerID != nil && *parsedData.CustomerID > 0 {
-		extraction.CustomerID = sql.NullInt64{Int64: int64(*parsedData.CustomerID), Valid: true}
-	}
-
-	if !parsedData.DocumentDate.IsZero() {
-		extraction.DocumentDate = sql.NullTime{Time: parsedData.DocumentDate, Valid: true}
+	if customerID != nil && *customerID > 0 {
+		extraction.CustomerID = sql.NullInt64{Int64: int64(*customerID), Valid: true}
 	}
 
-	metadata := map[string]interface{}{}
-	if !parsedData.StartDate.IsZero() {
-		metadata["start_date"] = parsedData.StartDate.Format(time.RFC3339)
+	if !parsedDoc.DocumentDate.IsZero() {
+		extraction.DocumentDate = sql.NullTime{Time: parsedDoc.DocumentDate, Valid: true}
 	}
-	if !parsedData.EndDate.IsZero() {
-		metadata["end_date"] = parsedData.EndDate.Format(time.RFC3339)
-	}
-	if parsedData.DiscountType != "" {
-		metadata["discount_type"] = parsedData.DiscountType
-	}
-	if len(metadata) > 0 {
-		if metaBytes, err := json.Marshal(metadata); err == nil {
+
+	// Store metadata from Python parser
+	if parsedDoc.Metadata != nil {
+		if metaBytes, err := json.Marshal(parsedDoc.Metadata); err == nil {
 			extraction.Metadata = sql.NullString{String: string(metaBytes), Valid: true}
 		}
 	}
@@ -220,11 +210,11 @@ func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 	}
 
 	// Create extraction items
-	for _, item := range parsedData.Items {
+	for _, item := range parsedDoc.Items {
 		extractionItem := models.PDFExtractionItem{
 			ExtractionID:   extraction.ExtractionID,
 			LineNumber:     sql.NullInt64{Int64: int64(item.LineNumber), Valid: true},
-			RawProductText: item.ProductText,
+			RawProductText: item.ProductName,
 			Quantity:       sql.NullInt64{Int64: int64(item.Quantity), Valid: true},
 			UnitPrice:      sql.NullFloat64{Float64: item.UnitPrice, Valid: item.UnitPrice > 0},
 			LineTotal:      sql.NullFloat64{Float64: item.LineTotal, Valid: item.LineTotal > 0},
@@ -232,7 +222,7 @@ func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 		}
 
 		// Try to find product mapping
-		_, product, confidence, err := h.Mapper.FindBestMatch(item.ProductText)
+		_, product, confidence, err := h.Mapper.FindBestMatch(item.ProductName)
 		if err == nil && product != nil && confidence >= 70 {
 			extractionItem.MappedProductID = sql.NullInt64{Int64: int64(product.ProductID), Valid: true}
 			extractionItem.MappingConfidence = sql.NullFloat64{Float64: confidence, Valid: true}
