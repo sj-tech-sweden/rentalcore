@@ -72,6 +72,9 @@ class OCRParser:
 
     def preprocess(self) -> List[str]:
         text = self.raw_text.replace("\r", "")
+        # Fix escaped newlines if they exist (from database storage)
+        if "\\n" in text and text.count("\\n") > text.count("\n"):
+            text = text.replace("\\n", "\n")
         # Insert line breaks before quantity+unit blocks to split descriptor from numeric rows.
         pattern = re.compile(
             r"(\d+)\s+(" + "|".join(UNIT_KEYWORDS) + r")",
@@ -108,25 +111,18 @@ class OCRParser:
             if self._looks_like_header(line) or lower.startswith("übertrag"):
                 continue
 
-            if current and self._is_numeric_line(line):
-                current["numeric_parts"].append(line)
-                segments.append(current)
-                current = None
-                continue
-
-            header_match = re.match(r"^(\d+)\s+(.+)$", line)
-            if header_match:
-                line_number = int(header_match.group(1))
-                remainder = header_match.group(2).strip()
-                if current and line_number <= current.get("line_number", 0):
-                    current["description_parts"].append(line)
+            # Check if line is ONLY a position number (1-100)
+            only_num_match = re.match(r"^([1-9]|[1-9][0-9]|100)$", line)
+            if only_num_match:
+                line_number = int(only_num_match.group(1))
+                
+                # Check if this could be a quantity instead of a new position
+                if current and self._is_item_incomplete(current):
+                    # Item is incomplete (not enough numeric values), treat as quantity
+                    current["numeric_parts"].append(line)
                     continue
-                if current and self._is_numeric_line(remainder):
-                    current["numeric_parts"].append(remainder)
-                    segments.append(current)
-                    current = None
-                    continue
-
+                
+                # Item is complete or we don't have one, this is a new position
                 if current:
                     segments.append(current)
 
@@ -135,19 +131,34 @@ class OCRParser:
                     "description_parts": [],
                     "numeric_parts": [],
                 }
-                if remainder:
-                    current["description_parts"].append(remainder)
+                continue
+
+            # Check for "number word" pattern (like "6 Personal") - but be very strict
+            # Only match if word is short (not a long description) and alphanumeric only
+            pos_text_match = re.match(r"^([1-9]|[1-9][0-9]|100)\s+([A-Za-zäöüÄÖÜß]{3,15})$", line)
+            if pos_text_match and current is None:
+                line_number = int(pos_text_match.group(1))
+                remainder = pos_text_match.group(2).strip()
+                
+                current = {
+                    "line_number": line_number,
+                    "description_parts": [remainder],
+                    "numeric_parts": [],
+                }
                 continue
 
             if current is None:
                 continue
 
-            if self._is_numeric_line(line):
+            # We have a current item, check if this is numeric or description
+            if self._is_numeric_value(line):
                 current["numeric_parts"].append(line)
-                segments.append(current)
-                current = None
             else:
-                current["description_parts"].append(line)
+                # Only add text lines if the item is not yet complete
+                # A complete item has description + enough numeric values
+                if self._is_item_incomplete(current) or not current["description_parts"]:
+                    current["description_parts"].append(line)
+                # else: ignore this line (likely a section header between items)
 
         if current:
             segments.append(current)
@@ -160,22 +171,58 @@ class OCRParser:
 
         return items
 
+    def _is_item_incomplete(self, item: dict) -> bool:
+        """Check if item doesn't have enough numeric values yet (needs more data)."""
+        numeric_parts = item.get("numeric_parts", [])
+        # Count decimal numbers (prices)
+        decimal_count = sum(1 for part in numeric_parts if re.search(r"\d+,\d{2}", part))
+        # Item is incomplete if it has less than 2 decimal numbers (need at least unit_price + line_total)
+        return decimal_count < 2
+
     def _is_stop_line(self, lower: str) -> bool:
         return any(stop in lower for stop in TOTAL_STOP_WORDS)
 
     def _find_table_start(self, lines: List[str]) -> int:
+        """Find the start of the invoice items table."""
+        # First try: look for a line with all header keywords (compact layout)
         for idx, line in enumerate(lines):
             lower = line.lower()
             if all(keyword in lower for keyword in HEADER_KEYWORDS):
                 return idx + 1
+
+        # Second try: look for header keywords in consecutive lines (column layout)
+        for idx in range(len(lines) - 2):
+            window = " ".join(lines[idx:idx+5]).lower()
+            if all(keyword in window for keyword in HEADER_KEYWORDS):
+                # Find the first line that is ONLY a number (1-100) after the header
+                for j in range(idx, min(idx + 10, len(lines))):
+                    if re.match(r"^([1-9]|[1-9][0-9]|100)$", lines[j]):
+                        return j
+                return idx + 5
+
         return 0
 
     def _looks_like_header(self, line: str) -> bool:
         lower = line.lower()
         return "pos." in lower and "bezeichnung" in lower
 
-    def _is_numeric_line(self, line: str) -> bool:
-        return len(re.findall(r"\d+,\d{2}", line)) >= 2
+    def _is_numeric_value(self, line: str) -> bool:
+        """Check if line is a numeric value (single decimal number or quantity+unit)."""
+        stripped = line.strip()
+
+        # Quantity + unit (e.g., "1 Stück") - check this FIRST
+        if re.match(r"^\d+\s+(" + "|".join(UNIT_KEYWORDS) + r")$", stripped, re.IGNORECASE):
+            return True
+
+        # Single decimal number (e.g., "130,00" or just "1")
+        if re.match(r"^\d+(?:,\d{2})?$", stripped):
+            return True
+
+        # Multiple decimal numbers on one line (original compact format)
+        if len(re.findall(r"\d+,\d{2}", stripped)) >= 2:
+            return True
+
+        return False
 
     def _finalize_row(self, row: dict) -> Optional[ParsedItem]:
         numeric_blob = " ".join(row.get("numeric_parts", []))
