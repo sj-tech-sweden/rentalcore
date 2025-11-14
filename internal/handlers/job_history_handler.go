@@ -25,9 +25,9 @@ func NewJobHistoryHandler(db *gorm.DB) *JobHistoryHandler {
 }
 
 // GetJobHistory returns the history for a specific job
-// GET /api/jobs/:job_id/history
+// GET /api/jobs/:id/history
 func (h *JobHistoryHandler) GetJobHistory(c *gin.Context) {
-	jobIDStr := c.Param("job_id")
+	jobIDStr := c.Param("id")
 	jobID, err := strconv.ParseUint(jobIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
