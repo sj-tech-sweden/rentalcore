@@ -32,6 +32,7 @@ type PDFHandler struct {
 	DB             *gorm.DB
 	Extractor      *pdf.PDFExtractor
 	Mapper         *pdf.ProductMapper
+	PackageMapper  *pdf.PackageMapper
 	CustomerMapper *pdf.CustomerMapper
 	JobHandler     *JobHandler
 	AttachmentRepo *repository.JobAttachmentRepository
@@ -234,6 +235,7 @@ func NewPDFHandler(db *gorm.DB, uploadDir string, jobHandler *JobHandler, attach
 		DB:             db,
 		Extractor:      pdf.NewPDFExtractor(uploadDir),
 		Mapper:         pdf.NewProductMapper(db, aliasCache),
+		PackageMapper:  pdf.NewPackageMapper(db),
 		CustomerMapper: pdf.NewCustomerMapper(db),
 		JobHandler:     jobHandler,
 		AttachmentRepo: attachmentRepo,
@@ -1221,7 +1223,12 @@ func (h *PDFHandler) SaveManualMapping(c *gin.Context) {
 		if err := h.Mapper.SaveMapping(item.RawProductText, *req.ProductID, userID); err != nil {
 			log.Printf("warning: failed to persist manual mapping for item %d: %v", item.ItemID, err)
 		}
-		h.recordMappingEvent(item.ExtractionID, item.ItemID, *req.ProductID, item.RawProductText, userID)
+		h.recordMappingEvent(item.ExtractionID, item.ItemID, *req.ProductID, 0, item.RawProductText, userID)
+	} else if targetPackage && req.PackageID != nil && h.PackageMapper != nil {
+		if err := h.PackageMapper.SaveMapping(item.RawProductText, *req.PackageID, userID); err != nil {
+			log.Printf("warning: failed to persist manual package mapping for item %d: %v", item.ItemID, err)
+		}
+		h.recordMappingEvent(item.ExtractionID, item.ItemID, 0, *req.PackageID, item.RawProductText, userID)
 	}
 
 	response := gin.H{
@@ -2515,7 +2522,7 @@ func formatDateInput(t *time.Time) string {
 }
 func (h *PDFHandler) persistExtractionMappings(c *gin.Context, extractionID uint64) error {
 	var mappedItems []models.PDFExtractionItem
-	if err := h.DB.Where("extraction_id = ? AND mapped_product_id IS NOT NULL", extractionID).
+	if err := h.DB.Where("extraction_id = ? AND (mapped_product_id IS NOT NULL OR mapped_package_id IS NOT NULL)", extractionID).
 		Find(&mappedItems).Error; err != nil {
 		return err
 	}
@@ -2532,31 +2539,44 @@ func (h *PDFHandler) persistExtractionMappings(c *gin.Context, extractionID uint
 	}
 
 	for _, item := range mappedItems {
-		if !item.MappedProductID.Valid {
-			continue
-		}
 		text := strings.TrimSpace(item.RawProductText)
 		if text == "" {
 			continue
 		}
 
-		if err := h.Mapper.SaveMapping(text, int(item.MappedProductID.Int64), userID); err != nil {
-			log.Printf("warning: failed to save mapping for extraction item %d: %v", item.ItemID, err)
-			continue
+		// Handle product mappings
+		if item.MappedProductID.Valid {
+			if err := h.Mapper.SaveMapping(text, int(item.MappedProductID.Int64), userID); err != nil {
+				log.Printf("warning: failed to save product mapping for extraction item %d: %v", item.ItemID, err)
+			} else {
+				h.recordMappingEvent(item.ExtractionID, item.ItemID, int(item.MappedProductID.Int64), 0, text, userID)
+			}
 		}
 
-		h.recordMappingEvent(item.ExtractionID, item.ItemID, int(item.MappedProductID.Int64), text, userID)
+		// Handle package mappings
+		if item.MappedPackageID.Valid && h.PackageMapper != nil {
+			if err := h.PackageMapper.SaveMapping(text, int(item.MappedPackageID.Int64), userID); err != nil {
+				log.Printf("warning: failed to save package mapping for extraction item %d: %v", item.ItemID, err)
+			} else {
+				h.recordMappingEvent(item.ExtractionID, item.ItemID, 0, int(item.MappedPackageID.Int64), text, userID)
+			}
+		}
 	}
 
 	return nil
 }
 
-func (h *PDFHandler) recordMappingEvent(extractionID uint64, itemID uint64, productID int, rawText string, userID int64) {
+func (h *PDFHandler) recordMappingEvent(extractionID uint64, itemID uint64, productID int, packageID int, rawText string, userID int64) {
 	event := models.PDFMappingEvent{
 		PDFProductText: rawText,
-		ProductID:      productID,
 	}
 
+	if productID > 0 {
+		event.ProductID = sql.NullInt64{Int64: int64(productID), Valid: true}
+	}
+	if packageID > 0 {
+		event.PackageID = sql.NullInt64{Int64: int64(packageID), Valid: true}
+	}
 	if extractionID > 0 {
 		event.ExtractionID = sql.NullInt64{Int64: int64(extractionID), Valid: true}
 	}

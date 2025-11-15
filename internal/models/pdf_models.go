@@ -99,6 +99,27 @@ func (PDFProductMapping) TableName() string {
 	return "pdf_product_mappings"
 }
 
+// PDFPackageMapping represents saved mappings between PDF text and packages
+type PDFPackageMapping struct {
+	MappingID       uint64          `gorm:"primaryKey;column:mapping_id;autoIncrement" json:"mapping_id"`
+	PDFPackageText  string          `gorm:"column:pdf_package_text;not null;index:idx_pdf_package_mappings_text" json:"pdf_package_text"`
+	NormalizedText  sql.NullString  `gorm:"column:normalized_text;index:idx_pdf_package_mappings_normalized" json:"normalized_text"`
+	PackageID       int             `gorm:"column:package_id;not null;index:idx_pdf_package_mappings_package" json:"package_id"`
+	MappingType     string          `gorm:"column:mapping_type;type:enum('exact','fuzzy','manual');default:'manual';index:idx_pdf_package_mappings_type" json:"mapping_type"`
+	ConfidenceScore sql.NullFloat64 `gorm:"column:confidence_score" json:"confidence_score"`
+	UsageCount      int             `gorm:"column:usage_count;default:0" json:"usage_count"`
+	LastUsedAt      sql.NullTime    `gorm:"column:last_used_at" json:"last_used_at"`
+	CreatedBy       sql.NullInt64   `gorm:"column:created_by" json:"created_by"`
+	CreatedAt       time.Time       `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt       time.Time       `gorm:"column:updated_at;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	IsActive        bool            `gorm:"column:is_active;default:true" json:"is_active"`
+}
+
+// TableName specifies the table name for PDFPackageMapping
+func (PDFPackageMapping) TableName() string {
+	return "pdf_package_mappings"
+}
+
 // PDFCustomerMapping represents saved mappings between PDF text and customers
 type PDFCustomerMapping struct {
 	MappingID       uint64          `gorm:"primaryKey;column:mapping_id;autoIncrement" json:"mapping_id"`
@@ -158,7 +179,8 @@ type PDFMappingEvent struct {
 	ItemID         sql.NullInt64  `gorm:"column:item_id" json:"item_id"`
 	PDFProductText string         `gorm:"column:pdf_product_text;not null" json:"pdf_product_text"`
 	NormalizedText sql.NullString `gorm:"column:normalized_text" json:"normalized_text"`
-	ProductID      int            `gorm:"column:product_id;not null" json:"product_id"`
+	ProductID      sql.NullInt64  `gorm:"column:product_id" json:"product_id"`
+	PackageID      sql.NullInt64  `gorm:"column:package_id" json:"package_id"`
 	CreatedBy      sql.NullInt64  `gorm:"column:created_by" json:"created_by"`
 	CreatedAt      time.Time      `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"created_at"`
 }

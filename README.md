@@ -53,7 +53,9 @@ A comprehensive, enterprise-grade equipment rental management system built with 
 - **📦 Package Suggestions**: WarehouseCore package alias map powers bundle-level recommendations (configure `WAREHOUSECORE_ALIAS_MAP_URL` or reuse `WAREHOUSECORE_DOMAIN`)
 - **💡 Smart Suggestions**: AI-powered product suggestions with confidence scoring (>80% auto-accept)
 - **🎯 Manual Mapping**: Searchable product database for manual mapping when needed
-- **📚 Learning System**: Saves user mappings to improve future auto-mapping accuracy
+- **📚 Learning System**: Saves both product and package mappings to improve future auto-mapping accuracy
+- **🔄 Package Mapping**: Package mappings persist to database and are suggested in future PDFs
+- **🎯 Alias Support**: Multiple different PDF texts can map to the same product/package (one-to-many)
 - **🔄 Workflow Integration**: Complete workflow from upload → review → mapping → job creation
 
 ### 👥 **Customer & Job Management**
@@ -455,7 +457,17 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.63** (Latest) - Job Package Booking System
+### **v3.64** (Latest) - PDF Package Mapping Persistence & One-to-Many Support
+- 📦 **Package Mapping Persistence**: Package mappings from PDF extraction are now saved to `pdf_package_mappings` table
+- 🔄 **Package Learning System**: User-confirmed package mappings are automatically saved for future auto-suggestions
+- 🗄️ **New Database Table**: Added `pdf_package_mappings` table with same structure as product mappings
+- 🔧 **Enhanced Mapping Events**: `pdf_mapping_events` now tracks both product_id and package_id for complete audit trail
+- 💡 **PackageMapper Service**: New dedicated service for managing package mapping operations
+- ✅ **One-to-Many Mappings**: Multiple PDF text strings can now map to the same product/package (alias support)
+- 🎯 **Improved Auto-Mapping**: Package suggestions from previous extractions now persist and improve accuracy over time
+- 📊 **Event Tracking**: All manual and auto package mappings are logged for analytics and quality control
+
+### **v3.63** - Job Package Booking System
 - 📦 **Package Assignment to Jobs**: Packages can now be assigned to jobs as single line items (like products)
 - 🔒 **Automatic Device Reservations**: When a package is assigned, underlying devices are automatically reserved in the background
 - 💰 **Package Pricing**: Use package prices (not sum of individual products), with override support per job

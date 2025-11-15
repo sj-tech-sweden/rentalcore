@@ -2136,6 +2136,32 @@ CREATE TABLE `pdf_product_mappings` (
 -- Table structure for table `pdf_customer_mappings`
 --
 
+CREATE TABLE `pdf_package_mappings` (
+  `mapping_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `pdf_package_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Text from PDF',
+  `normalized_text` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Cleaned/normalized version',
+  `package_id` int NOT NULL COMMENT 'Mapped package ID',
+  `mapping_type` enum('exact','fuzzy','manual') COLLATE utf8mb4_unicode_ci DEFAULT 'manual',
+  `confidence_score` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
+  `usage_count` int DEFAULT '0' COMMENT 'How many times this mapping was used',
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `created_by` bigint UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_active` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`mapping_id`),
+  KEY `idx_pdf_package_mappings_package` (`package_id`),
+  KEY `idx_pdf_package_mappings_text` (`pdf_package_text`),
+  KEY `idx_pdf_package_mappings_normalized` (`normalized_text`),
+  KEY `idx_pdf_package_mappings_type` (`mapping_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Saved mappings between PDF text and packages';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pdf_customer_mappings`
+--
+
 CREATE TABLE `pdf_customer_mappings` (
   `mapping_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `pdf_customer_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Customer text from PDF',
@@ -2167,12 +2193,14 @@ CREATE TABLE `pdf_mapping_events` (
   `item_id` bigint UNSIGNED DEFAULT NULL,
   `pdf_product_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
   `normalized_text` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `product_id` int NOT NULL,
+  `product_id` int DEFAULT NULL,
+  `package_id` int DEFAULT NULL,
   `created_by` bigint UNSIGNED DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`event_id`),
   KEY `idx_mapping_events_extraction` (`extraction_id`),
   KEY `idx_mapping_events_product` (`product_id`),
+  KEY `idx_mapping_events_package` (`package_id`),
   KEY `idx_mapping_events_text` (`pdf_product_text`),
   KEY `idx_mapping_events_normalized` (`normalized_text`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail for manual or auto PDF mappings';
