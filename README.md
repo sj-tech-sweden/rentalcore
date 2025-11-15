@@ -459,7 +459,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.69** (Latest) - Package Mapping Auto-Suggestions Fix
+### **v3.70** (Latest) - Database Collation Fix
+- ✅ **Fixed Collation Errors**: Resolved "Illegal mix of collations" errors in package availability queries
+- 🔧 **COLLATE Clauses Added**: All JOIN and WHERE conditions now specify utf8mb4_unicode_ci collation
+- 📦 **Package Assignment Works**: Packages can now be assigned without collation mismatch errors
+- 🎯 **Affected Queries**: Fixed countAvailableDevicesByProduct and findAvailableDevicesByProduct
+- 🚀 **Cross-Table Comparisons**: deviceID and jobID comparisons now use consistent collation
+
+### **v3.69** - Package Mapping Auto-Suggestions Fix
 - ✅ **Package Auto-Mapping Now Works**: RunAutoMapping now checks saved package mappings for auto-suggestions
 - 🎯 **Priority Checking**: PackageMapper.LookupSavedMapping() is checked first before falling back to ProductMapper
 - 💡 **Improved Learning**: Previously saved package mappings now automatically suggest in new PDF extractions
