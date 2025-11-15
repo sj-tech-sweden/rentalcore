@@ -459,7 +459,14 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.68** (Latest) - Complete Column Name Fix
+### **v3.69** (Latest) - Package Mapping Auto-Suggestions Fix
+- ✅ **Package Auto-Mapping Now Works**: RunAutoMapping now checks saved package mappings for auto-suggestions
+- 🎯 **Priority Checking**: PackageMapper.LookupSavedMapping() is checked first before falling back to ProductMapper
+- 💡 **Improved Learning**: Previously saved package mappings now automatically suggest in new PDF extractions
+- 🔧 **Exported Method**: LookupSavedMapping is now publicly accessible for handler integration
+- 🚀 **Complete Workflow**: Package mapping learning system now works end-to-end (save → retrieve → auto-suggest)
+
+### **v3.68** - Complete Column Name Fix
 - ✅ **Fixed ALL SQL Errors**: Corrected ALL column names in both countAvailableDevicesByProduct and findAvailableDevicesByProduct
 - 🔧 **Complete Fix**: Both availability check functions now use startDate/endDate correctly
 - 📦 **Package Assignment Works**: Packages can now be properly assigned to jobs without any SQL errors
