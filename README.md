@@ -459,7 +459,12 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.66** (Latest) - WarehouseCore Package Integration
+### **v3.67** (Latest) - Fix Job Date Column Names
+- ✅ **Fixed SQL Error**: Corrected column names in availability queries (startDate/endDate instead of start_date/end_date)
+- 🔧 **Package Assignment**: Device availability checks now work correctly with proper job date columns
+- 📦 **Package Reservations**: Packages can now be properly assigned to jobs without SQL errors
+
+### **v3.66** - WarehouseCore Package Integration
 - 🔧 **Product-Based Package System**: Job package assignment now uses WarehouseCore's `product_packages` and `product_package_items` tables
 - 🗄️ **Database Migration**: Switched from RentalCore's `equipment_packages` to WarehouseCore's `product_packages` for unified package management
 - 📦 **Product-Type Reservations**: Device reservations now query by `productID` instead of `deviceID` pattern matching
