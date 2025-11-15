@@ -286,6 +286,24 @@
                     </div>
                 </div>
 
+                <!-- Job Packages -->
+                <div class="rc-card rc-mt-lg">
+                    <div class="rc-card-header">
+                        <h3 class="rc-card-title"><i class="bi bi-box2"></i> Packages</h3>
+                        <button class="rc-btn rc-btn-primary rc-btn-sm" onclick="showAddPackageModal()">
+                            <i class="bi bi-plus-lg"></i> Add Package
+                        </button>
+                    </div>
+                    <div class="rc-card-body">
+                        <div id="packages-list">
+                            <div class="rc-text-center rc-p-lg">
+                                <i class="bi bi-arrow-clockwise" style="animation: spin 1s linear infinite;"></i>
+                                Loading packages...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Job Attachments -->
                 <div class="rc-card rc-mt-lg">
                     <div class="rc-card-header">
@@ -843,6 +861,166 @@
         setTimeout(() => {
             notification.remove();
         }, 3000);
+    }
+
+    // Load job packages on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadJobPackages();
+    });
+
+    // Load packages assigned to job
+    async function loadJobPackages() {
+        const jobID = {{.job.JobID}};
+        try {
+            const response = await fetch(`/api/jobs/${jobID}/packages`);
+            const data = await response.json();
+
+            const packagesList = document.getElementById('packages-list');
+
+            if (!data.success || !data.packages || data.packages.length === 0) {
+                packagesList.innerHTML = `
+                    <div class="rc-text-center rc-p-xl">
+                        <i class="bi bi-box2" style="font-size: 3rem; color: var(--text-muted);"></i>
+                        <h4 class="rc-text-muted">No Packages Assigned</h4>
+                        <p class="rc-text-secondary">Add packages to this job using the button above.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="package-items">';
+            data.packages.forEach(pkg => {
+                const price = pkg.custom_price?.Float64 || pkg.package_price || 0;
+                const total = price * pkg.quantity;
+                html += `
+                    <div class="package-item rc-card-nested rc-mb-md">
+                        <div class="rc-flex rc-flex-between rc-mb-sm">
+                            <div>
+                                <h4 class="rc-mb-xs">${pkg.package_name}</h4>
+                                <p class="rc-text-sm rc-text-secondary">${pkg.package_description || ''}</p>
+                                <span class="rc-badge rc-badge-primary">Quantity: ${pkg.quantity}</span>
+                                <span class="rc-badge rc-badge-${pkg.availability_status === 'fully_reserved' ? 'success' : 'warning'}">
+                                    ${pkg.reserved_devices}/${pkg.device_count * pkg.quantity} devices reserved
+                                </span>
+                            </div>
+                            <div class="rc-text-right">
+                                <div class="rc-text-lg rc-font-bold">€${total.toFixed(2)}</div>
+                                <div class="rc-text-sm rc-text-secondary">€${price.toFixed(2)} × ${pkg.quantity}</div>
+                                <div class="rc-flex rc-flex-gap-xs rc-mt-sm">
+                                    <button class="rc-btn rc-btn-outline rc-btn-sm" onclick="editPackagePrice(${pkg.job_package_id}, ${price})" title="Edit Price">
+                                        <i class="bi bi-currency-euro"></i>
+                                    </button>
+                                    <button class="rc-btn rc-btn-outline rc-btn-sm" onclick="viewPackageReservations(${pkg.job_package_id})" title="View Reservations">
+                                        <i class="bi bi-list-check"></i>
+                                    </button>
+                                    <button class="rc-btn rc-btn-outline rc-btn-sm rc-btn-danger" onclick="removePackage(${pkg.job_package_id})" title="Remove Package">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            packagesList.innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading packages:', error);
+            document.getElementById('packages-list').innerHTML = `
+                <div class="rc-alert rc-alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Failed to load packages
+                </div>
+            `;
+        }
+    }
+
+    // Show add package modal
+    function showAddPackageModal() {
+        showNotification('Package assignment UI coming soon - use API for now', 'info');
+    }
+
+    // Edit package price
+    async function editPackagePrice(packageID, currentPrice) {
+        const newPrice = prompt('Enter new price:', currentPrice);
+        if (newPrice === null) return;
+
+        const price = parseFloat(newPrice);
+        if (isNaN(price)) {
+            showNotification('Invalid price', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/jobs/packages/${packageID}/price`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ custom_price: price })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showNotification('Package price updated', 'success');
+                loadJobPackages();
+            } else {
+                showNotification(data.error || 'Failed to update price', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating price:', error);
+            showNotification('Failed to update price', 'error');
+        }
+    }
+
+    // View package device reservations
+    async function viewPackageReservations(packageID) {
+        try {
+            const response = await fetch(`/api/jobs/packages/${packageID}/reservations`);
+            const data = await response.json();
+
+            if (!data.success) {
+                showNotification(data.error || 'Failed to load reservations', 'error');
+                return;
+            }
+
+            let html = '<h3>Reserved Devices</h3><ul>';
+            if (data.reservations && data.reservations.length > 0) {
+                data.reservations.forEach(res => {
+                    html += `<li>${res.device_id} (Status: ${res.reservation_status})</li>`;
+                });
+            } else {
+                html += '<li>No devices reserved</li>';
+            }
+            html += '</ul>';
+
+            alert(html.replace(/<[^>]*>/g, '\n'));
+        } catch (error) {
+            console.error('Error loading reservations:', error);
+            showNotification('Failed to load reservations', 'error');
+        }
+    }
+
+    // Remove package from job
+    async function removePackage(packageID) {
+        if (!confirm('Are you sure you want to remove this package? This will release all device reservations.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/jobs/packages/${packageID}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showNotification('Package removed successfully', 'success');
+                loadJobPackages();
+            } else {
+                showNotification(data.error || 'Failed to remove package', 'error');
+            }
+        } catch (error) {
+            console.error('Error removing package:', error);
+            showNotification('Failed to remove package', 'error');
+        }
     }
     </script>
 

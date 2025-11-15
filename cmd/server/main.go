@@ -343,8 +343,11 @@ func main() {
 	// Auto-migration disabled - database schema managed manually
 	log.Printf("Database auto-migration disabled - using manual schema management")
 
+	// Initialize job package repository
+	jobPackageRepo := repository.NewJobPackageRepository(db)
+
 	// Initialize handlers
-	jobHandler := handlers.NewJobHandler(jobRepo, deviceRepo, customerRepo, statusRepo, jobCategoryRepo, jobEditSessionRepo, jobHistoryService)
+	jobHandler := handlers.NewJobHandler(jobRepo, jobPackageRepo, deviceRepo, customerRepo, statusRepo, jobCategoryRepo, jobEditSessionRepo, jobHistoryService)
 	jobHistoryHandler := handlers.NewJobHistoryHandler(db.DB)
 	deviceHandler := handlers.NewDeviceHandler(deviceRepo, barcodeService, productRepo)
 	customerHandler := handlers.NewCustomerHandler(customerRepo)
@@ -832,6 +835,7 @@ func setupRoutes(r *gin.Engine,
 			jobs.GET("/:id/devices", jobHandler.GetJobDevices)
 			jobs.POST("/:id/devices", jobHandler.AssignDevice)
 			jobs.DELETE("/:id/devices/:deviceId", jobHandler.RemoveDevice)
+
 		}
 
 		// Device routes - redirect to WarehouseCore
@@ -1263,6 +1267,19 @@ func setupRoutes(r *gin.Engine,
 				apiJobs.DELETE("/:id/editing", jobHandler.StopJobEditingSession)
 				apiJobs.GET("/:id/editing", jobHandler.GetJobEditingSessions)
 				apiJobs.GET("/:id/history", jobHistoryHandler.GetJobHistory)
+
+				// Job package routes
+				apiJobs.GET("/:id/packages", jobHandler.GetJobPackages)
+				apiJobs.POST("/:id/packages", jobHandler.AssignPackageToJob)
+			}
+
+			// Job package management routes
+			apiJobPackages := api.Group("/jobs/packages")
+			{
+				apiJobPackages.PATCH("/:package_id/price", jobHandler.UpdateJobPackagePrice)
+				apiJobPackages.PATCH("/:package_id/quantity", jobHandler.UpdateJobPackageQuantity)
+				apiJobPackages.DELETE("/:package_id", jobHandler.RemoveJobPackage)
+				apiJobPackages.GET("/:package_id/reservations", jobHandler.GetJobPackageReservations)
 			}
 
 			// Device API

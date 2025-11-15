@@ -38,6 +38,7 @@ A comprehensive, enterprise-grade equipment rental management system built with 
 - **QR Code & Barcode Generation**: Device identification codes now managed in WarehouseCore
 - **Bulk Operations**: Mass device assignment and status updates
 - **Equipment Packages**: Predefined equipment bundles for common rentals
+- **🆕 Package Booking to Jobs**: Assign entire packages to jobs as single line items with automatic device reservation
 - **Revenue Tracking**: Per-device revenue analytics and performance insights
 - **🆕 Rental Equipment System**: External equipment rental tracking with supplier management
 - **🆕 Manual Entry & Selection**: Add external rentals directly to jobs or select from catalog
@@ -454,7 +455,18 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.62** (Latest) - PDF Error Handling Fix
+### **v3.63** (Latest) - Job Package Booking System
+- 📦 **Package Assignment to Jobs**: Packages can now be assigned to jobs as single line items (like products)
+- 🔒 **Automatic Device Reservations**: When a package is assigned, underlying devices are automatically reserved in the background
+- 💰 **Package Pricing**: Use package prices (not sum of individual products), with override support per job
+- 📊 **Availability Checking**: Smart availability checking considers both individual device assignments and package reservations
+- 🗄️ **Database Schema**: New tables `job_packages` and `job_package_reservations` for tracking assignments
+- 🔌 **API Endpoints**: Full CRUD API for managing packages on jobs (assign, update price/quantity, remove, view reservations)
+- 🖥️ **UI Integration**: Job detail page now displays assigned packages with expandable device lists
+- 🔄 **Backward Compatible**: Existing jobs with individual devices continue to work unchanged
+- 📝 **Migration Support**: SQL migration file included for database updates
+
+### **v3.62** - PDF Error Handling Fix
 - ✅ **Fixed 500 Error**: Resolved "device not found in job" error during PDF extraction finalization
 - 🛠️ **Deployed Error Handling**: The graceful error handling from v3.61 is now properly deployed to production
 - 📦 **Package Mapping Support**: Database migration applied to support package mapping in PDF extractions

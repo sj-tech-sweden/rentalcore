@@ -112,6 +112,7 @@ func parseProductSelectionsFromInterface(value interface{}) ([]JobProductSelecti
 
 type JobHandler struct {
 	jobRepo            *repository.JobRepository
+	jobPackageRepo     *repository.JobPackageRepository
 	deviceRepo         *repository.DeviceRepository
 	customerRepo       *repository.CustomerRepository
 	statusRepo         *repository.StatusRepository
@@ -145,9 +146,10 @@ func formatUserDisplayName(user *models.User) string {
 	}
 }
 
-func NewJobHandler(jobRepo *repository.JobRepository, deviceRepo *repository.DeviceRepository, customerRepo *repository.CustomerRepository, statusRepo *repository.StatusRepository, jobCategoryRepo *repository.JobCategoryRepository, jobEditSessionRepo *repository.JobEditSessionRepository, jobHistoryService *services.JobHistoryService) *JobHandler {
+func NewJobHandler(jobRepo *repository.JobRepository, jobPackageRepo *repository.JobPackageRepository, deviceRepo *repository.DeviceRepository, customerRepo *repository.CustomerRepository, statusRepo *repository.StatusRepository, jobCategoryRepo *repository.JobCategoryRepository, jobEditSessionRepo *repository.JobEditSessionRepository, jobHistoryService *services.JobHistoryService) *JobHandler {
 	return &JobHandler{
 		jobRepo:            jobRepo,
+		jobPackageRepo:     jobPackageRepo,
 		deviceRepo:         deviceRepo,
 		customerRepo:       customerRepo,
 		statusRepo:         statusRepo,
@@ -1702,5 +1704,161 @@ func (h *JobHandler) FinishPack(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Pack process completed successfully",
+	})
+}
+
+// AssignPackageToJob handles POST /api/jobs/:id/packages
+func (h *JobHandler) AssignPackageToJob(c *gin.Context) {
+	jobID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
+		return
+	}
+
+	var request struct {
+		PackageID   int      `json:"package_id" binding:"required"`
+		Quantity    uint     `json:"quantity" binding:"required,min=1"`
+		CustomPrice *float64 `json:"custom_price"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, exists := GetCurrentUser(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	jobPackage, err := h.jobPackageRepo.AssignPackageToJob(jobID, request.PackageID, request.Quantity, request.CustomPrice, user.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":     true,
+		"message":     "Package assigned successfully",
+		"job_package": jobPackage,
+	})
+}
+
+// GetJobPackages handles GET /api/jobs/:id/packages
+func (h *JobHandler) GetJobPackages(c *gin.Context) {
+	jobID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
+		return
+	}
+
+	packages, err := h.jobPackageRepo.GetJobPackagesWithDetails(jobID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":  true,
+		"packages": packages,
+	})
+}
+
+// UpdateJobPackagePrice handles PATCH /api/jobs/packages/:package_id/price
+func (h *JobHandler) UpdateJobPackagePrice(c *gin.Context) {
+	packageID, err := strconv.ParseUint(c.Param("package_id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package ID"})
+		return
+	}
+
+	var request struct {
+		CustomPrice *float64 `json:"custom_price"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.jobPackageRepo.UpdateJobPackagePrice(uint(packageID), request.CustomPrice)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Package price updated successfully",
+	})
+}
+
+// UpdateJobPackageQuantity handles PATCH /api/jobs/packages/:package_id/quantity
+func (h *JobHandler) UpdateJobPackageQuantity(c *gin.Context) {
+	packageID, err := strconv.ParseUint(c.Param("package_id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package ID"})
+		return
+	}
+
+	var request struct {
+		Quantity uint `json:"quantity" binding:"required,min=1"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.jobPackageRepo.UpdateJobPackageQuantity(uint(packageID), request.Quantity)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Package quantity updated successfully",
+	})
+}
+
+// RemoveJobPackage handles DELETE /api/jobs/packages/:package_id
+func (h *JobHandler) RemoveJobPackage(c *gin.Context) {
+	packageID, err := strconv.ParseUint(c.Param("package_id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package ID"})
+		return
+	}
+
+	err = h.jobPackageRepo.RemoveJobPackage(uint(packageID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Package removed successfully",
+	})
+}
+
+// GetJobPackageReservations handles GET /api/jobs/packages/:package_id/reservations
+func (h *JobHandler) GetJobPackageReservations(c *gin.Context) {
+	packageID, err := strconv.ParseUint(c.Param("package_id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid package ID"})
+		return
+	}
+
+	reservations, err := h.jobPackageRepo.GetPackageDeviceReservations(uint(packageID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":      true,
+		"reservations": reservations,
 	})
 }
