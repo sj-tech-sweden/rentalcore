@@ -28,18 +28,18 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 		}
 	}()
 
-	// Verify package exists and is active
-	var pkg models.EquipmentPackage
-	if err := tx.Where("packageID = ? AND is_active = 1", packageID).First(&pkg).Error; err != nil {
+	// Verify package exists (from WarehouseCore product_packages)
+	var pkg models.ProductPackage
+	if err := tx.Where("package_id = ?", packageID).First(&pkg).Error; err != nil {
 		tx.Rollback()
-		return nil, fmt.Errorf("package not found or inactive: %w", err)
+		return nil, fmt.Errorf("package not found: %w", err)
 	}
 
-	// Get package devices
-	var packageDevices []models.PackageDevice
-	if err := tx.Where("packageID = ?", packageID).Find(&packageDevices).Error; err != nil {
+	// Get package items (from WarehouseCore product_package_items)
+	var packageItems []models.ProductPackageItem
+	if err := tx.Where("package_id = ?", packageID).Find(&packageItems).Error; err != nil {
 		tx.Rollback()
-		return nil, fmt.Errorf("failed to load package devices: %w", err)
+		return nil, fmt.Errorf("failed to load package items: %w", err)
 	}
 
 	// Get job dates for availability check
@@ -58,8 +58,8 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 		endDate = sql.NullTime{Time: *job.EndDate, Valid: true}
 	}
 
-	// Check device availability
-	availabilityIssues := r.checkPackageDeviceAvailability(r.db, packageDevices, quantity, startDate, endDate, jobID)
+	// Check device availability (using product-based items)
+	availabilityIssues := r.checkPackageItemAvailability(r.db, packageItems, quantity, startDate, endDate, jobID)
 	if len(availabilityIssues) > 0 {
 		tx.Rollback()
 		return nil, fmt.Errorf("device availability issues: %v", availabilityIssues)
@@ -85,15 +85,15 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 		return nil, fmt.Errorf("failed to create job package: %w", err)
 	}
 
-	// Create device reservations for each package device
-	for _, pkgDevice := range packageDevices {
-		totalQuantity := pkgDevice.Quantity * quantity
+	// Create device reservations for each package item (by product)
+	for _, pkgItem := range packageItems {
+		totalQuantity := uint(pkgItem.Quantity) * quantity
 
-		// Find available devices of this type
-		availableDevices, err := r.findAvailableDevices(r.db, pkgDevice.DeviceID, totalQuantity, startDate, endDate, jobID)
+		// Find available devices of this product type
+		availableDevices, err := r.findAvailableDevicesByProduct(r.db, pkgItem.ProductID, totalQuantity, startDate, endDate, jobID)
 		if err != nil {
 			tx.Rollback()
-			return nil, fmt.Errorf("failed to find available devices for %s: %w", pkgDevice.DeviceID, err)
+			return nil, fmt.Errorf("failed to find available devices for product %d: %w", pkgItem.ProductID, err)
 		}
 
 		// Create reservations
@@ -121,31 +121,31 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 	return r.GetJobPackageByID(jobPackage.JobPackageID)
 }
 
-// checkPackageDeviceAvailability verifies all devices in package are available
-func (r *JobPackageRepository) checkPackageDeviceAvailability(tx *Database, packageDevices []models.PackageDevice, quantity uint, startDate, endDate sql.NullTime, excludeJobID int) []string {
+// checkPackageItemAvailability verifies all products in package are available
+func (r *JobPackageRepository) checkPackageItemAvailability(tx *Database, packageItems []models.ProductPackageItem, quantity uint, startDate, endDate sql.NullTime, excludeJobID int) []string {
 	var issues []string
 
-	for _, pkgDevice := range packageDevices {
-		totalNeeded := pkgDevice.Quantity * quantity
-		available, err := r.countAvailableDevices(tx, pkgDevice.DeviceID, startDate, endDate, excludeJobID)
+	for _, pkgItem := range packageItems {
+		totalNeeded := uint(pkgItem.Quantity) * quantity
+		available, err := r.countAvailableDevicesByProduct(tx, pkgItem.ProductID, startDate, endDate, excludeJobID)
 		if err != nil {
-			issues = append(issues, fmt.Sprintf("Error checking %s: %v", pkgDevice.DeviceID, err))
+			issues = append(issues, fmt.Sprintf("Error checking product %d: %v", pkgItem.ProductID, err))
 			continue
 		}
 
 		if available < totalNeeded {
-			issues = append(issues, fmt.Sprintf("Device %s: need %d, only %d available", pkgDevice.DeviceID, totalNeeded, available))
+			issues = append(issues, fmt.Sprintf("Product %d: need %d, only %d available", pkgItem.ProductID, totalNeeded, available))
 		}
 	}
 
 	return issues
 }
 
-// countAvailableDevices counts how many instances of a device are available
-func (r *JobPackageRepository) countAvailableDevices(tx *Database, deviceIDPattern string, startDate, endDate sql.NullTime, excludeJobID int) (uint, error) {
-	// Count total devices matching pattern
+// countAvailableDevicesByProduct counts how many devices of a product are available
+func (r *JobPackageRepository) countAvailableDevicesByProduct(tx *Database, productID int, startDate, endDate sql.NullTime, excludeJobID int) (uint, error) {
+	// Count total devices of this product type
 	var totalCount int64
-	if err := tx.Model(&models.Device{}).Where("deviceID LIKE ?", deviceIDPattern+"%").Count(&totalCount).Error; err != nil {
+	if err := tx.Model(&models.Device{}).Where("productID = ?", productID).Count(&totalCount).Error; err != nil {
 		return 0, err
 	}
 
@@ -159,7 +159,7 @@ func (r *JobPackageRepository) countAvailableDevices(tx *Database, deviceIDPatte
 	query := `
 		SELECT COUNT(DISTINCT d.deviceID)
 		FROM devices d
-		WHERE d.deviceID LIKE ?
+		WHERE d.productID = ?
 		AND (
 			EXISTS (
 				SELECT 1 FROM jobdevices jd
@@ -185,7 +185,7 @@ func (r *JobPackageRepository) countAvailableDevices(tx *Database, deviceIDPatte
 			)
 		)
 	`
-	if err := tx.Raw(query, deviceIDPattern+"%", excludeJobID, endDate.Time, startDate.Time, excludeJobID, endDate.Time, startDate.Time).Scan(&reservedCount).Error; err != nil {
+	if err := tx.Raw(query, productID, excludeJobID, endDate.Time, startDate.Time, excludeJobID, endDate.Time, startDate.Time).Scan(&reservedCount).Error; err != nil {
 		return 0, err
 	}
 
@@ -197,14 +197,14 @@ func (r *JobPackageRepository) countAvailableDevices(tx *Database, deviceIDPatte
 	return uint(available), nil
 }
 
-// findAvailableDevices finds specific device instances that are available
-func (r *JobPackageRepository) findAvailableDevices(tx *Database, deviceIDPattern string, quantity uint, startDate, endDate sql.NullTime, excludeJobID int) ([]string, error) {
+// findAvailableDevicesByProduct finds specific device instances by product that are available
+func (r *JobPackageRepository) findAvailableDevicesByProduct(tx *Database, productID int, quantity uint, startDate, endDate sql.NullTime, excludeJobID int) ([]string, error) {
 	var devices []string
 
 	query := `
 		SELECT d.deviceID
 		FROM devices d
-		WHERE d.deviceID LIKE ?
+		WHERE d.productID = ?
 		AND NOT EXISTS (
 			SELECT 1 FROM jobdevices jd
 			JOIN jobs j ON jd.jobID = j.jobID
@@ -230,7 +230,7 @@ func (r *JobPackageRepository) findAvailableDevices(tx *Database, deviceIDPatter
 		LIMIT ?
 	`
 
-	if err := tx.Raw(query, deviceIDPattern+"%", excludeJobID, endDate.Time, startDate.Time, excludeJobID, endDate.Time, startDate.Time, quantity).Scan(&devices).Error; err != nil {
+	if err := tx.Raw(query, productID, excludeJobID, endDate.Time, startDate.Time, excludeJobID, endDate.Time, startDate.Time, quantity).Scan(&devices).Error; err != nil {
 		return nil, err
 	}
 
@@ -246,7 +246,6 @@ func (r *JobPackageRepository) GetJobPackageByID(id uint) (*models.JobPackage, e
 	var jobPackage models.JobPackage
 	err := r.db.
 		Preload("Package").
-		Preload("Package.PackageDevices").
 		Preload("Reservations").
 		Preload("Reservations.Device").
 		Preload("AddedByUser").
@@ -265,8 +264,6 @@ func (r *JobPackageRepository) GetJobPackagesByJobID(jobID int) ([]models.JobPac
 	var packages []models.JobPackage
 	err := r.db.
 		Preload("Package").
-		Preload("Package.PackageDevices").
-		Preload("Package.PackageDevices.Device").
 		Preload("Reservations").
 		Preload("Reservations.Device").
 		Preload("AddedByUser").
@@ -360,7 +357,6 @@ func (r *JobPackageRepository) GetJobPackagesWithDetails(jobID int) ([]models.Jo
 	var packages []models.JobPackage
 	err := r.db.
 		Preload("Package").
-		Preload("Package.PackageDevices").
 		Preload("Reservations").
 		Where("job_id = ?", jobID).
 		Order("added_at DESC").
@@ -378,11 +374,17 @@ func (r *JobPackageRepository) GetJobPackagesWithDetails(jobID int) ([]models.Jo
 
 		if pkg.Package != nil {
 			details.PackageName = pkg.Package.Name
-			details.PackageDescription = pkg.Package.Description
-			if pkg.Package.PackagePrice != nil {
-				details.PackagePrice = *pkg.Package.PackagePrice
+			if pkg.Package.Description.Valid {
+				details.PackageDescription = pkg.Package.Description.String
 			}
-			details.DeviceCount = len(pkg.Package.PackageDevices)
+			if pkg.Package.Price.Valid {
+				details.PackagePrice = pkg.Package.Price.Float64
+			}
+
+			// Count items in the package from product_package_items
+			var itemCount int64
+			r.db.Model(&models.ProductPackageItem{}).Where("package_id = ?", pkg.Package.PackageID).Count(&itemCount)
+			details.DeviceCount = int(itemCount)
 		}
 
 		// Calculate effective price

@@ -459,7 +459,17 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.65** (Latest) - PDF Package Assignment Fix
+### **v3.66** (Latest) - WarehouseCore Package Integration
+- 🔧 **Product-Based Package System**: Job package assignment now uses WarehouseCore's `product_packages` and `product_package_items` tables
+- 🗄️ **Database Migration**: Switched from RentalCore's `equipment_packages` to WarehouseCore's `product_packages` for unified package management
+- 📦 **Product-Type Reservations**: Device reservations now query by `productID` instead of `deviceID` pattern matching
+- 🎯 **Improved Availability**: countAvailableDevicesByProduct() queries devices by product type for accurate availability checking
+- ⚡ **Enhanced Performance**: Cleaner queries using exact product IDs instead of LIKE patterns
+- 🔄 **Model Update**: JobPackage.Package now references ProductPackage instead of EquipmentPackage
+- 🛠️ **Repository Refactor**: Complete rewrite of JobPackageRepository to use WarehouseCore package structure
+- ✅ **SQL Error Fix**: Resolved "Error 1146: Table 'RentalCore.equipment_packages' doesn't exist" issue
+
+### **v3.65** - PDF Package Assignment Fix
 - 📦 **Package Preservation**: PDF items mapped to packages now stay as packages instead of expanding to individual products
 - 🔄 **Smart Assignment**: Packages are added to `job_packages` table with automatic device reservations
 - 💰 **Custom Pricing**: PDF line totals and unit prices are extracted and applied as custom package prices

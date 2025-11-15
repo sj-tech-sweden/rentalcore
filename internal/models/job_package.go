@@ -18,7 +18,7 @@ type JobPackage struct {
 
 	// Relationships
 	Job          *Job                    `gorm:"foreignKey:JobID;references:JobID" json:"job,omitempty"`
-	Package      *EquipmentPackage       `gorm:"foreignKey:PackageID;references:PackageID" json:"package,omitempty"`
+	Package      *ProductPackage         `gorm:"foreignKey:PackageID;references:PackageID" json:"package,omitempty"`
 	AddedByUser  *User                   `gorm:"foreignKey:AddedBy;references:UserID" json:"added_by_user,omitempty"`
 	Reservations []JobPackageReservation `gorm:"foreignKey:JobPackageID" json:"reservations,omitempty"`
 }
