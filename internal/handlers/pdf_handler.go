@@ -2117,9 +2117,12 @@ func (h *PDFHandler) applyCustomPriceOverrides(job *models.Job, overrides map[ui
 
 	jobDevices, err := h.JobHandler.jobRepo.GetJobDevices(job.JobID)
 	if err != nil {
-		return err
+		// Log warning but don't fail - job creation should still succeed
+		fmt.Printf("[WARN] Could not fetch job devices for price overrides: %v\n", err)
+		return nil
 	}
 
+	failedUpdates := 0
 	for _, jd := range jobDevices {
 		if jd.Device.DeviceID == "" {
 			continue
@@ -2138,8 +2141,15 @@ func (h *PDFHandler) applyCustomPriceOverrides(job *models.Job, overrides map[ui
 			continue
 		}
 		if err := h.JobHandler.jobRepo.UpdateDevicePrice(job.JobID, jd.DeviceID, price); err != nil {
-			return err
+			// Log warning but continue - don't fail entire job creation
+			fmt.Printf("[WARN] Could not update price for device %s in job %d: %v\n", jd.DeviceID, job.JobID, err)
+			failedUpdates++
+			continue
 		}
+	}
+
+	if failedUpdates > 0 {
+		fmt.Printf("[INFO] %d device price updates failed for job %d, but job was created successfully\n", failedUpdates, job.JobID)
 	}
 
 	return nil

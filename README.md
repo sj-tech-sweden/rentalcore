@@ -454,7 +454,19 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.60** (Latest) - Warehouse Package OCR (Issue #19)
+### **v3.62** (Latest) - PDF Error Handling Fix
+- ✅ **Fixed 500 Error**: Resolved "device not found in job" error during PDF extraction finalization
+- 🛠️ **Deployed Error Handling**: The graceful error handling from v3.61 is now properly deployed to production
+- 📦 **Package Mapping Support**: Database migration applied to support package mapping in PDF extractions
+- 🔧 **Production Ready**: All recent PDF processing improvements are now live in Docker image
+
+### **v3.61** - Graceful PDF Device Assignment
+- ✅ **Resilient Job Creation**: PDF extraction finalization now succeeds even when some devices can't be assigned or priced
+- 🛠️ **Warning-Based Errors**: Device assignment and price override failures are logged as warnings instead of fatal errors
+- 📊 **Partial Success Handling**: Jobs are created successfully with available devices even if some assignments fail
+- 🔍 **Detailed Logging**: Failed device assignments and price updates are logged with specific device IDs for debugging
+
+### **v3.60** - Warehouse Package OCR (Issue #19)
 - 📦 **Package Suggestions**: RentalCore now pulls WarehouseCore’s alias map to recognize product bundles directly in the PDF mapping flow.
 - 🔁 **Auto-Mapping Upgrade**: Alias hits preempt product fuzzies, so matching “Audio (XLR 3P - XLR 3P)” immediately offers the cable package instead of 37 duplicate rows.
 - 🧮 **Job Assignment Expansion**: When a PDF item maps to a package, the assigner now unfolds it into the correct per-product counts before reserving inventory or pricing overrides.
