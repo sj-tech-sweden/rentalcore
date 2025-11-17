@@ -1750,11 +1750,11 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (
 		}
 
 		for pkgID, agg := range packageAggregates {
-			// Load package details to get the name
-			var pkg models.EquipmentPackage
+			// Load package details to get the name (from WarehouseCore product_packages)
+			var pkg models.ProductPackage
 			packageName := fmt.Sprintf("Package ID %d", pkgID)
 
-			if err := h.DB.Where("packageID = ?", pkgID).First(&pkg).Error; err != nil {
+			if err := h.DB.Where("package_id = ?", pkgID).First(&pkg).Error; err != nil {
 				// Package doesn't exist in database
 				errMsg := fmt.Sprintf("%s: Package not found in database (ID: %d). Please check package mapping.", packageName, pkgID)
 				log.Printf("Warning: %s", errMsg)
