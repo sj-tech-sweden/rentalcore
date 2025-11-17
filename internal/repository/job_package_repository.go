@@ -143,9 +143,10 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 	// Create virtual JobDevice entries for each package quantity for UI display and revenue calculation
 	// This makes packages appear as line items in the job, while real devices are tracked via job_package_reservations
 	for i := uint(0); i < quantity; i++ {
-		virtualDeviceID := fmt.Sprintf("PKG_%d_%d", packageID, jobPackage.JobPackageID)
+		// Use JobPackageID as base for device ID - it's unique and simpler
+		virtualDeviceID := fmt.Sprintf("PKG_%d", jobPackage.JobPackageID)
 		if quantity > 1 {
-			virtualDeviceID = fmt.Sprintf("PKG_%d_%d_%d", packageID, jobPackage.JobPackageID, i+1)
+			virtualDeviceID = fmt.Sprintf("PKG_%d_%d", jobPackage.JobPackageID, i+1)
 		}
 
 		// Calculate price per unit if custom price is provided
