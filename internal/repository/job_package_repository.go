@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"go-barcode-webapp/internal/models"
+	"log"
 	"strings"
 	"time"
 )
@@ -18,6 +19,15 @@ func NewJobPackageRepository(db *Database) *JobPackageRepository {
 
 // AssignPackageToJob assigns a package to a job and creates device reservations
 func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quantity uint, customPrice *float64, userID uint) (*models.JobPackage, error) {
+	// Check if package is already assigned to this job (idempotent)
+	var existingJobPackage models.JobPackage
+	if err := r.db.Where("job_id = ? AND package_id = ?", jobID, packageID).First(&existingJobPackage).Error; err == nil {
+		// Package already assigned - return existing entry (idempotent behavior)
+		log.Printf("Package %d already assigned to job %d (job_package_id: %d), skipping duplicate assignment",
+			packageID, jobID, existingJobPackage.JobPackageID)
+		return &existingJobPackage, nil
+	}
+
 	// Start transaction
 	tx := r.db.Begin()
 	if tx.Error != nil {
