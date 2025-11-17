@@ -1750,6 +1750,21 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (
 		}
 
 		for pkgID, agg := range packageAggregates {
+			// Load package details to get the name
+			var pkg models.EquipmentPackage
+			packageName := fmt.Sprintf("Package ID %d", pkgID)
+
+			if err := h.DB.Where("packageID = ?", pkgID).First(&pkg).Error; err != nil {
+				// Package doesn't exist in database
+				errMsg := fmt.Sprintf("%s: Package not found in database (ID: %d). Please check package mapping.", packageName, pkgID)
+				log.Printf("Warning: %s", errMsg)
+				warnings = append(warnings, errMsg)
+				continue
+			}
+
+			// Use the actual package name
+			packageName = pkg.Name
+
 			var customPrice *float64
 			if agg.totalAmount > 0 && agg.quantity > 0 {
 				// Calculate average price per package unit
@@ -1766,10 +1781,10 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (
 			)
 			if err != nil {
 				// Log warning but continue with other packages
-				log.Printf("Warning: failed to assign package %d to job %d: %v", pkgID, job.JobID, err)
-				warnings = append(warnings, fmt.Sprintf("Package %d: %v", pkgID, err))
+				log.Printf("Warning: failed to assign package '%s' (ID: %d) to job %d: %v", packageName, pkgID, job.JobID, err)
+				warnings = append(warnings, fmt.Sprintf("%s: %v", packageName, err))
 			} else {
-				log.Printf("Successfully assigned package %d (qty: %d) to job %d", pkgID, agg.quantity, job.JobID)
+				log.Printf("Successfully assigned package '%s' (ID: %d, qty: %d) to job %d", packageName, pkgID, agg.quantity, job.JobID)
 			}
 		}
 	}

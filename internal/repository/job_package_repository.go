@@ -128,13 +128,21 @@ func (r *JobPackageRepository) checkPackageItemAvailability(tx *Database, packag
 	for _, pkgItem := range packageItems {
 		totalNeeded := uint(pkgItem.Quantity) * quantity
 		available, err := r.countAvailableDevicesByProduct(tx, pkgItem.ProductID, startDate, endDate, excludeJobID)
+
+		// Load product name for better error message
+		var product models.Product
+		productName := fmt.Sprintf("Product ID %d", pkgItem.ProductID)
+		if err := tx.Where("productID = ?", pkgItem.ProductID).First(&product).Error; err == nil {
+			productName = product.Name
+		}
+
 		if err != nil {
-			issues = append(issues, fmt.Sprintf("Error checking product %d: %v", pkgItem.ProductID, err))
+			issues = append(issues, fmt.Sprintf("Error checking %s: %v", productName, err))
 			continue
 		}
 
 		if available < totalNeeded {
-			issues = append(issues, fmt.Sprintf("Product %d: need %d, only %d available", pkgItem.ProductID, totalNeeded, available))
+			issues = append(issues, fmt.Sprintf("%s: need %d, only %d available", productName, totalNeeded, available))
 		}
 	}
 
