@@ -513,10 +513,15 @@ CREATE TABLE `devices` (
 -- Trigger `devices`
 --
 DELIMITER $$
-CREATE TRIGGER `devices` BEFORE INSERT ON `devices` FOR EACH ROW BEGIN
+CREATE TRIGGER `devices` BEFORE INSERT ON `devices` FOR EACH ROW device_trigger: BEGIN
   DECLARE abkuerzung   VARCHAR(50);
   DECLARE pos_cat       INT;
   DECLARE next_counter  INT;
+
+  -- Skip auto-generation for virtual package devices (start with PKG_)
+  IF NEW.deviceID IS NOT NULL AND NEW.deviceID LIKE 'PKG_%' THEN
+    LEAVE device_trigger;
+  END IF;
 
   -- 1) Abkürzung holen
   SELECT s.abbreviation
