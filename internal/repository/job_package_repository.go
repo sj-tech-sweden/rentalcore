@@ -149,6 +149,9 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 			virtualDeviceID = fmt.Sprintf("PKG_%d_%d", jobPackage.JobPackageID, i+1)
 		}
 
+		log.Printf("DEBUG: Creating virtual device with ID: '%s' (JobPackageID: %d, PackageID: %d, Quantity: %d, Instance: %d)",
+			virtualDeviceID, jobPackage.JobPackageID, packageID, quantity, i)
+
 		// Calculate price per unit if custom price is provided
 		var unitPrice *float64
 		if customPrice != nil && quantity > 0 {
@@ -167,6 +170,8 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 				Status:    "package_virtual",
 				Notes:     &notes,
 			}
+			log.Printf("DEBUG: About to create device - DeviceID: '%s', ProductID: %d, Status: '%s'",
+				virtualDevice.DeviceID, *virtualDevice.ProductID, virtualDevice.Status)
 			if err := tx.Create(&virtualDevice).Error; err != nil {
 				// If error is duplicate key, just continue (race condition)
 				if !strings.Contains(err.Error(), "Duplicate entry") {
