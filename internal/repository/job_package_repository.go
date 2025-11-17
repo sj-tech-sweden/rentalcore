@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"go-barcode-webapp/internal/models"
+	"strings"
 	"time"
 )
 
@@ -109,6 +110,80 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 				tx.Rollback()
 				return nil, fmt.Errorf("failed to create reservation: %w", err)
 			}
+		}
+	}
+
+	// Create a virtual product for this package if it doesn't exist
+	virtualProductID := uint(1000000 + packageID) // Offset by 1M to avoid conflicts
+	var virtualProduct models.Product
+	if err := tx.Where("productID = ?", virtualProductID).First(&virtualProduct).Error; err != nil {
+		// Product doesn't exist, create it
+		packageName := fmt.Sprintf("📦 %s", pkg.Name) // Package emoji for visual distinction
+		virtualProduct = models.Product{
+			ProductID: virtualProductID,
+			Name:      packageName,
+		}
+		if pkg.Price.Valid {
+			pricePerDay := pkg.Price.Float64
+			virtualProduct.ItemCostPerDay = &pricePerDay
+		}
+		if pkg.Description.Valid {
+			desc := pkg.Description.String
+			virtualProduct.Description = &desc
+		}
+		if err := tx.Create(&virtualProduct).Error; err != nil {
+			// If error is duplicate key, just continue (race condition)
+			if !strings.Contains(err.Error(), "Duplicate entry") {
+				tx.Rollback()
+				return nil, fmt.Errorf("failed to create virtual product for package: %w", err)
+			}
+		}
+	}
+
+	// Create virtual JobDevice entries for each package quantity for UI display and revenue calculation
+	// This makes packages appear as line items in the job, while real devices are tracked via job_package_reservations
+	for i := uint(0); i < quantity; i++ {
+		virtualDeviceID := fmt.Sprintf("PKG_%d_%d", packageID, jobPackage.JobPackageID)
+		if quantity > 1 {
+			virtualDeviceID = fmt.Sprintf("PKG_%d_%d_%d", packageID, jobPackage.JobPackageID, i+1)
+		}
+
+		// Calculate price per unit if custom price is provided
+		var unitPrice *float64
+		if customPrice != nil && quantity > 0 {
+			pricePerUnit := *customPrice / float64(quantity)
+			unitPrice = &pricePerUnit
+		}
+
+		// Create a virtual device entry if it doesn't exist (for display purposes)
+		var existingDevice models.Device
+		if err := tx.Where("deviceID = ?", virtualDeviceID).First(&existingDevice).Error; err != nil {
+			// Device doesn't exist, create it
+			notes := fmt.Sprintf("Package: %s (ID: %d)", pkg.Name, packageID)
+			virtualDevice := models.Device{
+				DeviceID:  virtualDeviceID,
+				ProductID: &virtualProductID,
+				Status:    "package_virtual",
+				Notes:     &notes,
+			}
+			if err := tx.Create(&virtualDevice).Error; err != nil {
+				// If error is duplicate key, just continue (race condition)
+				if !strings.Contains(err.Error(), "Duplicate entry") {
+					tx.Rollback()
+					return nil, fmt.Errorf("failed to create virtual device entry: %w", err)
+				}
+			}
+		}
+
+		jobDevice := models.JobDevice{
+			JobID:       uint(jobID),
+			DeviceID:    virtualDeviceID,
+			CustomPrice: unitPrice,
+		}
+
+		if err := tx.Create(&jobDevice).Error; err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("failed to create virtual job device for package: %w", err)
 		}
 	}
 
