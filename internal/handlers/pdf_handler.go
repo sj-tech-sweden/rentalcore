@@ -405,9 +405,22 @@ func (h *PDFHandler) processUploadAsync(uploadID uint64) {
 			MappingStatus:  "pending",
 		}
 
-		// Try to find product or package mapping
-		if suggestion, err := h.Mapper.FindBestMatch(item.ProductName); err == nil && suggestion != nil {
-			applySuggestionToNewItem(&extractionItem, suggestion)
+		// First check for saved package mapping
+		var packageMatch *models.ProductPackage
+		if h.PackageMapper != nil {
+			packageMatch, _ = h.PackageMapper.LookupSavedMapping(item.ProductName)
+		}
+
+		// If package found, use it with high confidence
+		if packageMatch != nil {
+			extractionItem.MappedPackageID = sql.NullInt64{Int64: int64(packageMatch.PackageID), Valid: true}
+			extractionItem.MappingConfidence = sql.NullFloat64{Float64: 100.0, Valid: true}
+			extractionItem.MappingStatus = "auto_mapped"
+		} else {
+			// Try to find product mapping
+			if suggestion, err := h.Mapper.FindBestMatch(item.ProductName); err == nil && suggestion != nil {
+				applySuggestionToNewItem(&extractionItem, suggestion)
+			}
 		}
 
 		h.DB.Create(&extractionItem)
