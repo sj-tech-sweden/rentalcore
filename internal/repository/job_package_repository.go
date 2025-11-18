@@ -19,26 +19,32 @@ func NewJobPackageRepository(db *Database) *JobPackageRepository {
 
 // AssignPackageToJob assigns a package to a job and creates device reservations
 func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quantity uint, customPrice *float64, userID uint) (*models.JobPackage, error) {
+	log.Printf("=== AssignPackageToJob START: jobID=%d, packageID=%d, quantity=%d ===", jobID, packageID, quantity)
+
 	// Check if package is already assigned to this job
 	var existingJobPackage models.JobPackage
 	packageAlreadyExists := r.db.Where("job_id = ? AND package_id = ?", jobID, packageID).First(&existingJobPackage).Error == nil
+	log.Printf("[IDEMPOTENCY] packageAlreadyExists=%v", packageAlreadyExists)
 
 	if packageAlreadyExists {
 		// Check if JobDevices entries exist for this package
 		virtualDeviceID := fmt.Sprintf("PKG_%d", existingJobPackage.JobPackageID)
+		log.Printf("[IDEMPOTENCY] Checking for virtual device: %s", virtualDeviceID)
+
 		var existingJobDevice models.JobDevice
 		jobDevicesExist := r.db.Where("jobID = ? AND deviceID = ?", jobID, virtualDeviceID).First(&existingJobDevice).Error == nil
+		log.Printf("[IDEMPOTENCY] jobDevicesExist=%v", jobDevicesExist)
 
 		if jobDevicesExist {
 			// Everything already exists - return existing entry (fully idempotent)
-			log.Printf("Package %d fully assigned to job %d (job_package_id: %d), skipping",
+			log.Printf("[IDEMPOTENCY] Package %d fully assigned to job %d (job_package_id: %d), RETURNING EARLY",
 				packageID, jobID, existingJobPackage.JobPackageID)
 			return &existingJobPackage, nil
 		}
 
 		// Package exists but JobDevices don't - we need to create them
 		// This can happen if a previous run was interrupted
-		log.Printf("Package %d exists for job %d but JobDevices missing, creating them now",
+		log.Printf("[RECOVERY MODE] Package %d exists for job %d but JobDevices missing, will create them now",
 			packageID, jobID)
 
 		// We'll use the existing jobPackage and create the missing JobDevices below
@@ -46,22 +52,29 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 	}
 
 	// Start transaction
+	log.Printf("[TX] Starting transaction...")
 	tx := r.db.Begin()
 	if tx.Error != nil {
+		log.Printf("[TX ERROR] Failed to start transaction: %v", tx.Error)
 		return nil, fmt.Errorf("failed to start transaction: %w", tx.Error)
 	}
 	defer func() {
 		if r := recover(); r != nil {
+			log.Printf("[TX PANIC] Transaction panic, rolling back: %v", r)
 			tx.Rollback()
 		}
 	}()
+	log.Printf("[TX] Transaction started successfully")
 
 	// Verify package exists (from WarehouseCore product_packages)
+	log.Printf("[VERIFY] Loading package %d from product_packages...", packageID)
 	var pkg models.ProductPackage
 	if err := tx.Where("package_id = ?", packageID).First(&pkg).Error; err != nil {
+		log.Printf("[VERIFY ERROR] Package %d not found: %v", packageID, err)
 		tx.Rollback()
 		return nil, fmt.Errorf("package not found: %w", err)
 	}
+	log.Printf("[VERIFY] Package loaded: %s (price: %.2f)", pkg.Name, pkg.Price.Float64)
 
 	// Get package items (from WarehouseCore product_package_items)
 	var packageItems []models.ProductPackageItem
@@ -94,14 +107,16 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 	}
 
 	// Create or use existing job package entry
+	log.Printf("[JOB_PACKAGE] Determining job_package entry...")
 	var jobPackage *models.JobPackage
 
 	if packageAlreadyExists {
 		// Use the existing job_package entry
 		jobPackage = &existingJobPackage
-		log.Printf("Using existing job_package_id: %d", jobPackage.JobPackageID)
+		log.Printf("[JOB_PACKAGE] Using existing job_package_id: %d", jobPackage.JobPackageID)
 	} else {
 		// Create new job package entry
+		log.Printf("[JOB_PACKAGE] Creating new job_package entry...")
 		var priceValue sql.NullFloat64
 		if customPrice != nil {
 			priceValue = sql.NullFloat64{Float64: *customPrice, Valid: true}
@@ -117,23 +132,28 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 		}
 
 		if err := tx.Create(jobPackage).Error; err != nil {
+			log.Printf("[JOB_PACKAGE ERROR] Failed to create: %v", err)
 			tx.Rollback()
 			return nil, fmt.Errorf("failed to create job package: %w", err)
 		}
-		log.Printf("Created new job_package_id: %d", jobPackage.JobPackageID)
+		log.Printf("[JOB_PACKAGE] Created new job_package_id: %d", jobPackage.JobPackageID)
 	}
 
 	// Create device reservations only if this is a new package assignment
 	if !packageAlreadyExists {
+		log.Printf("[RESERVATIONS] Creating device reservations for %d package items...", len(packageItems))
 		for _, pkgItem := range packageItems {
 			totalQuantity := uint(pkgItem.Quantity) * quantity
+			log.Printf("[RESERVATIONS] Processing product %d: need %d devices", pkgItem.ProductID, totalQuantity)
 
 			// Find available devices of this product type
 			availableDevices, err := r.findAvailableDevicesByProduct(r.db, pkgItem.ProductID, totalQuantity, startDate, endDate, jobID)
 			if err != nil {
+				log.Printf("[RESERVATIONS ERROR] Failed to find devices for product %d: %v", pkgItem.ProductID, err)
 				tx.Rollback()
 				return nil, fmt.Errorf("failed to find available devices for product %d: %w", pkgItem.ProductID, err)
 			}
+			log.Printf("[RESERVATIONS] Found %d available devices for product %d", len(availableDevices), pkgItem.ProductID)
 
 			// Create reservations
 			for _, deviceID := range availableDevices {
@@ -145,20 +165,24 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 					ReservedAt:        time.Now(),
 				}
 				if err := tx.Create(&reservation).Error; err != nil {
+					log.Printf("[RESERVATIONS ERROR] Failed to create reservation for %s: %v", deviceID, err)
 					tx.Rollback()
 					return nil, fmt.Errorf("failed to create reservation: %w", err)
 				}
 			}
 		}
+		log.Printf("[RESERVATIONS] All device reservations created successfully")
 	} else {
-		log.Printf("Skipping reservation creation - already exist for job_package_id: %d", jobPackage.JobPackageID)
+		log.Printf("[RESERVATIONS] Skipping - already exist for job_package_id: %d", jobPackage.JobPackageID)
 	}
 
 	// Create a virtual product for this package if it doesn't exist
 	virtualProductID := uint(1000000 + packageID) // Offset by 1M to avoid conflicts
+	log.Printf("[VIRTUAL_PRODUCT] Creating/checking virtual product ID %d for package %d...", virtualProductID, packageID)
 	var virtualProduct models.Product
 	if err := tx.Where("productID = ?", virtualProductID).First(&virtualProduct).Error; err != nil {
 		// Product doesn't exist, create it
+		log.Printf("[VIRTUAL_PRODUCT] Product doesn't exist, creating it...")
 		packageName := fmt.Sprintf("📦 %s", pkg.Name) // Package emoji for visual distinction
 		virtualProduct = models.Product{
 			ProductID: virtualProductID,
@@ -175,17 +199,25 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 		if err := tx.Create(&virtualProduct).Error; err != nil {
 			// If error is duplicate key, just continue (race condition)
 			if !strings.Contains(err.Error(), "Duplicate entry") {
+				log.Printf("[VIRTUAL_PRODUCT ERROR] Failed to create: %v", err)
 				tx.Rollback()
 				return nil, fmt.Errorf("failed to create virtual product for package: %w", err)
 			}
+			log.Printf("[VIRTUAL_PRODUCT] Duplicate entry (race condition), continuing...")
+		} else {
+			log.Printf("[VIRTUAL_PRODUCT] Virtual product created successfully: %s", packageName)
 		}
+	} else {
+		log.Printf("[VIRTUAL_PRODUCT] Virtual product already exists: %s", virtualProduct.Name)
 	}
 
 	// Create ONE virtual device for the package (to show in product list)
 	virtualDeviceID := fmt.Sprintf("PKG_%d", jobPackage.JobPackageID)
+	log.Printf("[VIRTUAL_DEVICE] Creating/checking virtual device %s...", virtualDeviceID)
 	var existingDevice models.Device
 	if err := tx.Where("deviceID = ?", virtualDeviceID).First(&existingDevice).Error; err != nil {
 		// Device doesn't exist, create it
+		log.Printf("[VIRTUAL_DEVICE] Device doesn't exist, creating it...")
 		notes := fmt.Sprintf("Package: %s (ID: %d, Quantity: %d)", pkg.Name, packageID, quantity)
 		virtualDevice := models.Device{
 			DeviceID:  virtualDeviceID,
@@ -195,33 +227,47 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 		}
 		if err := tx.Create(&virtualDevice).Error; err != nil {
 			if !strings.Contains(err.Error(), "Duplicate entry") {
+				log.Printf("[VIRTUAL_DEVICE ERROR] Failed to create: %v", err)
 				tx.Rollback()
 				return nil, fmt.Errorf("failed to create virtual device entry: %w", err)
 			}
+			log.Printf("[VIRTUAL_DEVICE] Duplicate entry (race condition), continuing...")
+		} else {
+			log.Printf("[VIRTUAL_DEVICE] Virtual device created successfully: %s", virtualDeviceID)
 		}
+	} else {
+		log.Printf("[VIRTUAL_DEVICE] Virtual device already exists: %s", virtualDeviceID)
 	}
 
 	// Add the virtual package device to JobDevices (this makes package appear in product list)
+	log.Printf("[JOBDEVICE_VIRTUAL] Creating JobDevice entry for virtual device %s...", virtualDeviceID)
 	jobDevice := models.JobDevice{
 		JobID:       uint(jobID),
 		DeviceID:    virtualDeviceID,
 		CustomPrice: customPrice, // Full package price (counts in revenue)
 	}
 	if err := tx.Create(&jobDevice).Error; err != nil {
+		log.Printf("[JOBDEVICE_VIRTUAL ERROR] Failed to create: %v", err)
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to create virtual job device for package: %w", err)
 	}
+	log.Printf("[JOBDEVICE_VIRTUAL] Virtual JobDevice created successfully!")
 
 	// Now add all REAL devices from the package to JobDevices
 	// These will show in the device tree for warehouse scans, but won't count in revenue
+	log.Printf("[JOBDEVICE_REAL] Loading reservations for job_package_id %d...", jobPackage.JobPackageID)
 	var reservations []models.JobPackageReservation
 	if err := tx.Where("job_package_id = ?", jobPackage.JobPackageID).Find(&reservations).Error; err != nil {
+		log.Printf("[JOBDEVICE_REAL ERROR] Failed to load reservations: %v", err)
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to load package reservations: %w", err)
 	}
+	log.Printf("[JOBDEVICE_REAL] Loaded %d reservations", len(reservations))
 
 	packageIDInt := packageID
 	zeroPrice := 0.0
+	createdCount := 0
+	skippedCount := 0
 	for _, reservation := range reservations {
 		// Add real device to JobDevices with price=0 and marked as package item
 		realJobDevice := models.JobDevice{
@@ -234,16 +280,27 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 		if err := tx.Create(&realJobDevice).Error; err != nil {
 			// Skip if device is already in job (duplicate)
 			if !strings.Contains(err.Error(), "Duplicate entry") {
+				log.Printf("[JOBDEVICE_REAL ERROR] Failed to add device %s: %v", reservation.DeviceID, err)
 				tx.Rollback()
 				return nil, fmt.Errorf("failed to add package device %s to job: %w", reservation.DeviceID, err)
 			}
+			skippedCount++
+			log.Printf("[JOBDEVICE_REAL] Skipped device %s (already exists)", reservation.DeviceID)
+		} else {
+			createdCount++
 		}
 	}
+	log.Printf("[JOBDEVICE_REAL] Created %d real JobDevices, skipped %d duplicates", createdCount, skippedCount)
 
 	// Commit transaction
+	log.Printf("[TX] Committing transaction...")
 	if err := tx.Commit().Error; err != nil {
+		log.Printf("[TX ERROR] Failed to commit: %v", err)
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
+	log.Printf("[TX] Transaction committed successfully!")
+
+	log.Printf("=== AssignPackageToJob SUCCESS: jobID=%d, packageID=%d, job_package_id=%d ===", jobID, packageID, jobPackage.JobPackageID)
 
 	// Reload with associations
 	return r.GetJobPackageByID(jobPackage.JobPackageID)

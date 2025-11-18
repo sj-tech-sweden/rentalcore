@@ -459,7 +459,16 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.70** (Latest) - Database Collation Fix
+### **v3.81** (Latest) - Package JobDevice Debug Logging
+- 🔍 **Comprehensive Debug Logging**: Added detailed logging throughout AssignPackageToJob to track package assignment flow
+- 📊 **Transaction Tracking**: Log every step from transaction start to commit with clear markers ([TX], [VERIFY], [JOB_PACKAGE], etc.)
+- 🐛 **Troubleshooting Aid**: Helps diagnose why JobDevices aren't being created for packages
+- ⚡ **Idempotency Logging**: Clear logging for recovery mode when packages exist but JobDevices don't
+- 🎯 **Virtual Device Tracking**: Detailed logs for virtual product, virtual device, and virtual JobDevice creation
+- 📦 **Real Device Tracking**: Logs for each real device added to JobDevices with package markers
+- ✅ **Success/Failure Indicators**: Clear ERROR markers for failures, SUCCESS for completion
+
+### **v3.70** - Database Collation Fix
 - ✅ **Fixed Collation Errors**: Resolved "Illegal mix of collations" errors in package availability queries
 - 🔧 **COLLATE Clauses Added**: All JOIN and WHERE conditions now specify utf8mb4_unicode_ci collation
 - 📦 **Package Assignment Works**: Packages can now be assigned without collation mismatch errors
