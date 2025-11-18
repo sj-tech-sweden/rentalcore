@@ -185,7 +185,7 @@ func (Subbiercategory) TableName() string {
 }
 
 type JobDevice struct {
-	JobID          uint       `json:"jobID" gorm:"primaryKey;column:jobID"`
+	JobID          int        `json:"jobID" gorm:"primaryKey;column:jobID"`
 	DeviceID       string     `json:"deviceID" gorm:"primaryKey;column:deviceID"`
 	Job            Job        `json:"job,omitempty" gorm:"foreignKey:JobID"`
 	Device         Device     `json:"device,omitempty" gorm:"foreignKey:DeviceID"`

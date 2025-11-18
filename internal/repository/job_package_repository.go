@@ -242,10 +242,11 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 	// Add the virtual package device to JobDevices (this makes package appear in product list)
 	log.Printf("[JOBDEVICE_VIRTUAL] Creating JobDevice entry for virtual device %s...", virtualDeviceID)
 	jobDevice := models.JobDevice{
-		JobID:       uint(jobID),
+		JobID:       jobID,
 		DeviceID:    virtualDeviceID,
 		CustomPrice: customPrice, // Full package price (counts in revenue)
 	}
+	log.Printf("[JOBDEVICE_VIRTUAL] JobDevice struct: jobID=%d, deviceID=%s, price=%v", jobID, virtualDeviceID, customPrice)
 	if err := tx.Create(&jobDevice).Error; err != nil {
 		log.Printf("[JOBDEVICE_VIRTUAL ERROR] Failed to create: %v", err)
 		tx.Rollback()
@@ -271,7 +272,7 @@ func (r *JobPackageRepository) AssignPackageToJob(jobID int, packageID int, quan
 	for _, reservation := range reservations {
 		// Add real device to JobDevices with price=0 and marked as package item
 		realJobDevice := models.JobDevice{
-			JobID:         uint(jobID),
+			JobID:         jobID,
 			DeviceID:      reservation.DeviceID,
 			CustomPrice:   &zeroPrice,        // Price = 0 (doesn't count in revenue)
 			PackageID:     &packageIDInt,     // Mark which package it belongs to

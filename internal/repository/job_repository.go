@@ -421,7 +421,7 @@ func (r *JobRepository) AssignDevice(jobID uint, deviceID string, price float64)
 
 	// Create new assignment
 	jobDevice := &models.JobDevice{
-		JobID:    jobID,
+		JobID:    int(jobID),
 		DeviceID: deviceID,
 	}
 
@@ -562,7 +562,7 @@ func (r *JobRepository) assignDeviceWithoutRevenue(jobID uint, deviceID string, 
 
 	// Create new assignment
 	jobDevice := &models.JobDevice{
-		JobID:    jobID,
+		JobID:    int(jobID),
 		DeviceID: deviceID,
 	}
 

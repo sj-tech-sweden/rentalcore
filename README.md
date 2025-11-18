@@ -459,7 +459,15 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v3.81** (Latest) - Package JobDevice Debug Logging
+### **v3.82** (Latest) - Critical Fix: JobDevice Type Mismatch
+- 🔴 **CRITICAL BUG FIX**: Fixed JobDevice model type mismatch causing GORM silent failures
+- 🔧 **Type Alignment**: Changed JobDevice.JobID from `uint` to `int` to match database schema
+- ✅ **Package JobDevices Now Created**: Virtual and real package devices now correctly inserted into jobdevices table
+- 📊 **Database Compatibility**: Resolved composite primary key issues with type mismatch (int in DB vs uint in model)
+- 🎯 **Root Cause**: GORM silently failed to execute INSERT statements due to type incompatibility
+- ⚡ **Impact**: Packages will now appear in "Selected Products" and count towards revenue
+
+### **v3.81** - Package JobDevice Debug Logging
 - 🔍 **Comprehensive Debug Logging**: Added detailed logging throughout AssignPackageToJob to track package assignment flow
 - 📊 **Transaction Tracking**: Log every step from transaction start to commit with clear markers ([TX], [VERIFY], [JOB_PACKAGE], etc.)
 - 🐛 **Troubleshooting Aid**: Helps diagnose why JobDevices aren't being created for packages

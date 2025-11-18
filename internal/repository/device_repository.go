@@ -752,5 +752,6 @@ func (r *DeviceRepository) IsDeviceCurrentlyAssigned(deviceID string) (bool, *ui
 		return false, nil, err // Database error
 	}
 
-	return true, &assignment.JobID, nil
+	jobIDUint := uint(assignment.JobID)
+	return true, &jobIDUint, nil
 }

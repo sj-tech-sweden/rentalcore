@@ -115,7 +115,8 @@ func (r *ProductRepository) GetDevicesBySubbiercategory(subbiercategoryID string
 		var jobID *uint
 		isAssigned := false
 		if err == nil {
-			jobID = &jobDevice.JobID
+			jobIDUint := uint(jobDevice.JobID)
+			jobID = &jobIDUint
 			isAssigned = true
 		}
 		
@@ -155,7 +156,8 @@ func (r *ProductRepository) GetDevicesBySubcategory(subcategoryID string) ([]mod
 		var jobID *uint
 		isAssigned := false
 		if err == nil {
-			jobID = &jobDevice.JobID
+			jobIDUint := uint(jobDevice.JobID)
+			jobID = &jobIDUint
 			isAssigned = true
 		}
 		
@@ -199,7 +201,8 @@ func (r *ProductRepository) GetDevicesByCategory(categoryID uint) ([]models.Devi
 		var jobID *uint
 		isAssigned := false
 		if err == nil {
-			jobID = &jobDevice.JobID
+			jobIDUint := uint(jobDevice.JobID)
+			jobID = &jobIDUint
 			isAssigned = true
 		}
 		

@@ -242,7 +242,7 @@ func (h *PWAHandler) processAssignDevice(action models.OfflineSyncQueue) error {
 	if result.Error == gorm.ErrRecordNotFound {
 		// Create new assignment
 		assignment := models.JobDevice{
-			JobID:    jobID,
+			JobID:    int(jobID),
 			DeviceID: deviceID,
 		}
 		return h.db.Create(&assignment).Error
