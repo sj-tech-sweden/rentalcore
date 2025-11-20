@@ -1690,6 +1690,13 @@ type productPricingAggregate struct {
 	pricedQuantity int
 }
 
+type packageAggregate struct {
+	quantity    int
+	totalAmount float64
+	itemCount   int
+	hasPrice    bool
+}
+
 func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (string, error) {
 	if h.JobHandler == nil {
 		return "", nil
@@ -1704,12 +1711,6 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (
 	pricingAggregates := make(map[uint]*productPricingAggregate)
 
 	// Separate package handling: map[packageID] -> aggregate info
-	type packageAggregate struct {
-		quantity    int
-		totalAmount float64
-		itemCount   int
-		hasPrice    bool
-	}
 	packageAggregates := make(map[int]*packageAggregate)
 
 	// Categorize items: products vs packages
@@ -1796,6 +1797,14 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (
 				customPrice = &avgPrice
 			}
 
+			// Preload package items for potential fallback
+			var pkgItems []models.ProductPackageItem
+			if err := h.DB.Where("package_id = ?", pkgID).Find(&pkgItems).Error; err != nil {
+				log.Printf("Warning: failed to load items for package %d: %v", pkgID, err)
+				warnings = append(warnings, fmt.Sprintf("%s: Paket-Komponenten konnten nicht geladen werden", packageName))
+				continue
+			}
+
 			_, err := h.JobPackageRepo.AssignPackageToJob(
 				int(job.JobID),
 				pkgID,
@@ -1807,6 +1816,8 @@ func (h *PDFHandler) assignProductsToJob(job *models.Job, extractionID uint64) (
 				// Log warning but continue with other packages
 				log.Printf("Warning: failed to assign package '%s' (ID: %d) to job %d: %v", packageName, pkgID, job.JobID, err)
 				warnings = append(warnings, fmt.Sprintf("%s: %v", packageName, err))
+				// Fallback: expand package into product selections so devices still get assigned
+				h.fallbackAssignPackageComponents(&pkg, pkgItems, agg, productCounts, pricingAggregates, &warnings)
 			} else {
 				log.Printf("Successfully assigned package '%s' (ID: %d, qty: %d) to job %d", packageName, pkgID, agg.quantity, job.JobID)
 			}
@@ -2386,6 +2397,95 @@ func (h *PDFHandler) expandPackageProductCounts(packageQuantities map[int]int, c
 			}
 			counts[uint(component.ProductID)] += packageQty * component.Quantity
 		}
+	}
+}
+
+func (h *PDFHandler) fallbackAssignPackageComponents(pkg *models.ProductPackage, pkgItems []models.ProductPackageItem, agg *packageAggregate, productCounts map[uint]int, pricingAggregates map[uint]*productPricingAggregate, warnings *[]string) {
+	if pkg == nil || agg == nil || agg.quantity <= 0 {
+		return
+	}
+	if len(pkgItems) == 0 {
+		if warnings != nil {
+			*warnings = append(*warnings, fmt.Sprintf("Package %d besitzt keine Komponenten, kann nicht auf Geräte abbilden", pkg.PackageID))
+		}
+		return
+	}
+
+	// Load involved products to get default pricing
+	productIDs := make([]int, 0, len(pkgItems))
+	for _, item := range pkgItems {
+		productIDs = append(productIDs, item.ProductID)
+	}
+	var products []models.Product
+	if err := h.DB.Where("productID IN ?", productIDs).Find(&products).Error; err != nil {
+		if warnings != nil {
+			*warnings = append(*warnings, fmt.Sprintf("Package %s: Produkte konnten nicht geladen werden (%v)", pkg.Name, err))
+		}
+		return
+	}
+	productMap := make(map[int]*models.Product, len(products))
+	for i := range products {
+		product := &products[i]
+		productMap[int(product.ProductID)] = product
+	}
+
+	// Calculate discount based on package price vs. regular component sum
+	regularTotal := 0.0
+	for _, item := range pkgItems {
+		if prod := productMap[item.ProductID]; prod != nil && prod.ItemCostPerDay != nil {
+			regularTotal += *prod.ItemCostPerDay * float64(item.Quantity)
+		}
+	}
+	packagePrice := 0.0
+	if agg.hasPrice && agg.quantity > 0 {
+		packagePrice = agg.totalAmount / float64(agg.quantity)
+	} else if pkg.Price.Valid {
+		packagePrice = pkg.Price.Float64
+	}
+	if packagePrice < 0 {
+		packagePrice = 0
+	}
+
+	discountPercent := 0.0
+	if regularTotal > 0 {
+		discountPercent = (regularTotal - packagePrice) / regularTotal
+		if discountPercent < 0 {
+			discountPercent = 0
+		}
+		if discountPercent > 1 {
+			discountPercent = 1
+		}
+	}
+
+	for _, item := range pkgItems {
+		if item.ProductID <= 0 || item.Quantity <= 0 {
+			continue
+		}
+		neededQty := agg.quantity * item.Quantity
+		if neededQty <= 0 {
+			continue
+		}
+
+		productCounts[uint(item.ProductID)] += neededQty
+
+		// Apply discounted pricing into aggregates so price overrides mirror the package discount
+		prod := productMap[item.ProductID]
+		if prod == nil || prod.ItemCostPerDay == nil {
+			continue
+		}
+		defaultPrice := *prod.ItemCostPerDay
+		priceAfterDiscount := defaultPrice * (1 - discountPercent)
+		if priceAfterDiscount < 0 {
+			priceAfterDiscount = 0
+		}
+
+		aggRec := pricingAggregates[uint(item.ProductID)]
+		if aggRec == nil {
+			aggRec = &productPricingAggregate{}
+			pricingAggregates[uint(item.ProductID)] = aggRec
+		}
+		aggRec.totalAmount += priceAfterDiscount * float64(neededQty)
+		aggRec.pricedQuantity += neededQty
 	}
 }
 
