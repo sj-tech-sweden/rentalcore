@@ -38,59 +38,24 @@
     </script>
 
     <!-- Main Content -->
-    <main class="rc-container rc-mt-lg rc-page-shell">
-            <section class="rc-hero-banner">
-                <div class="rc-hero-content">
-                    <div class="rc-hero-icon">
-                        <i class="bi bi-briefcase-fill"></i>
-                    </div>
-                    <div>
-                        <div class="rc-hero-kicker">WarehouseCore Look</div>
-                        <h1 class="rc-heading-1 rc-hero-title">Jobs</h1>
-                        <p class="rc-text">Manage your orders and projects with the new glassy layout.</p>
-                        <div class="rc-hero-tags">
-                            <span class="rc-pill"><i class="bi bi-grid-3x3-gap"></i> {{len .jobs}} Jobs</span>
-                            <span class="rc-pill"><i class="bi bi-flag"></i> {{len .statuses}} Statuses</span>
-                            <span class="rc-pill"><i class="bi bi-tags"></i> {{len .jobcategories}} Categories</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="rc-hero-actions">
-                    <a href="/customers" class="rc-btn rc-btn-secondary">
-                        <i class="bi bi-people"></i> Customers
-                    </a>
-                    <button class="rc-btn rc-btn-primary" onclick="openNewJobModal()">
-                        <i class="bi bi-plus-lg"></i> New Job
-                    </button>
-                </div>
-            </section>
-
-            <div class="rc-tab-strip">
-                <span class="rc-tab-chip active">
-                    <i class="bi bi-briefcase"></i> Jobs
-                </span>
-                <a class="rc-tab-chip" href="/customers">
-                    <i class="bi bi-people"></i> Customers
-                </a>
-                <a class="rc-tab-chip" href="#jobsTable">
-                    <i class="bi bi-table"></i> Table View
-                </a>
+    <main class="rc-container rc-mt-lg">
+            <!-- Page Header -->
+            <div class="rc-page-header">
+                <h1 class="rc-heading-1">Jobs</h1>
+                <p class="rc-text">Manage your orders and projects</p>
             </div>
 
-            <div class="rc-card rc-card-glass rc-card-compact">
+            <!-- Search Card -->
+            <div class="rc-card rc-mb-lg">
                 <div class="rc-card-header">
-                    <div>
-                        <h3 class="rc-card-title">
-                            <i class="bi bi-search"></i> Search Jobs
-                        </h3>
-                        <p class="rc-text-sm" style="margin: 0;">WarehouseCore /products inspired controls with soft glass edges.</p>
-                    </div>
-                    <div class="rc-text-sm" style="color: var(--text-muted);">Press Enter to apply</div>
+                    <h3 class="rc-card-title">
+                        <i class="bi bi-search"></i> Search Jobs
+                    </h3>
                 </div>
                 <div class="rc-card-body">
                     <form method="GET" action="/jobs">
-                        <div class="rc-flex rc-flex-gap-sm" style="align-items: stretch; flex-wrap: wrap;">
-                            <input type="text" class="rc-input" name="search" placeholder="Search jobs..." value="{{.params.SearchTerm}}" style="max-width: 360px; flex: 1 1 240px;">
+                        <div class="rc-flex rc-flex-gap-sm" style="align-items: stretch;">
+                            <input type="text" class="rc-input" name="search" placeholder="Search jobs..." value="{{.params.SearchTerm}}" style="max-width: 300px;">
                             <button type="submit" class="rc-btn rc-btn-primary" style="padding: 0 var(--space-md); min-width: 50px;">
                                 <i class="bi bi-search"></i>
                             </button>
@@ -104,35 +69,35 @@
                 </div>
             </div>
 
-            <div class="rc-card rc-card-glass">
-                <div class="rc-card-header">
-                    <div>
-                        <h3 class="rc-card-title">
-                            <i class="bi bi-table"></i> Job Board
-                        </h3>
-                        <p class="rc-text-sm" style="margin: 0;">Mirrors the WarehouseCore /products glass-dark theming.</p>
-                    </div>
-                    <button class="rc-btn rc-btn-primary" onclick="openNewJobModal()">
-                        <i class="bi bi-plus-lg"></i> New Job
-                    </button>
-                </div>
+            <!-- Actions Bar -->
+            <div class="rc-flex rc-flex-between rc-mb-lg">
+                <div></div>
+                <button class="rc-btn rc-btn-primary" onclick="openNewJobModal()">
+                    <i class="bi bi-plus-lg"></i> New Job
+                </button>
+            </div>
+
+            <!-- Jobs Table -->
+            <div class="rc-card">
                 <div class="rc-card-body">
                     {{if .jobs}}
-                    <div class="rc-filter-row rc-mb-lg">
-                        <input type="text" id="filterCustomer" placeholder="Filter by customer..." class="rc-input" style="max-width: 220px; flex: 1 1 160px;">
-                        <select id="filterStatus" class="rc-select" style="max-width: 180px; flex: 1 1 140px;">
+
+                    <!-- Filter Bar -->
+                    <div class="rc-mb-lg" style="display: flex; gap: var(--space-md); flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="filterCustomer" placeholder="Filter by customer..." class="rc-input" style="max-width: 200px;">
+                        <select id="filterStatus" class="rc-select" style="max-width: 150px;">
                             <option value="">All Statuses</option>
                             {{range .statuses}}
                             <option value="{{.StatusID}}">{{.Status}}</option>
                             {{end}}
                         </select>
-                        <select id="filterCategory" class="rc-select" style="max-width: 180px; flex: 1 1 140px;">
+                        <select id="filterCategory" class="rc-select" style="max-width: 150px;">
                             <option value="">All Categories</option>
                             {{range .jobcategories}}
                             <option value="{{.JobCategoryID}}">{{.Name}}</option>
                             {{end}}
                         </select>
-                        <input type="number" id="filterMinDevices" placeholder="Min devices" class="rc-input" style="max-width: 160px; flex: 0 0 140px;" min="0">
+                        <input type="number" id="filterMinDevices" placeholder="Min devices" class="rc-input" style="max-width: 120px;" min="0">
                         <button type="button" class="rc-btn rc-btn-outline rc-btn-sm" onclick="clearFilters()">
                             <i class="bi bi-x-circle"></i> Clear Filters
                         </button>
@@ -143,14 +108,14 @@
                             <table class="rc-table-wc" id="jobsTable">
                                 <thead>
                                     <tr>
-                                    <th class="sortable" onclick="sortTable('id')" style="cursor: pointer;">Job <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                    <th class="sortable" onclick="sortTable('customer')" style="cursor: pointer;">Customer <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                    <th class="sortable" onclick="sortTable('startDate')" style="cursor: pointer;">Start <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                    <th class="sortable" onclick="sortTable('endDate')" style="cursor: pointer;">End <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                    <th class="sortable" onclick="sortTable('status')" style="cursor: pointer;">Status <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                    <th class="sortable" onclick="sortTable('devices')" style="cursor: pointer;">Devices <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                    <th class="sortable" onclick="sortTable('revenue')" style="cursor: pointer; text-align: right;">Revenue <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                    <th style="text-align: right;">Actions</th>
+                                        <th class="sortable" onclick="sortTable('id')" style="cursor: pointer;">Job <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('customer')" style="cursor: pointer;">Customer <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('startDate')" style="cursor: pointer;">Start <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('endDate')" style="cursor: pointer;">End <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('status')" style="cursor: pointer;">Status <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('devices')" style="cursor: pointer;">Devices <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('revenue')" style="cursor: pointer; text-align: right;">Revenue <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th style="text-align: right;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>

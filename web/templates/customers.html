@@ -34,59 +34,32 @@
     {{template "navbar.html" .}}
 
     <!-- Main Content -->
-    <main class="rc-container rc-mt-lg rc-page-shell">
+    <main class="rc-container rc-mt-lg">
         
-        <section class="rc-hero-banner">
-            <div class="rc-hero-content">
-                <div class="rc-hero-icon">
-                    <i class="bi bi-people-fill"></i>
-                </div>
-                <div>
-                    <div class="rc-hero-kicker">WarehouseCore Look</div>
-                    <h1 class="rc-heading-1 rc-hero-title">Customers</h1>
-                    <p class="rc-text">Keep your rental CRM aligned with the WarehouseCore /products styling.</p>
-                    <div class="rc-hero-tags">
-                        <span class="rc-pill"><i class="bi bi-people"></i> {{len .customers}} Customers</span>
-                        <span class="rc-pill"><i class="bi bi-card-text"></i> Directory View</span>
-                        {{if .params.SearchTerm}}
-                        <span class="rc-pill"><i class="bi bi-search"></i> "{{.params.SearchTerm}}"</span>
-                        {{end}}
-                    </div>
-                </div>
+        <!-- Page Header -->
+        <div class="rc-flex rc-flex-between rc-mb-xl">
+            <div>
+                <h1 class="rc-heading-2">
+                    <i class="bi bi-people"></i> Customers
+                </h1>
+                <p class="rc-text">Manage your customer database</p>
             </div>
-            <div class="rc-hero-actions">
-                <a href="/jobs" class="rc-btn rc-btn-secondary">
-                    <i class="bi bi-briefcase"></i> Jobs
-                </a>
-                <button onclick="showNewCustomerModal()" class="rc-btn rc-btn-primary">
-                    <i class="bi bi-plus-lg"></i> New Customer
-                </button>
-            </div>
-        </section>
-
-        <div class="rc-tab-strip">
-            <span class="rc-tab-chip active">
-                <i class="bi bi-people"></i> Customers
-            </span>
-            <a class="rc-tab-chip" href="/jobs">
-                <i class="bi bi-briefcase"></i> Jobs
-            </a>
-            <a class="rc-tab-chip" href="#customersTable">
-                <i class="bi bi-table"></i> Directory
-            </a>
+            <button onclick="showNewCustomerModal()" class="rc-btn rc-btn-primary">
+                <i class="bi bi-plus-lg"></i> New Customer
+            </button>
         </div>
 
-        <div class="rc-card rc-card-glass rc-card-compact">
+        <!-- Search Card -->
+        <div class="rc-card rc-mb-lg">
             <div class="rc-card-header">
                 <h3 class="rc-card-title">
                     <i class="bi bi-search"></i> Search Customers
                 </h3>
-                <div class="rc-text-sm" style="color: var(--text-muted);">Glassy search just like WarehouseCore /products.</div>
             </div>
             <div class="rc-card-body">
                 <form method="GET" action="/customers">
-                    <div class="rc-flex rc-flex-gap-sm" style="align-items: stretch; flex-wrap: wrap;">
-                        <input type="text" class="rc-input" name="search" placeholder="Search customers..." value="{{.params.SearchTerm}}" style="max-width: 360px; flex: 1 1 240px;">
+                    <div class="rc-flex rc-flex-gap-sm" style="align-items: stretch;">
+                        <input type="text" class="rc-input" name="search" placeholder="Search customers..." value="{{.params.SearchTerm}}" style="max-width: 300px;">
                         <button type="submit" class="rc-btn rc-btn-primary" style="padding: 0 var(--space-md); min-width: 50px;">
                             <i class="bi bi-search"></i>
                         </button>
@@ -100,18 +73,14 @@
             </div>
         </div>
 
-        <div class="rc-card rc-card-glass">
+        <!-- Customers Table -->
+        <div class="rc-card">
             <div class="rc-card-header">
                 <h3 class="rc-card-title">
                     <i class="bi bi-table"></i> Customer Directory
                 </h3>
-                <div class="rc-flex rc-flex-gap-sm" style="align-items: center;">
-                    <div class="rc-text-sm">
-                        {{if .customers}}{{len .customers}} customers found{{else}}No customers{{end}}
-                    </div>
-                    <button onclick="showNewCustomerModal()" class="rc-btn rc-btn-primary rc-btn-sm">
-                        <i class="bi bi-plus-lg"></i> New Customer
-                    </button>
+                <div class="rc-text-sm">
+                    {{if .customers}}{{len .customers}} customers found{{else}}No customers{{end}}
                 </div>
             </div>
             <div class="rc-card-body">
