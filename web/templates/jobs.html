@@ -138,7 +138,7 @@
                                         </td>
                                         <td>
                                             <div class="rc-table-wc-title">{{.CustomerName}}</div>
-                                            <div class="rc-table-wc-sub">{{if .JobCategoryID}}Category {{.JobCategoryID}}{{else}}No category{{end}}</div>
+                                            <div class="rc-table-wc-sub">{{if .CategoryName}}{{.CategoryName}}{{else}}No category{{end}}</div>
                                         </td>
                                         <td><span class="rc-table-wc-sub">{{if .StartDate}}{{.StartDate.Format "02.01.2006"}}{{else}}-{{end}}</span></td>
                                         <td><span class="rc-table-wc-sub">{{if .EndDate}}{{.EndDate.Format "02.01.2006"}}{{else}}-{{end}}</span></td>
