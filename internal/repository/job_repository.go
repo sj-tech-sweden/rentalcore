@@ -633,10 +633,15 @@ func (r *JobRepository) CalculateAndUpdateRevenue(jobID uint) error {
 			continue
 		}
 
-		if jd.CustomPrice != nil && *jd.CustomPrice > 0 {
-			// Use custom price as-is (flat rate, not per day)
-			totalRevenue += *jd.CustomPrice
-		} else if jd.Device.Product != nil && jd.Device.Product.ItemCostPerDay != nil {
+		if jd.CustomPrice != nil {
+			// Use custom price as-is (allow zero for full discounts)
+			if *jd.CustomPrice > 0 {
+				totalRevenue += *jd.CustomPrice
+			}
+			continue
+		}
+
+		if jd.Device.Product != nil && jd.Device.Product.ItemCostPerDay != nil {
 			// Use product price as flat rate (not per day)
 			totalRevenue += *jd.Device.Product.ItemCostPerDay
 		}
