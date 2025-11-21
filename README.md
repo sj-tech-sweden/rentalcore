@@ -466,7 +466,11 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v4.1.4** (Latest) - File Pool Shell Fix
+### **v4.1.8** (Latest) - Nextcloud Backfill
+- 🌐 **Nextcloud import**: File Pool scan holt WebDAV-Dateien, die noch nicht in der DB sind (system/unassigned), damit auch manuell hochgeladene Files sichtbar werden
+- 🔧 **Env-Handling**: WebDAV-Variablen werden entquotet/getrimmt, damit `.env`-Werte mit Anführungszeichen korrekt funktionieren
+
+### **v4.1.4** - File Pool Shell Fix
 - 🎨 **File Pool layout**: Page now uses the shared base shell (sidebar/header/scripts) to avoid audit-page redirect quirks and dropped assets
 - 🖼️ **Manifest icons**: Missing PWA icon sizes restored to remove 404s in the browser console
 
