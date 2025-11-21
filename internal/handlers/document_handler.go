@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
@@ -9,21 +10,27 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"go-barcode-webapp/internal/models"
+	"go-barcode-webapp/internal/services/storage"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type DocumentHandler struct {
-	db           *gorm.DB
-	uploadPath   string
-	maxFileSize  int64
-	allowedTypes map[string]bool
+	db             *gorm.DB
+	uploadPath     string
+	maxFileSize    int64
+	allowedTypes   map[string]bool
+	useNextcloud   bool
+	ncClient       *storage.NextcloudClient
+	ncBasePath     string
+	backfillOnBoot bool
 }
 
 func NewDocumentHandler(db *gorm.DB) *DocumentHandler {
@@ -34,24 +41,48 @@ func NewDocumentHandler(db *gorm.DB) *DocumentHandler {
 	}
 
 	allowedTypes := map[string]bool{
-		"application/pdf":                          true,
-		"image/jpeg":                              true,
-		"image/jpg":                               true,
-		"image/png":                               true,
-		"image/gif":                               true,
-		"text/plain":                              true,
-		"application/msword":                      true,
+		"application/pdf":    true,
+		"image/jpeg":         true,
+		"image/jpg":          true,
+		"image/png":          true,
+		"image/gif":          true,
+		"text/plain":         true,
+		"application/msword": true,
 		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
-		"application/vnd.ms-excel":                true,
-		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":       true,
+		"application/vnd.ms-excel": true,
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
 	}
 
-	return &DocumentHandler{
-		db:           db,
-		uploadPath:   uploadPath,
-		maxFileSize:  10 * 1024 * 1024, // 10MB
-		allowedTypes: allowedTypes,
+	h := &DocumentHandler{
+		db:             db,
+		uploadPath:     uploadPath,
+		maxFileSize:    10 * 1024 * 1024, // 10MB
+		allowedTypes:   allowedTypes,
+		useNextcloud:   false,
+		ncBasePath:     strings.Trim(os.Getenv("NEXTCLOUD_WEBDAV_BASE_PATH"), "/"),
+		backfillOnBoot: strings.ToLower(os.Getenv("NEXTCLOUD_BACKFILL_ON_START")) != "false",
 	}
+
+	ncURL := strings.TrimSpace(os.Getenv("NEXTCLOUD_WEBDAV_URL"))
+	ncUser := strings.TrimSpace(os.Getenv("NEXTCLOUD_WEBDAV_USER"))
+	ncPass := strings.TrimSpace(os.Getenv("NEXTCLOUD_WEBDAV_PASSWORD"))
+
+	if ncURL != "" && ncUser != "" && ncPass != "" {
+		client, err := storage.NewNextcloudClient(ncURL, ncUser, ncPass, h.ncBasePath)
+		if err != nil {
+			panic("Failed to configure Nextcloud WebDAV client: " + err.Error())
+		}
+		h.useNextcloud = true
+		h.ncClient = client
+		if h.ncBasePath == "" {
+			h.ncBasePath = "rentalcore-filepool"
+		}
+		if h.backfillOnBoot {
+			go h.backfillLocalFiles()
+		}
+	}
+
+	return h
 }
 
 // ================================================================
@@ -167,26 +198,55 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 	// Generate unique filename
 	filename := h.generateUniqueFilename(header.Filename)
 
-	// Create directory structure if needed
-	entityDir := filepath.Join(h.uploadPath, entityType, entityID)
-	if err := os.MkdirAll(entityDir, 0755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
-		return
-	}
+	var finalPath string
+	var checksum string
+	var size int64
 
-	finalPath := filepath.Join(entityDir, filename)
+	if h.useNextcloud {
+		buf := bytes.Buffer{}
+		if _, err := io.Copy(&buf, file); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+			return
+		}
+		size = int64(buf.Len())
+		if size > h.maxFileSize {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("File size exceeds maximum limit of %d MB", h.maxFileSize/(1024*1024)),
+			})
+			return
+		}
+		finalPath = h.remotePath(entityType, entityID, filename)
+		if err := h.ncClient.Upload(finalPath, bytes.NewReader(buf.Bytes()), contentType); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload to Nextcloud: " + err.Error()})
+			return
+		}
+		checksum = h.calculateBufferChecksum(buf.Bytes())
+	} else {
+		// Create directory structure if needed
+		entityDir := filepath.Join(h.uploadPath, entityType, entityID)
+		if err := os.MkdirAll(entityDir, 0755); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
+			return
+		}
 
-	// Save file
-	if err := h.saveUploadedFile(file, finalPath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-		return
-	}
+		finalPath = filepath.Join(entityDir, filename)
 
-	// Calculate checksum
-	checksum, err := h.calculateFileChecksum(finalPath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to calculate checksum"})
-		return
+		// Save file
+		if err := h.saveUploadedFile(file, finalPath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return
+		}
+
+		// Calculate checksum
+		checksum, err = h.calculateFileChecksum(finalPath)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to calculate checksum"})
+			return
+		}
+		info, _ := os.Stat(finalPath)
+		if info != nil {
+			size = info.Size()
+		}
 	}
 
 	// Save document record
@@ -196,7 +256,7 @@ func (h *DocumentHandler) UploadDocument(c *gin.Context) {
 		Filename:         filename,
 		OriginalFilename: header.Filename,
 		FilePath:         finalPath,
-		FileSize:         header.Size,
+		FileSize:         size,
 		MimeType:         contentType,
 		DocumentType:     documentType,
 		Description:      description,
@@ -236,6 +296,29 @@ func (h *DocumentHandler) DownloadDocument(c *gin.Context) {
 	}
 
 	// Check if file exists
+	if h.useNextcloud && h.isRemote(document.FilePath) {
+		reader, contentType, err := h.ncClient.Download(h.stripRemotePrefix(document.FilePath))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "File not found in storage"})
+			return
+		}
+		defer reader.Close()
+
+		if contentType != "" {
+			c.Header("Content-Type", contentType)
+		} else {
+			c.Header("Content-Type", document.MimeType)
+		}
+		c.Header("Content-Description", "File Transfer")
+		c.Header("Content-Transfer-Encoding", "binary")
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", document.OriginalFilename))
+		c.Stream(func(w io.Writer) bool {
+			io.Copy(w, reader)
+			return false
+		})
+		return
+	}
+
 	if _, err := os.Stat(document.FilePath); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "File not found on disk"})
 		return
@@ -265,6 +348,27 @@ func (h *DocumentHandler) ViewDocument(c *gin.Context) {
 	}
 
 	// Check if file exists
+	if h.useNextcloud && h.isRemote(document.FilePath) {
+		reader, contentType, err := h.ncClient.Download(h.stripRemotePrefix(document.FilePath))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "File not found in storage"})
+			return
+		}
+		defer reader.Close()
+
+		if contentType != "" {
+			c.Header("Content-Type", contentType)
+		} else {
+			c.Header("Content-Type", document.MimeType)
+		}
+		c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%s", document.OriginalFilename))
+		c.Stream(func(w io.Writer) bool {
+			io.Copy(w, reader)
+			return false
+		})
+		return
+	}
+
 	if _, err := os.Stat(document.FilePath); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "File not found on disk"})
 		return
@@ -292,9 +396,16 @@ func (h *DocumentHandler) DeleteDocument(c *gin.Context) {
 	}
 
 	// Delete file from disk
-	if err := os.Remove(document.FilePath); err != nil && !os.IsNotExist(err) {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file from disk"})
-		return
+	if h.useNextcloud && h.isRemote(document.FilePath) {
+		if err := h.ncClient.Delete(h.stripRemotePrefix(document.FilePath)); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file from storage"})
+			return
+		}
+	} else {
+		if err := os.Remove(document.FilePath); err != nil && !os.IsNotExist(err) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file from disk"})
+			return
+		}
 	}
 
 	// Delete database record
@@ -357,10 +468,10 @@ func (h *DocumentHandler) AddSignature(c *gin.Context) {
 	documentID := c.Param("id")
 
 	var request struct {
-		SignerName      string `json:"signerName" binding:"required"`
-		SignerEmail     string `json:"signerEmail"`
-		SignerRole      string `json:"signerRole"`
-		SignatureData   string `json:"signatureData" binding:"required"`
+		SignerName    string `json:"signerName" binding:"required"`
+		SignerEmail   string `json:"signerEmail"`
+		SignerRole    string `json:"signerRole"`
+		SignatureData string `json:"signatureData" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -440,7 +551,7 @@ func (h *DocumentHandler) generateUniqueFilename(originalFilename string) string
 	randomBytes := make([]byte, 4)
 	rand.Read(randomBytes)
 	randomHex := hex.EncodeToString(randomBytes)
-	
+
 	return fmt.Sprintf("%d_%s%s", timestamp, randomHex, ext)
 }
 
@@ -470,6 +581,12 @@ func (h *DocumentHandler) calculateFileChecksum(filePath string) (string, error)
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+func (h *DocumentHandler) calculateBufferChecksum(data []byte) string {
+	hash := md5.New()
+	hash.Write(data)
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
 func (h *DocumentHandler) generateVerificationCode() string {
 	randomBytes := make([]byte, 16)
 	rand.Read(randomBytes)
@@ -484,19 +601,19 @@ func (h *DocumentHandler) generateVerificationCode() string {
 func (h *DocumentHandler) ListDocumentsAPI(c *gin.Context) {
 	entityType := c.Query("entityType")
 	entityID := c.Query("entityID")
-	
+
 	var documents []models.Document
 	query := h.db.Preload("Uploader").Preload("Signatures")
-	
+
 	if entityType != "" && entityID != "" {
 		query = query.Where("entity_type = ? AND entity_id = ?", entityType, entityID)
 	}
-	
+
 	if err := query.Order("uploaded_at DESC").Find(&documents).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load documents"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"documents": documents,
 		"count":     len(documents),
@@ -506,11 +623,11 @@ func (h *DocumentHandler) ListDocumentsAPI(c *gin.Context) {
 // GetDocumentStats returns document statistics
 func (h *DocumentHandler) GetDocumentStats(c *gin.Context) {
 	var stats struct {
-		TotalDocuments    int64   `json:"totalDocuments"`
-		TotalSize         int64   `json:"totalSize"`
-		DocumentsByType   map[string]int64 `json:"documentsByType"`
-		SignedDocuments   int64   `json:"signedDocuments"`
-		RecentUploads     int64   `json:"recentUploads"`
+		TotalDocuments  int64            `json:"totalDocuments"`
+		TotalSize       int64            `json:"totalSize"`
+		DocumentsByType map[string]int64 `json:"documentsByType"`
+		SignedDocuments int64            `json:"signedDocuments"`
+		RecentUploads   int64            `json:"recentUploads"`
 	}
 
 	// Total documents
@@ -546,4 +663,83 @@ func (h *DocumentHandler) GetDocumentStats(c *gin.Context) {
 		Count(&stats.RecentUploads)
 
 	c.JSON(http.StatusOK, stats)
+}
+
+// ListFilePool groups documents by assignment status.
+func (h *DocumentHandler) ListFilePool(c *gin.Context) {
+	var assigned []models.Document
+	if err := h.db.Where("entity_type <> ? OR entity_id <> ?", "system", "unassigned").
+		Order("uploaded_at DESC").Find(&assigned).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load assigned documents"})
+		return
+	}
+
+	var unused []models.Document
+	if err := h.db.Where("entity_type = ? AND entity_id = ?", "system", "unassigned").
+		Order("uploaded_at DESC").Find(&unused).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load unused documents"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"assigned": assigned,
+		"unused":   unused,
+	})
+}
+
+// Helpers
+func (h *DocumentHandler) remotePath(entityType, entityID, filename string) string {
+	rel := path.Join(entityType, entityID, filename)
+	if h.useNextcloud {
+		return "nextcloud:" + strings.TrimLeft(rel, "/")
+	}
+	return rel
+}
+
+func (h *DocumentHandler) stripRemotePrefix(p string) string {
+	return strings.TrimPrefix(p, "nextcloud:")
+}
+
+func (h *DocumentHandler) isRemote(p string) bool {
+	return strings.HasPrefix(p, "nextcloud:")
+}
+
+// Backfill existing local files into Nextcloud storage.
+func (h *DocumentHandler) backfillLocalFiles() {
+	if !h.useNextcloud {
+		return
+	}
+
+	var documents []models.Document
+	if err := h.db.Find(&documents).Error; err != nil {
+		return
+	}
+
+	for _, doc := range documents {
+		if h.isRemote(doc.FilePath) || doc.FilePath == "" {
+			continue
+		}
+		file, err := os.Open(doc.FilePath)
+		if err != nil {
+			continue
+		}
+		info, _ := file.Stat()
+		buf := bytes.Buffer{}
+		io.Copy(&buf, file)
+		file.Close()
+
+		remote := h.remotePath(doc.EntityType, doc.EntityID, doc.Filename)
+		if err := h.ncClient.Upload(remote, bytes.NewReader(buf.Bytes()), doc.MimeType); err != nil {
+			continue
+		}
+		doc.FilePath = remote
+		if info != nil {
+			doc.FileSize = info.Size()
+		}
+		h.db.Model(&doc).Updates(map[string]interface{}{
+			"file_path": doc.FilePath,
+			"file_size": doc.FileSize,
+		})
+		_ = os.Remove(doc.FilePath)
+	}
 }

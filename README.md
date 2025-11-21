@@ -295,6 +295,14 @@ ENCRYPTION_KEY=your-256-bit-encryption-key
 SESSION_TIMEOUT=3600
 GIN_MODE=release
 
+# Nextcloud File Pool (WebDAV)
+NEXTCLOUD_WEBDAV_URL=https://cloud.example.com/remote.php/dav/files/username
+NEXTCLOUD_WEBDAV_USER=your-nextcloud-user
+NEXTCLOUD_WEBDAV_PASSWORD=your-nextcloud-app-password
+NEXTCLOUD_WEBDAV_BASE_PATH=rentalcore-filepool
+# Disable automatic migration of existing local uploads by setting to false
+# NEXTCLOUD_BACKFILL_ON_START=false
+
 # Optional: Email Configuration
 SMTP_HOST=smtp.yourdomain.com
 SMTP_PORT=587
@@ -458,7 +466,13 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v4.0.1** (Latest) - Remove Legacy Equipment Packages & Invoices
+### **v4.1.0** (Latest) - Nextcloud File Pool
+- 📂 **Nextcloud-backed File Pool**: All document uploads now stored in Nextcloud via WebDAV (no local disk copies)
+- 🔒 **Role-gated Pool API**: `/documents/pool` (admin/manager) groups files into Assigned vs. Unused (system/unassigned)
+- 🔄 **Backfill**: Existing local uploads are migrated to Nextcloud on startup (disable with `NEXTCLOUD_BACKFILL_ON_START=false`)
+- ⚙️ **Config via ENV**: `NEXTCLOUD_WEBDAV_URL`, `NEXTCLOUD_WEBDAV_USER`, `NEXTCLOUD_WEBDAV_PASSWORD`, optional `NEXTCLOUD_WEBDAV_BASE_PATH`
+
+### **v4.0.1** - Remove Legacy Equipment Packages & Invoices
 - 🔒 Removed legacy Equipment Packages UI/API routes; requests now return HTTP 410 (Gone)
 - 🧾 Removed legacy Invoices and Invoice Templates UI/API routes; navigation entries hidden
 - 🧭 Navbar Tools dropdown now only lists Analytics and Financial
