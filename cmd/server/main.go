@@ -237,6 +237,17 @@ func buildWarehouseCasesURL(r *http.Request) string {
 	return fmt.Sprintf("%s://%s/admin/cases", scheme, host)
 }
 
+func deprecatedFeatureHandler(feature string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		message := fmt.Sprintf("%s has been removed from RentalCore.", feature)
+		if strings.Contains(c.GetHeader("Accept"), "text/html") {
+			c.HTML(http.StatusGone, "error.html", gin.H{"error": message})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusGone, gin.H{"error": message})
+	}
+}
+
 func main() {
 	// Parse command line flags
 	configFile := flag.String("config", "config.json", "Configuration file path")
@@ -1022,16 +1033,9 @@ func setupRoutes(r *gin.Engine,
 		workflow := protected.Group("/workflow")
 		{
 			// Equipment Packages
-			packages := workflow.Group("/packages")
-			{
-				packages.GET("", equipmentPackageHandler.ShowPackagesList)
-				packages.GET("/new", equipmentPackageHandler.ShowPackageForm)
-				packages.GET("/:id", equipmentPackageHandler.ShowPackageDetail)
-				packages.GET("/:id/edit", equipmentPackageHandler.ShowPackageForm)
-				packages.POST("", equipmentPackageHandler.CreatePackage)
-				packages.PUT("/:id", equipmentPackageHandler.UpdatePackage)
-				packages.DELETE("/:id", equipmentPackageHandler.DeletePackage)
-			}
+			packagesDisabled := deprecatedFeatureHandler("Equipment packages")
+			workflow.Any("/packages", packagesDisabled)
+			workflow.Any("/packages/*path", packagesDisabled)
 
 			// Bulk Operations
 			bulk := workflow.Group("/bulk")
@@ -1088,31 +1092,17 @@ func setupRoutes(r *gin.Engine,
 			invoices.Use(complianceMiddleware.DataProcessingMiddleware(compliance.FinancialData, "invoice_management", "Contract performance and accounting", "Art. 6(1)(b) GDPR"))
 		}
 		{
-			// All routes now use the NEW FIXED handler
-			invoices.GET("", invoiceHandler.ListInvoices)
-			invoices.GET("/new", invoiceHandler.NewInvoiceForm)
-			invoices.POST("", invoiceHandler.CreateInvoice)
-			invoices.GET("/:id", invoiceHandler.GetInvoice)
-			invoices.GET("/:id/edit", invoiceHandler.EditInvoiceForm)
-			invoices.GET("/:id/preview", invoiceHandler.PreviewInvoice)
-			invoices.PUT("/:id", invoiceHandler.UpdateInvoice)
-			invoices.PUT("/:id/status", invoiceHandler.UpdateInvoiceStatus)
-			invoices.DELETE("/:id", invoiceHandler.DeleteInvoice)
-			// FIXED PDF generation - always returns PDF, never HTML
-			invoices.GET("/:id/pdf", invoiceHandler.GenerateInvoicePDF)
+			invoicesDisabled := deprecatedFeatureHandler("Invoices")
+			invoices.Any("", invoicesDisabled)
+			invoices.Any("/*path", invoicesDisabled)
 		}
 
 		// Invoice template routes - full implementation
 		invoiceTemplates := protected.Group("/invoice-templates")
 		{
-			invoiceTemplates.GET("", templateHandler.ListTemplates)
-			invoiceTemplates.GET("/new", templateHandler.NewTemplateForm)
-			invoiceTemplates.POST("", templateHandler.CreateTemplate)
-			invoiceTemplates.GET("/:id/edit", templateHandler.EditTemplateForm)
-			invoiceTemplates.PUT("/:id", templateHandler.UpdateTemplate)
-			invoiceTemplates.DELETE("/:id", templateHandler.DeleteTemplate)
-			invoiceTemplates.GET("/:id/preview", templateHandler.PreviewTemplate)
-			invoiceTemplates.POST("/:id/set-default", templateHandler.SetDefaultTemplate)
+			templatesDisabled := deprecatedFeatureHandler("Invoice templates")
+			invoiceTemplates.Any("", templatesDisabled)
+			invoiceTemplates.Any("/*path", templatesDisabled)
 		}
 
 		// Company Settings routes - NOW ACTIVE
@@ -1368,23 +1358,9 @@ func setupRoutes(r *gin.Engine,
 			// Workflow API
 			apiWorkflow := api.Group("/workflow")
 			{
-				// Equipment Packages API
-				apiPackages := apiWorkflow.Group("/packages")
-				{
-					apiPackages.GET("", equipmentPackageHandler.GetPackages)
-					apiPackages.POST("", equipmentPackageHandler.CreatePackage)
-					apiPackages.GET("/:id", equipmentPackageHandler.GetPackage)
-					apiPackages.PUT("/:id", equipmentPackageHandler.UpdatePackage)
-					apiPackages.DELETE("/:id", equipmentPackageHandler.DeletePackage)
-					apiPackages.POST("/:id/clone", equipmentPackageHandler.ClonePackage)
-					apiPackages.GET("/:id/validate", equipmentPackageHandler.ValidatePackage)
-					apiPackages.GET("/:id/stats", equipmentPackageHandler.GetPackageStats)
-					apiPackages.GET("/search", equipmentPackageHandler.SearchPackages)
-					apiPackages.GET("/categories", equipmentPackageHandler.GetPackageCategories)
-					apiPackages.GET("/popular", equipmentPackageHandler.GetPopularPackages)
-					apiPackages.GET("/available-devices", equipmentPackageHandler.GetAvailableDevices)
-					apiPackages.PUT("/bulk", equipmentPackageHandler.BulkUpdatePackages)
-				}
+				packagesDisabled := deprecatedFeatureHandler("Equipment packages API")
+				apiWorkflow.Any("/packages", packagesDisabled)
+				apiWorkflow.Any("/packages/*path", packagesDisabled)
 			}
 
 			// Rental Equipment API
@@ -1441,17 +1417,9 @@ func setupRoutes(r *gin.Engine,
 			// Invoice API (using NEW fixed invoice system)
 			apiInvoices := api.Group("/invoices")
 			{
-				// All operations use NEW FIXED handler
-				apiInvoices.GET("", invoiceHandler.GetInvoicesAPI)
-				apiInvoices.POST("", invoiceHandler.CreateInvoice)
-				apiInvoices.GET("/:id", invoiceHandler.GetInvoice)
-				apiInvoices.PUT("/:id", invoiceHandler.UpdateInvoice)
-				apiInvoices.PUT("/:id/status", invoiceHandler.UpdateInvoiceStatus)
-				apiInvoices.DELETE("/:id", invoiceHandler.DeleteInvoice)
-				apiInvoices.GET("/stats", invoiceHandler.GetInvoiceStatsAPI)
-				// New API endpoints for product/device selection
-				apiInvoices.GET("/products/:productId", invoiceHandler.GetProductDetails)
-				apiInvoices.GET("/products/:productId/devices", invoiceHandler.GetDevicesByProduct)
+				invoicesDisabled := deprecatedFeatureHandler("Invoices API")
+				apiInvoices.Any("", invoicesDisabled)
+				apiInvoices.Any("/*path", invoicesDisabled)
 			}
 
 			// User preferences API
@@ -1490,13 +1458,9 @@ func setupRoutes(r *gin.Engine,
 		legacyAPI := protected.Group("/api")
 		{
 			// Legacy Invoice API (using NEW fixed invoice system)
-			legacyAPI.GET("/invoices", invoiceHandler.GetInvoicesAPI)
-			legacyAPI.POST("/invoices", invoiceHandler.CreateInvoice)
-			legacyAPI.GET("/invoices/:id", invoiceHandler.GetInvoice)
-			legacyAPI.PUT("/invoices/:id", invoiceHandler.UpdateInvoice)
-			legacyAPI.PUT("/invoices/:id/status", invoiceHandler.UpdateInvoiceStatus)
-			legacyAPI.DELETE("/invoices/:id", invoiceHandler.DeleteInvoice)
-			legacyAPI.GET("/invoices/stats", invoiceHandler.GetInvoiceStatsAPI)
+			legacyInvoicesDisabled := deprecatedFeatureHandler("Invoices API")
+			legacyAPI.Any("/invoices", legacyInvoicesDisabled)
+			legacyAPI.Any("/invoices/*path", legacyInvoicesDisabled)
 
 			// Legacy Rental Equipment API
 			legacyAPI.GET("/rental-equipment", rentalEquipmentHandler.GetRentalEquipmentAPI)

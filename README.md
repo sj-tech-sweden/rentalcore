@@ -37,7 +37,6 @@ A comprehensive, enterprise-grade equipment rental management system built with 
 - **Availability Tracking**: Real-time device status integration from WarehouseCore (available, checked out, maintenance)
 - **QR Code & Barcode Generation**: Device identification codes now managed in WarehouseCore
 - **Bulk Operations**: Mass device assignment and status updates
-- **Equipment Packages**: Predefined equipment bundles for common rentals
 - **🆕 Package Booking to Jobs**: Assign entire packages to jobs as single line items with automatic device reservation
 - **Revenue Tracking**: Per-device revenue analytics and performance insights
 - **🆕 Rental Equipment System**: External equipment rental tracking with supplier management
@@ -459,7 +458,12 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v4.0** (Latest) - Package System Redesign
+### **v4.0.1** (Latest) - Remove Legacy Equipment Packages & Invoices
+- 🔒 Removed legacy Equipment Packages UI/API routes; requests now return HTTP 410 (Gone)
+- 🧾 Removed legacy Invoices and Invoice Templates UI/API routes; navigation entries hidden
+- 🧭 Navbar Tools dropdown now only lists Analytics and Financial
+
+### **v4.0** - Package System Redesign
 - 🎯 **MAJOR ARCHITECTURAL CHANGE**: Complete package system redesign for simplicity
 - 📦 **Manual Package Devices**: Packages now treated exactly like products - manually created in WarehouseCore (e.g., PKG_SOUNDM_001, PKG_SOUNDM_002)
 - 🔄 **Automatic Real Device Reservation**: When package device assigned to job, backend automatically reserves real devices with discounted prices

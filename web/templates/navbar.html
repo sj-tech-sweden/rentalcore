@@ -87,20 +87,12 @@
 
         <!-- Tools Dropdown -->
         <div class="rc-nav-dropdown">
-            <button class="rc-nav-dropdown-toggle {{if or (eq .currentPage "packages") (eq .currentPage "invoices") (eq .currentPage "analytics") (eq .currentPage "financial")}}active{{end}}" data-dropdown="tools">
+            <button class="rc-nav-dropdown-toggle {{if or (eq .currentPage "analytics") (eq .currentPage "financial")}}active{{end}}" data-dropdown="tools">
                 <i class="bi bi-tools"></i>
                 <span class="rc-nav-label">Tools</span>
                 <i class="bi bi-chevron-down rc-dropdown-icon"></i>
             </button>
             <div class="rc-nav-dropdown-menu" id="dropdown-tools">
-                <a href="/workflow/packages" class="rc-nav-dropdown-item {{if eq .currentPage "packages"}}active{{end}}">
-                    <i class="bi bi-box-seam"></i>
-                    <span class="rc-nav-label">Equipment Packages</span>
-                </a>
-                <a href="/invoices" class="rc-nav-dropdown-item {{if eq .currentPage "invoices"}}active{{end}}">
-                    <i class="bi bi-file-text"></i>
-                    <span class="rc-nav-label">Invoices</span>
-                </a>
                 <a href="/analytics" class="rc-nav-dropdown-item {{if eq .currentPage "analytics"}}active{{end}}">
                     <i class="bi bi-graph-up"></i>
                     <span class="rc-nav-label">Analytics</span>
