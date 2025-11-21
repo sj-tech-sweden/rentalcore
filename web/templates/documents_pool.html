@@ -37,6 +37,56 @@
             </div>
         </div>
 
+        <div class="rc-card rc-mb-lg">
+            <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
+                <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
+                    <i class="bi bi-cloud-upload"></i>
+                    <div>
+                        <div class="rc-text-strong">Upload to File Pool</div>
+                        <div class="rc-text-sm rc-text-muted">Stored in Nextcloud and listed under “Unused”</div>
+                    </div>
+                </div>
+                <div class="rc-text-xs rc-text-muted">Max 10 MB • PDF/Images/Docs</div>
+            </div>
+            <div class="rc-card-body">
+                <form class="rc-form rc-grid rc-grid-2 rc-grid-gap-md rc-flex-align-start" action="/documents/upload" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="entityType" value="system">
+                    <input type="hidden" name="entityID" value="unassigned">
+                    <input type="hidden" name="isPublic" value="false">
+
+                    <label class="rc-form-field">
+                        <span class="rc-form-label">File</span>
+                        <input class="rc-input" type="file" name="file" required>
+                    </label>
+
+                    <label class="rc-form-field">
+                        <span class="rc-form-label">Document Type</span>
+                        <select class="rc-input" name="documentType" required>
+                            <option value="other" selected>Other</option>
+                            <option value="contract">Contract</option>
+                            <option value="manual">Manual</option>
+                            <option value="photo">Photo</option>
+                            <option value="invoice">Invoice</option>
+                            <option value="receipt">Receipt</option>
+                            <option value="signature">Signature</option>
+                        </select>
+                    </label>
+
+                    <label class="rc-form-field rc-grid-span-2">
+                        <span class="rc-form-label">Description (optional)</span>
+                        <textarea class="rc-input" name="description" rows="2" placeholder="Add a short note"></textarea>
+                    </label>
+
+                    <div class="rc-grid-span-2">
+                        <button type="submit" class="rc-btn rc-btn-primary">
+                            <i class="bi bi-upload"></i>
+                            Upload to Pool
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div class="rc-grid rc-grid-2 rc-grid-gap-lg">
             <div class="rc-card">
                 <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
