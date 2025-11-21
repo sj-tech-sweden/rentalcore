@@ -805,6 +805,11 @@ func (h *DocumentHandler) backfillRemoteFiles() {
 		}
 
 		relPath := strings.TrimLeft(entry.Path, "/")
+		entityType, entityID, ok := parseRemoteEntity(relPath)
+		if !ok {
+			continue
+		}
+
 		filePath := "nextcloud:" + relPath
 
 		var count int64
@@ -823,8 +828,8 @@ func (h *DocumentHandler) backfillRemoteFiles() {
 		}
 
 		doc := models.Document{
-			EntityType:       "system",
-			EntityID:         "unassigned",
+			EntityType:       entityType,
+			EntityID:         entityID,
 			Filename:         filename,
 			OriginalFilename: filename,
 			FilePath:         filePath,
@@ -846,6 +851,24 @@ func chooseMime(m string) string {
 		return "application/octet-stream"
 	}
 	return m
+}
+
+// parseRemoteEntity maps a Nextcloud relative path to entityType/entityID using
+// the storage layout:
+// - unassigned/<file>
+// - assigned/<entityType>/<entityID>/<file>
+func parseRemoteEntity(relPath string) (string, string, bool) {
+	segments := strings.Split(strings.TrimLeft(relPath, "/"), "/")
+	if len(segments) < 2 {
+		return "", "", false
+	}
+	if segments[0] == "unassigned" {
+		return "system", "unassigned", true
+	}
+	if segments[0] == "assigned" && len(segments) >= 4 {
+		return segments[1], segments[2], true
+	}
+	return "", "", false
 }
 
 func trimQuotes(s string) string {

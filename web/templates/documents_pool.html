@@ -111,6 +111,9 @@
                                 </div>
                             </div>
                             <div class="rc-flex rc-flex-gap-xs">
+                                <button type="button" class="rc-btn rc-btn-ghost rc-btn-icon" onclick="deleteDoc({{.DocumentID}}, '{{.OriginalFilename}}')" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                                 <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/view" target="_blank" title="View">
                                     <i class="bi bi-eye"></i>
                                 </a>
@@ -150,6 +153,9 @@
                                 </div>
                             </div>
                             <div class="rc-flex rc-flex-gap-xs">
+                                <button type="button" class="rc-btn rc-btn-ghost rc-btn-icon" onclick="deleteDoc({{.DocumentID}}, '{{.OriginalFilename}}')" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                                 <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/view" target="_blank" title="View">
                                     <i class="bi bi-eye"></i>
                                 </a>
@@ -170,5 +176,16 @@
             </div>
         </section>
     </main>
+    <script>
+        async function deleteDoc(id, name) {
+            if (!confirm(`Wirklich löschen?\\n${name}`)) return;
+            const res = await fetch(`/documents/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert('Löschen fehlgeschlagen');
+            }
+        }
+    </script>
 </body>
 </html>
