@@ -79,6 +79,7 @@ func NewDocumentHandler(db *gorm.DB) *DocumentHandler {
 		}
 		if h.backfillOnBoot {
 			go h.backfillLocalFiles()
+			go h.backfillRemoteFiles()
 		}
 	}
 
@@ -770,4 +771,64 @@ func (h *DocumentHandler) backfillLocalFiles() {
 		})
 		_ = os.Remove(doc.FilePath)
 	}
+}
+
+// backfillRemoteFiles imports files that exist in Nextcloud but not in the DB.
+func (h *DocumentHandler) backfillRemoteFiles() {
+	if !h.useNextcloud {
+		return
+	}
+
+	entries, err := h.ncClient.List("")
+	if err != nil {
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir {
+			continue
+		}
+
+		relPath := strings.TrimLeft(entry.Path, "/")
+		filePath := "nextcloud:" + relPath
+
+		var count int64
+		if err := h.db.Model(&models.Document{}).Where("file_path = ?", filePath).Count(&count).Error; err != nil {
+			continue
+		}
+		if count > 0 {
+			continue // already indexed
+		}
+
+		filename := path.Base(relPath)
+		now := time.Now()
+		uploadedAt := entry.ModTime
+		if uploadedAt.IsZero() {
+			uploadedAt = now
+		}
+
+		doc := models.Document{
+			EntityType:       "system",
+			EntityID:         "unassigned",
+			Filename:         filename,
+			OriginalFilename: filename,
+			FilePath:         filePath,
+			FileSize:         entry.Size,
+			MimeType:         chooseMime(entry.ContentType),
+			DocumentType:     "other",
+			Description:      "Imported from Nextcloud",
+			UploadedAt:       uploadedAt,
+			Version:          1,
+			IsPublic:         false,
+		}
+
+		_ = h.db.Create(&doc).Error
+	}
+}
+
+func chooseMime(m string) string {
+	if strings.TrimSpace(m) == "" {
+		return "application/octet-stream"
+	}
+	return m
 }

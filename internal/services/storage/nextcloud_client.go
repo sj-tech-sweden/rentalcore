@@ -1,12 +1,15 @@
 package storage
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"time"
 )
 
 // NextcloudClient is a lightweight WebDAV client for pushing files to Nextcloud.
@@ -16,6 +19,16 @@ type NextcloudClient struct {
 	password   string
 	basePath   string
 	httpClient *http.Client
+}
+
+// RemoteEntry represents a file or directory in Nextcloud.
+type RemoteEntry struct {
+	Path        string
+	IsDir       bool
+	ContentType string
+	Size        int64
+	ModTime     time.Time
+	ETag        string
 }
 
 func NewNextcloudClient(rawURL, username, password, basePath string) (*NextcloudClient, error) {
@@ -131,4 +144,141 @@ func (c *NextcloudClient) Delete(rel string) error {
 		return fmt.Errorf("delete failed: %s", resp.Status)
 	}
 	return nil
+}
+
+// List returns all files under the given relative folder (recursive).
+func (c *NextcloudClient) List(rel string) ([]RemoteEntry, error) {
+	results := []RemoteEntry{}
+	if err := c.walk(rel, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func (c *NextcloudClient) walk(rel string, results *[]RemoteEntry) error {
+	rel = strings.TrimLeft(rel, "/")
+	reqBody := `<?xml version="1.0"?>
+<d:propfind xmlns:d="DAV:">
+  <d:prop>
+    <d:displayname/>
+    <d:resourcetype/>
+    <d:getcontenttype/>
+    <d:getcontentlength/>
+    <d:getlastmodified/>
+    <d:getetag/>
+  </d:prop>
+</d:propfind>`
+
+	req, err := http.NewRequest("PROPFIND", c.joinPath(rel), bytes.NewBufferString(reqBody))
+	if err != nil {
+		return fmt.Errorf("propfind request: %w", err)
+	}
+	req.Header.Set("Depth", "1")
+	req.Header.Set("Content-Type", "application/xml")
+	req.SetBasicAuth(c.username, c.password)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("propfind: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("propfind failed: %s", resp.Status)
+	}
+
+	var multistatus multiStatus
+	if err := xml.NewDecoder(resp.Body).Decode(&multistatus); err != nil {
+		return fmt.Errorf("decode propfind: %w", err)
+	}
+
+	for _, r := range multistatus.Responses {
+		prop := r.FirstProp()
+		relPath := c.normalizeHref(r.Href)
+		if relPath == "" {
+			continue // self
+		}
+
+		isDir := prop.ResourceType.Collection
+		var modTime time.Time
+		if prop.LastModified != "" {
+			modTime, _ = time.Parse(time.RFC1123Z, prop.LastModified)
+			if modTime.IsZero() {
+				modTime, _ = time.Parse(time.RFC1123, prop.LastModified)
+			}
+		}
+
+		size := int64(0)
+		if prop.ContentLength != "" {
+			fmt.Sscan(prop.ContentLength, &size)
+		}
+
+		entry := RemoteEntry{
+			Path:        relPath,
+			IsDir:       isDir,
+			ContentType: prop.ContentType,
+			Size:        size,
+			ModTime:     modTime,
+			ETag:        prop.ETag,
+		}
+
+		if isDir {
+			if err := c.walk(relPath, results); err != nil {
+				return err
+			}
+			continue
+		}
+
+		*results = append(*results, entry)
+	}
+
+	return nil
+}
+
+// normalizeHref makes a relative path (trim base + basePath and trailing slash).
+func (c *NextcloudClient) normalizeHref(href string) string {
+	clean := path.Clean(href)
+	prefix := path.Join("/", strings.Trim(c.baseURL.Path, "/"), c.basePath)
+	rel := strings.TrimPrefix(clean, prefix)
+	rel = strings.TrimPrefix(rel, "/")
+	rel = strings.TrimSuffix(rel, "/")
+	return rel
+}
+
+// WebDAV multistatus parsing helpers
+type multiStatus struct {
+	Responses []response `xml:"response"`
+}
+
+type response struct {
+	Href     string     `xml:"href"`
+	PropStat []propStat `xml:"propstat"`
+}
+
+func (r response) FirstProp() prop {
+	for _, ps := range r.PropStat {
+		if ps.Prop.DisplayName != "" || ps.Prop.ContentType != "" || ps.Prop.ContentLength != "" || ps.Prop.LastModified != "" {
+			return ps.Prop
+		}
+	}
+	if len(r.PropStat) > 0 {
+		return r.PropStat[0].Prop
+	}
+	return prop{}
+}
+
+type propStat struct {
+	Prop prop `xml:"prop"`
+}
+
+type prop struct {
+	DisplayName   string `xml:"displayname"`
+	ResourceType  resType `xml:"resourcetype"`
+	ContentType   string `xml:"getcontenttype"`
+	ContentLength string `xml:"getcontentlength"`
+	LastModified  string `xml:"getlastmodified"`
+	ETag          string `xml:"getetag"`
+}
+
+type resType struct {
+	Collection bool `xml:"collection"`
 }
