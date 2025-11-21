@@ -1,108 +1,90 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="dark">
-<head>
-    <script>
-        // Prevent FOUC by setting theme immediately
-        (function() {
-            const t = (localStorage.getItem("rc-theme") || "dark");
-            document.documentElement.setAttribute("data-theme", t);
-        })();
-    </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.title}} - RentalCore</title>
+{{template "base.html" .}}
 
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#030712">
-    <meta name="msapplication-TileColor" content="#030712">
-
-    <link rel="stylesheet" href="/static/css/rental-core-design.css?v={{.timestamp}}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-</head>
-<body class="rc-animate-fade-in">
-    {{template "navbar.html" .}}
-
-    <main class="rc-container rc-mt-lg rc-mb-xl">
-        <div class="rc-flex rc-flex-between rc-mb-lg rc-flex-align-start">
+{{define "content"}}
+<div class="rc-page-header">
+    <div class="rc-container">
+        <div class="rc-flex rc-flex-between rc-flex-align-center">
             <div>
-                <h1 class="rc-heading-2"><i class="bi bi-folder2-open"></i> File Pool</h1>
-                <p class="rc-text rc-text-muted">Nextcloud-backed uploads grouped by assignment status (Assigned vs. Unused/system).</p>
+                <h1 class="rc-page-title">
+                    <i class="bi bi-folder2-open"></i>
+                    File Pool
+                </h1>
+                <p class="rc-page-subtitle">Nextcloud-backed uploads grouped by assignment state</p>
             </div>
-            <div class="rc-text-sm rc-text-muted" aria-label="backing store">
-                Storage: Nextcloud WebDAV
+            <div class="rc-text-sm rc-text-muted" aria-label="backing store">Storage: Nextcloud WebDAV</div>
+        </div>
+    </div>
+</div>
+
+<div class="rc-container rc-mb-xl">
+    <div class="rc-grid rc-grid-2 rc-grid-gap-lg">
+        <div class="rc-card">
+            <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
+                <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
+                    <span class="rc-badge rc-badge-success">Assigned</span>
+                    <span class="rc-text-sm rc-text-muted">{{len .assigned}} files</span>
+                </div>
+            </div>
+            <div class="rc-card-body rc-flex rc-flex-column rc-flex-gap-sm">
+                {{if .assigned}}
+                {{range .assigned}}
+                <div class="rc-list-item rc-flex rc-flex-between rc-flex-align-center rc-py-sm rc-px-sm" style="border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1);">
+                    <div>
+                        <div class="rc-text-strong">{{.OriginalFilename}}</div>
+                        <div class="rc-text-sm rc-text-muted">{{.EntityType}} #{{.EntityID}} • {{.UploadedAt.Format "2006-01-02"}}</div>
+                    </div>
+                    <div class="rc-flex rc-flex-gap-sm">
+                        <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/view" target="_blank" title="View">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/download" title="Download">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </div>
+                </div>
+                {{end}}
+                {{else}}
+                <div class="rc-empty-state">
+                    <i class="bi bi-folder-check rc-empty-icon"></i>
+                    <p class="rc-text-muted">No assigned files yet.</p>
+                </div>
+                {{end}}
             </div>
         </div>
 
-        <div class="rc-grid rc-grid-2 rc-grid-gap-lg rc-mb-xl">
-            <div class="rc-card">
-                <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
-                    <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
-                        <span class="rc-badge rc-badge-success">Assigned</span>
-                        <span class="rc-text-sm rc-text-muted">{{len .assigned}} files</span>
-                    </div>
-                </div>
-                <div class="rc-card-body rc-flex rc-flex-column rc-flex-gap-sm">
-                    {{if .assigned}}
-                    {{range .assigned}}
-                    <div class="rc-list-item rc-flex rc-flex-between rc-flex-align-center rc-py-sm rc-px-sm" style="border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1);">
-                        <div>
-                            <div class="rc-text-strong">{{.OriginalFilename}}</div>
-                            <div class="rc-text-sm rc-text-muted">{{.EntityType}} #{{.EntityID}} • {{.UploadedAt.Format "2006-01-02"}}</div>
-                        </div>
-                        <div class="rc-flex rc-flex-gap-sm">
-                            <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/view" target="_blank" title="View">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/download" title="Download">
-                                <i class="bi bi-download"></i>
-                            </a>
-                        </div>
-                    </div>
-                    {{end}}
-                    {{else}}
-                    <div class="rc-empty-state">
-                        <i class="bi bi-folder-check rc-empty-icon"></i>
-                        <p class="rc-text-muted">No assigned files yet.</p>
-                    </div>
-                    {{end}}
+        <div class="rc-card">
+            <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
+                <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
+                    <span class="rc-badge rc-badge-warning">Unused</span>
+                    <span class="rc-text-sm rc-text-muted">{{len .unused}} files</span>
                 </div>
             </div>
-
-            <div class="rc-card">
-                <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
-                    <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
-                        <span class="rc-badge rc-badge-warning">Unused</span>
-                        <span class="rc-text-sm rc-text-muted">{{len .unused}} files</span>
+            <div class="rc-card-body rc-flex rc-flex-column rc-flex-gap-sm">
+                {{if .unused}}
+                {{range .unused}}
+                <div class="rc-list-item rc-flex rc-flex-between rc-flex-align-center rc-py-sm rc-px-sm" style="border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1);">
+                    <div>
+                        <div class="rc-text-strong">{{.OriginalFilename}}</div>
+                        <div class="rc-text-sm rc-text-muted">Uploaded {{.UploadedAt.Format "2006-01-02"}}</div>
+                    </div>
+                    <div class="rc-flex rc-flex-gap-sm">
+                        <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/view" target="_blank" title="View">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/download" title="Download">
+                            <i class="bi bi-download"></i>
+                        </a>
                     </div>
                 </div>
-                <div class="rc-card-body rc-flex rc-flex-column rc-flex-gap-sm">
-                    {{if .unused}}
-                    {{range .unused}}
-                    <div class="rc-list-item rc-flex rc-flex-between rc-flex-align-center rc-py-sm rc-px-sm" style="border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1);">
-                        <div>
-                            <div class="rc-text-strong">{{.OriginalFilename}}</div>
-                            <div class="rc-text-sm rc-text-muted">Uploaded {{.UploadedAt.Format "2006-01-02"}}</div>
-                        </div>
-                        <div class="rc-flex rc-flex-gap-sm">
-                            <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/view" target="_blank" title="View">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a class="rc-btn rc-btn-ghost rc-btn-icon" href="/documents/{{.DocumentID}}/download" title="Download">
-                                <i class="bi bi-download"></i>
-                            </a>
-                        </div>
-                    </div>
-                    {{end}}
-                    {{else}}
-                    <div class="rc-empty-state">
-                        <i class="bi bi-inbox rc-empty-icon"></i>
-                        <p class="rc-text-muted">No unused files available.</p>
-                    </div>
-                    {{end}}
+                {{end}}
+                {{else}}
+                <div class="rc-empty-state">
+                    <i class="bi bi-inbox rc-empty-icon"></i>
+                    <p class="rc-text-muted">No unused files available.</p>
                 </div>
+                {{end}}
             </div>
         </div>
-    </main>
-</body>
-</html>
+    </div>
+</div>
+{{end}}
