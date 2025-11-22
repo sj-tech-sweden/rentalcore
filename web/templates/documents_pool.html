@@ -174,19 +174,31 @@
             </div>
         </div>
 
-        <section class="rc-grid rc-grid-2 rc-grid-gap-lg">
-            <div class="rc-card rc-card-glow">
-                <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
-                    <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
-                        <span class="rc-badge rc-badge-success"><i class="bi bi-check2-circle"></i> Assigned</span>
-                        <span class="rc-text-sm rc-text-muted">{{.assignedCount}} files</span>
+        <div class="rc-card rc-card-glow">
+            <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
+                <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
+                    <i class="bi bi-collection"></i>
+                    <div>
+                        <div class="rc-text-strong">Pool files</div>
+                        <div class="rc-text-sm rc-text-muted">Wechsel zwischen Assigned und Unassigned, volle Breite</div>
                     </div>
                 </div>
-                <div class="rc-card-body">
+                <div class="rc-flex rc-flex-gap-xs rc-flex-wrap">
+                    <button type="button" class="rc-btn rc-btn-ghost rc-btn-sm rc-btn-active" data-section-toggle="assigned">
+                        <i class="bi bi-check2-circle"></i> Assigned ({{.assignedCount}})
+                    </button>
+                    <button type="button" class="rc-btn rc-btn-ghost rc-btn-sm" data-section-toggle="unassigned">
+                        <i class="bi bi-inbox-fill"></i> Unassigned ({{.unusedCount}})
+                    </button>
+                </div>
+            </div>
+            <div class="rc-card-body rc-flex rc-flex-column rc-flex-gap-md">
+                <div id="assigned-wrapper">
                     <div id="assigned-list" class="rc-grid rc-grid-1 rc-grid-gap-sm">
                         {{range .assigned}}
                         <div class="rc-card rc-card-soft rc-flex rc-flex-between rc-flex-align-center rc-flex-wrap" data-doc-card data-section="assigned" data-type="{{.DocumentType}}" data-name="{{.OriginalFilename}}" data-entity="{{.EntityType}}-{{.EntityID}}" data-size="{{.FileSize}}" data-date="{{.UploadedAt.Unix}}">
                             <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
+                                <i class="bi bi-file-earmark rc-text-lg" data-file-icon></i>
                                 <div class="rc-pill rc-pill-success">{{.DocumentType}}</div>
                                 <div>
                                     <div class="rc-text-strong">{{.OriginalFilename}}</div>
@@ -223,20 +235,13 @@
                         <p class="rc-text-muted">No assigned files match your filters.</p>
                     </div>
                 </div>
-            </div>
 
-            <div class="rc-card rc-card-glow">
-                <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
-                    <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
-                        <span class="rc-badge rc-badge-warning"><i class="bi bi-inbox-fill"></i> Unassigned</span>
-                        <span class="rc-text-sm rc-text-muted">{{.unusedCount}} files</span>
-                    </div>
-                </div>
-                <div class="rc-card-body">
-                    <div id="unused-list" class="rc-grid rc-grid-1 rc-grid-gap-sm">
+                <div id="unassigned-wrapper" class="rc-hidden">
+                    <div id="unassigned-list" class="rc-grid rc-grid-1 rc-grid-gap-sm">
                         {{range .unused}}
                         <div class="rc-card rc-card-soft rc-flex rc-flex-between rc-flex-align-center rc-flex-wrap" data-doc-card data-section="unassigned" data-type="{{.DocumentType}}" data-name="{{.OriginalFilename}}" data-entity="{{.EntityType}}-{{.EntityID}}" data-size="{{.FileSize}}" data-date="{{.UploadedAt.Unix}}">
                             <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
+                                <i class="bi bi-file-earmark rc-text-lg" data-file-icon></i>
                                 <div class="rc-pill rc-pill-muted">{{.DocumentType}}</div>
                                 <div>
                                     <div class="rc-text-strong">{{.OriginalFilename}}</div>
@@ -264,17 +269,17 @@
                         </div>
                         {{end}}
                     </div>
-                    <div id="unused-empty-default" class="rc-empty-state {{if .unused}}rc-hidden{{end}}">
+                    <div id="unassigned-empty-default" class="rc-empty-state {{if .unused}}rc-hidden{{end}}">
                         <i class="bi bi-inbox rc-empty-icon"></i>
                         <p class="rc-text-muted">No unused files found in {{index .poolFolders "unassigned"}}.</p>
                     </div>
-                    <div id="unused-empty-filter" class="rc-empty-state rc-hidden">
+                    <div id="unassigned-empty-filter" class="rc-empty-state rc-hidden">
                         <i class="bi bi-search rc-empty-icon"></i>
                         <p class="rc-text-muted">No unassigned files match your filters.</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
     </main>
     <script>
         async function deleteDoc(id, name) {
@@ -289,15 +294,19 @@
 
         const docCards = Array.from(document.querySelectorAll('[data-doc-card]'));
         const assignedList = document.getElementById('assigned-list');
-        const unusedList = document.getElementById('unused-list');
+        const unassignedList = document.getElementById('unassigned-list');
         const searchInput = document.getElementById('pool-search');
         const typeFilter = document.getElementById('pool-type-filter');
         const sortSelect = document.getElementById('pool-sort');
         const resetBtn = document.getElementById('reset-filters');
+        const sectionToggles = document.querySelectorAll('[data-section-toggle]');
+        const assignedWrapper = document.getElementById('assigned-wrapper');
+        const unassignedWrapper = document.getElementById('unassigned-wrapper');
+        let activeSection = 'assigned';
 
         function sortLists() {
             const mode = sortSelect.value;
-            [assignedList, unusedList].forEach(list => {
+            [assignedList, unassignedList].forEach(list => {
                 const cards = Array.from(list.querySelectorAll('[data-doc-card]'));
                 cards.sort((a, b) => compareCards(a, b, mode));
                 cards.forEach(card => list.appendChild(card));
@@ -328,26 +337,24 @@
                 card.classList.toggle('rc-hidden', !(matchesTerm && matchesType));
             });
 
-            updateEmptyState(assignedList, 'assigned');
-            updateEmptyState(unusedList, 'unused');
+            refreshEmptyStates();
         }
 
-        function updateEmptyState(listEl, prefix) {
+        function refreshEmptyStates() {
+            updateEmptyState(assignedList, 'assigned', assignedWrapper);
+            updateEmptyState(unassignedList, 'unassigned', unassignedWrapper);
+        }
+
+        function updateEmptyState(listEl, prefix, wrapper) {
             const visible = listEl.querySelectorAll('[data-doc-card]:not(.rc-hidden)').length;
             const total = listEl.querySelectorAll('[data-doc-card]').length;
             const emptyDefault = document.getElementById(`${prefix}-empty-default`);
             const emptyFilter = document.getElementById(`${prefix}-empty-filter`);
+            const isActive = activeSection === prefix;
 
-            if (visible === 0 && total > 0) {
-                emptyFilter.classList.remove('rc-hidden');
-                emptyDefault.classList.add('rc-hidden');
-            } else if (visible === 0) {
-                emptyFilter.classList.add('rc-hidden');
-                emptyDefault.classList.remove('rc-hidden');
-            } else {
-                emptyFilter.classList.add('rc-hidden');
-                emptyDefault.classList.add('rc-hidden');
-            }
+            emptyFilter.classList.toggle('rc-hidden', !(isActive && visible === 0 && total > 0));
+            emptyDefault.classList.toggle('rc-hidden', !(isActive && visible === 0 && total === 0));
+            wrapper.classList.toggle('rc-hidden', !isActive);
         }
 
         if (searchInput && typeFilter && sortSelect) {
@@ -359,6 +366,16 @@
             });
         }
 
+        if (sectionToggles) {
+            sectionToggles.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeSection = btn.dataset.sectionToggle;
+                    updateToggleStyles();
+                    applyFilters();
+                });
+            });
+        }
+
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
                 searchInput.value = '';
@@ -366,11 +383,49 @@
                 sortSelect.value = 'newest';
                 sortLists();
                 applyFilters();
+                updateToggleStyles();
             });
         }
 
+        function updateToggleStyles() {
+            sectionToggles.forEach(btn => {
+                const isActive = btn.dataset.sectionToggle === activeSection;
+                btn.classList.toggle('rc-btn-primary', isActive);
+                btn.classList.toggle('rc-btn-ghost', !isActive);
+            });
+        }
+
+        function applyIcons() {
+            const iconMap = {
+                pdf: 'bi-file-earmark-pdf-fill rc-text-danger',
+                png: 'bi-file-earmark-image rc-text-primary',
+                jpg: 'bi-file-earmark-image rc-text-primary',
+                jpeg: 'bi-file-earmark-image rc-text-primary',
+                gif: 'bi-file-earmark-image rc-text-primary',
+                doc: 'bi-file-earmark-word-fill rc-text-info',
+                docx: 'bi-file-earmark-word-fill rc-text-info',
+                xls: 'bi-file-earmark-excel-fill rc-text-success',
+                xlsx: 'bi-file-earmark-excel-fill rc-text-success',
+                csv: 'bi-filetype-csv rc-text-success',
+                txt: 'bi-filetype-txt',
+                json: 'bi-filetype-json',
+                default: 'bi-file-earmark'
+            };
+
+            docCards.forEach(card => {
+                const icon = card.querySelector('[data-file-icon]');
+                if (!icon) return;
+                const name = (card.dataset.name || '').toLowerCase();
+                const ext = name.includes('.') ? name.split('.').pop() : '';
+                const cls = iconMap[ext] || iconMap.default;
+                icon.className = `bi ${cls}`;
+            });
+        }
+
+        applyIcons();
         sortLists();
         applyFilters();
+        updateToggleStyles();
     </script>
 </body>
 </html>
