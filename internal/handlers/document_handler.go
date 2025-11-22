@@ -31,6 +31,8 @@ type DocumentHandler struct {
 	ncClient       *storage.NextcloudClient
 	ncBasePath     string
 	backfillOnBoot bool
+	assignedRoot   string
+	unassignedRoot string
 }
 
 func NewDocumentHandler(db *gorm.DB) *DocumentHandler {
@@ -53,6 +55,15 @@ func NewDocumentHandler(db *gorm.DB) *DocumentHandler {
 		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
 	}
 
+	assignedRoot := strings.Trim(trimQuotes(os.Getenv("FILEPOOL_ASSIGNED_ROOT")), "/")
+	if assignedRoot == "" {
+		assignedRoot = "assigned"
+	}
+	unassignedRoot := strings.Trim(trimQuotes(os.Getenv("FILEPOOL_UNASSIGNED_ROOT")), "/")
+	if unassignedRoot == "" {
+		unassignedRoot = "unassigned"
+	}
+
 	h := &DocumentHandler{
 		db:             db,
 		uploadPath:     uploadPath,
@@ -61,6 +72,8 @@ func NewDocumentHandler(db *gorm.DB) *DocumentHandler {
 		useNextcloud:   false,
 		ncBasePath:     trimQuotes(strings.Trim(os.Getenv("NEXTCLOUD_WEBDAV_BASE_PATH"), "/")),
 		backfillOnBoot: strings.ToLower(os.Getenv("NEXTCLOUD_BACKFILL_ON_START")) != "false",
+		assignedRoot:   assignedRoot,
+		unassignedRoot: unassignedRoot,
 	}
 
 	ncURL := trimQuotes(strings.TrimSpace(os.Getenv("NEXTCLOUD_WEBDAV_URL")))
@@ -691,48 +704,60 @@ func (h *DocumentHandler) GetDocumentStats(c *gin.Context) {
 
 // ListFilePool groups documents by assignment status.
 func (h *DocumentHandler) ListFilePool(c *gin.Context) {
-	var assigned []models.Document
-	if err := h.db.Where("entity_type <> ? OR entity_id <> ?", "system", "unassigned").
-		Order("uploaded_at DESC").Find(&assigned).Error; err != nil {
-		h.respondError(c, http.StatusInternalServerError, "Failed to load assigned documents")
+	var documents []models.Document
+	if err := h.db.Preload("Uploader").Order("uploaded_at DESC").Find(&documents).Error; err != nil {
+		h.respondError(c, http.StatusInternalServerError, "Failed to load documents")
 		return
 	}
 
-	var unused []models.Document
-	if err := h.db.Where("entity_type = ? AND entity_id = ?", "system", "unassigned").
-		Order("uploaded_at DESC").Find(&unused).Error; err != nil {
-		h.respondError(c, http.StatusInternalServerError, "Failed to load unused documents")
-		return
-	}
+	assigned, unused := h.splitPoolDocuments(documents)
+	assignedSize := h.sumFileSizes(assigned)
+	unusedSize := h.sumFileSizes(unused)
+	assignedCount := len(assigned)
+	unusedCount := len(unused)
 
 	accept := c.GetHeader("Accept")
 	if strings.Contains(accept, "text/html") {
 		user, _ := GetCurrentUser(c)
 		c.HTML(http.StatusOK, "documents_pool.html", gin.H{
-			"title":       "File Pool",
-			"user":        user,
-			"assigned":    assigned,
-			"unused":      unused,
-			"currentPage": "documents_pool",
-			"timestamp":   time.Now().Unix(),
+			"title":         "File Pool",
+			"user":          user,
+			"assigned":      assigned,
+			"unused":        unused,
+			"assignedSize":  assignedSize,
+			"unusedSize":    unusedSize,
+			"assignedCount": assignedCount,
+			"unusedCount":   unusedCount,
+			"poolFolders": gin.H{
+				"assigned":   h.assignedRoot,
+				"unassigned": h.unassignedRoot,
+				"base":       h.ncBasePath,
+			},
+			"nextcloudEnabled": h.useNextcloud,
+			"currentPage":      "documents_pool",
+			"timestamp":        time.Now().Unix(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"assigned": assigned,
-		"unused":   unused,
+		"assigned":      assigned,
+		"unused":        unused,
+		"assignedSize":  assignedSize,
+		"unusedSize":    unusedSize,
+		"assignedCount": assignedCount,
+		"unusedCount":   unusedCount,
 	})
 }
 
 // Helpers
 func (h *DocumentHandler) remotePath(entityType, entityID, filename string) string {
-	// Store unassigned files in a flat "unassigned" directory; everything else under "assigned/<entityType>/<entityID>"
+	// Store unassigned files in a flat "<unassignedRoot>/" directory; everything else under "<assignedRoot>/<entityType>/<entityID>"
 	var rel string
 	if entityType == "system" && strings.ToLower(entityID) == "unassigned" {
-		rel = path.Join("unassigned", filename)
+		rel = path.Join(h.unassignedRoot, filename)
 	} else {
-		rel = path.Join("assigned", entityType, entityID, filename)
+		rel = path.Join(h.assignedRoot, entityType, entityID, filename)
 	}
 	if h.useNextcloud {
 		return "nextcloud:" + strings.TrimLeft(rel, "/")
@@ -805,7 +830,7 @@ func (h *DocumentHandler) backfillRemoteFiles() {
 		}
 
 		relPath := strings.TrimLeft(entry.Path, "/")
-		entityType, entityID, ok := parseRemoteEntity(relPath)
+		entityType, entityID, ok := h.parseRemoteEntity(relPath)
 		if !ok {
 			continue
 		}
@@ -854,21 +879,78 @@ func chooseMime(m string) string {
 }
 
 // parseRemoteEntity maps a Nextcloud relative path to entityType/entityID using
-// the storage layout:
-// - unassigned/<file>
-// - assigned/<entityType>/<entityID>/<file>
-func parseRemoteEntity(relPath string) (string, string, bool) {
+// the configurable storage layout:
+// - <unassignedRoot>/<file>
+// - <assignedRoot>/<entityType>/<entityID>/<file>
+func (h *DocumentHandler) parseRemoteEntity(relPath string) (string, string, bool) {
 	segments := strings.Split(strings.TrimLeft(relPath, "/"), "/")
 	if len(segments) < 2 {
 		return "", "", false
 	}
-	if segments[0] == "unassigned" {
+	if h.unassignedRoot != "" && segments[0] == h.unassignedRoot {
 		return "system", "unassigned", true
 	}
-	if segments[0] == "assigned" && len(segments) >= 4 {
+	if h.assignedRoot != "" && segments[0] == h.assignedRoot && len(segments) >= 4 {
 		return segments[1], segments[2], true
 	}
 	return "", "", false
+}
+
+func (h *DocumentHandler) splitPoolDocuments(documents []models.Document) ([]models.Document, []models.Document) {
+	assigned := []models.Document{}
+	unused := []models.Document{}
+
+	for _, doc := range documents {
+		if h.isUnassignedPoolDoc(doc) {
+			unused = append(unused, doc)
+			continue
+		}
+		if h.isAssignedPoolDoc(doc) {
+			assigned = append(assigned, doc)
+		}
+	}
+
+	return assigned, unused
+}
+
+func (h *DocumentHandler) isUnassignedPoolDoc(doc models.Document) bool {
+	if strings.ToLower(doc.EntityType) != "system" || strings.ToLower(doc.EntityID) != "unassigned" {
+		return false
+	}
+	return h.folderMatches(doc.FilePath, h.unassignedRoot)
+}
+
+func (h *DocumentHandler) isAssignedPoolDoc(doc models.Document) bool {
+	if strings.ToLower(doc.EntityType) == "system" && strings.ToLower(doc.EntityID) == "unassigned" {
+		return false
+	}
+	return h.folderMatches(doc.FilePath, h.assignedRoot)
+}
+
+func (h *DocumentHandler) folderMatches(filePath, folder string) bool {
+	folder = strings.Trim(folder, "/")
+	if folder == "" {
+		return false
+	}
+	if !h.useNextcloud {
+		return true
+	}
+	normalized := h.normalizeFilePath(filePath)
+	return normalized == folder || strings.HasPrefix(normalized, folder+"/")
+}
+
+func (h *DocumentHandler) normalizeFilePath(p string) string {
+	p = strings.TrimPrefix(p, "nextcloud:")
+	p = strings.TrimLeft(p, "/")
+	return p
+}
+
+func (h *DocumentHandler) sumFileSizes(docs []models.Document) int64 {
+	var total int64
+	for _, doc := range docs {
+		total += doc.FileSize
+	}
+	return total
 }
 
 func trimQuotes(s string) string {

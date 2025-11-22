@@ -40,13 +40,96 @@
             </div>
         </div>
 
-        <div class="rc-card rc-mb-lg">
+        <div class="rc-grid rc-grid-3 rc-grid-gap-md rc-mb-lg">
+            <div class="rc-card rc-card-soft rc-card-glow">
+                <div class="rc-flex rc-flex-between rc-flex-align-center">
+                    <div>
+                        <div class="rc-text-strong">Assigned pool</div>
+                        <div class="rc-text-sm rc-text-muted">{{.assignedCount}} files • {{humanizeBytes .assignedSize}}</div>
+                    </div>
+                    <span class="rc-badge rc-badge-success"><i class="bi bi-check2-circle"></i> Assigned</span>
+                </div>
+                <div class="rc-text-xs rc-text-muted rc-mt-xs">Folder: {{index .poolFolders "assigned"}}/&lt;entity&gt;/&lt;id&gt;</div>
+            </div>
+            <div class="rc-card rc-card-soft rc-card-glow">
+                <div class="rc-flex rc-flex-between rc-flex-align-center">
+                    <div>
+                        <div class="rc-text-strong">Unassigned pool</div>
+                        <div class="rc-text-sm rc-text-muted">{{.unusedCount}} files • {{humanizeBytes .unusedSize}}</div>
+                    </div>
+                    <span class="rc-badge rc-badge-warning"><i class="bi bi-inbox-fill"></i> Unassigned</span>
+                </div>
+                <div class="rc-text-xs rc-text-muted rc-mt-xs">Folder: {{index .poolFolders "unassigned"}}</div>
+            </div>
+            <div class="rc-card rc-card-soft rc-card-glow">
+                <div class="rc-flex rc-flex-between rc-flex-align-center">
+                    <div>
+                        <div class="rc-text-strong">Storage</div>
+                        <div class="rc-text-sm rc-text-muted">Base: {{if .nextcloudEnabled}}{{index .poolFolders "base"}}{{else}}Local uploads{{end}}</div>
+                    </div>
+                    <span class="rc-chip rc-chip-ghost"><i class="bi bi-hdd-network"></i> Synced</span>
+                </div>
+                <div class="rc-text-xs rc-text-muted rc-mt-xs">Only items inside the configured assigned/unassigned folders appear below.</div>
+            </div>
+        </div>
+
+        <div class="rc-card rc-card-glow rc-mb-lg">
+            <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
+                <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
+                    <i class="bi bi-sliders2"></i>
+                    <div>
+                        <div class="rc-text-strong">Pool controls</div>
+                        <div class="rc-text-sm rc-text-muted">Filter and sort files before assigning them</div>
+                    </div>
+                </div>
+                <div class="rc-flex rc-flex-gap-xs rc-flex-wrap">
+                    <span class="rc-chip rc-chip-ghost"><i class="bi bi-folder"></i> {{index .poolFolders "assigned"}}</span>
+                    <span class="rc-chip rc-chip-ghost"><i class="bi bi-folder2-open"></i> {{index .poolFolders "unassigned"}}</span>
+                </div>
+            </div>
+            <div class="rc-card-body rc-grid rc-grid-4 rc-grid-gap-md rc-flex-align-end">
+                <label class="rc-form-field">
+                    <span class="rc-form-label">Search</span>
+                    <input class="rc-input" type="text" id="pool-search" placeholder="Filename, entity, description">
+                </label>
+                <label class="rc-form-field">
+                    <span class="rc-form-label">Document type</span>
+                    <select class="rc-input" id="pool-type-filter">
+                        <option value="">All types</option>
+                        <option value="contract">Contract</option>
+                        <option value="manual">Manual</option>
+                        <option value="photo">Photo</option>
+                        <option value="invoice">Invoice</option>
+                        <option value="receipt">Receipt</option>
+                        <option value="signature">Signature</option>
+                        <option value="other">Other</option>
+                    </select>
+                </label>
+                <label class="rc-form-field">
+                    <span class="rc-form-label">Sort by</span>
+                    <select class="rc-input" id="pool-sort">
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="name">Name (A → Z)</option>
+                        <option value="size">Size (largest)</option>
+                    </select>
+                </label>
+                <div class="rc-flex rc-flex-gap-sm rc-flex-align-center rc-flex-wrap rc-mt-auto">
+                    <button type="button" class="rc-btn rc-btn-ghost rc-btn-icon" id="reset-filters" title="Reset filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                    <div class="rc-text-xs rc-text-muted">Only files inside the assigned/unassigned folders are shown.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rc-card rc-mb-lg rc-card-glow">
             <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
                 <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
                     <i class="bi bi-cloud-upload"></i>
                     <div>
                         <div class="rc-text-strong">Upload to File Pool</div>
-                        <div class="rc-text-sm rc-text-muted">Stored in Nextcloud and listed under “Unused”</div>
+                        <div class="rc-text-sm rc-text-muted">Stored in Nextcloud and listed under “Unassigned”</div>
                     </div>
                 </div>
                 <div class="rc-text-xs rc-text-muted">Max 10 MB • PDF/Images/Docs</div>
@@ -80,7 +163,8 @@
                         <textarea class="rc-input" name="description" rows="2" placeholder="Add a short note"></textarea>
                     </label>
 
-                    <div class="rc-grid-span-2">
+                    <div class="rc-grid-span-2 rc-flex rc-flex-between rc-flex-align-center">
+                        <div class="rc-text-xs rc-text-muted">Files land in {{index .poolFolders "unassigned"}} until attached to an entity.</div>
                         <button type="submit" class="rc-btn rc-btn-primary">
                             <i class="bi bi-upload"></i>
                             Upload to Pool
@@ -95,22 +179,28 @@
                 <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
                     <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
                         <span class="rc-badge rc-badge-success"><i class="bi bi-check2-circle"></i> Assigned</span>
-                        <span class="rc-text-sm rc-text-muted">{{len .assigned}} files</span>
+                        <span class="rc-text-sm rc-text-muted">{{.assignedCount}} files</span>
                     </div>
                 </div>
                 <div class="rc-card-body">
-                    {{if .assigned}}
-                    <div class="rc-grid rc-grid-1 rc-grid-gap-sm">
+                    <div id="assigned-list" class="rc-grid rc-grid-1 rc-grid-gap-sm">
                         {{range .assigned}}
-                        <div class="rc-card rc-card-soft rc-flex rc-flex-between rc-flex-align-center">
+                        <div class="rc-card rc-card-soft rc-flex rc-flex-between rc-flex-align-center rc-flex-wrap" data-doc-card data-section="assigned" data-type="{{.DocumentType}}" data-name="{{.OriginalFilename}}" data-entity="{{.EntityType}}-{{.EntityID}}" data-size="{{.FileSize}}" data-date="{{.UploadedAt.Unix}}">
                             <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
                                 <div class="rc-pill rc-pill-success">{{.DocumentType}}</div>
                                 <div>
                                     <div class="rc-text-strong">{{.OriginalFilename}}</div>
-                                    <div class="rc-text-xs rc-text-muted">{{.EntityType}} #{{.EntityID}} • {{.UploadedAt.Format "2006-01-02"}}</div>
+                                    <div class="rc-text-xs rc-text-muted">{{title .EntityType}} #{{.EntityID}} • {{.UploadedAt.Format "2006-01-02"}} • {{humanizeBytes .FileSize}}</div>
+                                    <div class="rc-text-xs rc-text-muted">Path: {{index $.poolFolders "assigned"}}/{{.EntityType}}/{{.EntityID}}</div>
                                 </div>
                             </div>
-                            <div class="rc-flex rc-flex-gap-xs">
+                            <div class="rc-flex rc-flex-gap-xs rc-flex-align-center rc-flex-wrap">
+                                {{if .Description}}
+                                <span class="rc-chip rc-chip-ghost rc-text-xs" title="{{.Description}}"><i class="bi bi-card-text"></i> Note</span>
+                                {{end}}
+                                {{if .Uploader}}
+                                <span class="rc-chip rc-chip-ghost rc-text-xs"><i class="bi bi-person-circle"></i> {{.Uploader.Username}}</span>
+                                {{end}}
                                 <button type="button" class="rc-btn rc-btn-ghost rc-btn-icon" onclick="deleteDoc({{.DocumentID}}, '{{.OriginalFilename}}')" title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -124,35 +214,43 @@
                         </div>
                         {{end}}
                     </div>
-                    {{else}}
-                    <div class="rc-empty-state">
+                    <div id="assigned-empty-default" class="rc-empty-state {{if .assigned}}rc-hidden{{end}}">
                         <i class="bi bi-folder-check rc-empty-icon"></i>
-                        <p class="rc-text-muted">No assigned files yet.</p>
+                        <p class="rc-text-muted">No assigned files inside {{index .poolFolders "assigned"}} yet.</p>
                     </div>
-                    {{end}}
+                    <div id="assigned-empty-filter" class="rc-empty-state rc-hidden">
+                        <i class="bi bi-search rc-empty-icon"></i>
+                        <p class="rc-text-muted">No assigned files match your filters.</p>
+                    </div>
                 </div>
             </div>
 
             <div class="rc-card rc-card-glow">
                 <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
                     <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
-                        <span class="rc-badge rc-badge-warning"><i class="bi bi-inbox-fill"></i> Unused</span>
-                        <span class="rc-text-sm rc-text-muted">{{len .unused}} files</span>
+                        <span class="rc-badge rc-badge-warning"><i class="bi bi-inbox-fill"></i> Unassigned</span>
+                        <span class="rc-text-sm rc-text-muted">{{.unusedCount}} files</span>
                     </div>
                 </div>
                 <div class="rc-card-body">
-                    {{if .unused}}
-                    <div class="rc-grid rc-grid-1 rc-grid-gap-sm">
+                    <div id="unused-list" class="rc-grid rc-grid-1 rc-grid-gap-sm">
                         {{range .unused}}
-                        <div class="rc-card rc-card-soft rc-flex rc-flex-between rc-flex-align-center">
+                        <div class="rc-card rc-card-soft rc-flex rc-flex-between rc-flex-align-center rc-flex-wrap" data-doc-card data-section="unassigned" data-type="{{.DocumentType}}" data-name="{{.OriginalFilename}}" data-entity="{{.EntityType}}-{{.EntityID}}" data-size="{{.FileSize}}" data-date="{{.UploadedAt.Unix}}">
                             <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
                                 <div class="rc-pill rc-pill-muted">{{.DocumentType}}</div>
                                 <div>
                                     <div class="rc-text-strong">{{.OriginalFilename}}</div>
-                                    <div class="rc-text-xs rc-text-muted">Uploaded {{.UploadedAt.Format "2006-01-02"}}</div>
+                                    <div class="rc-text-xs rc-text-muted">Uploaded {{.UploadedAt.Format "2006-01-02"}} • {{humanizeBytes .FileSize}}</div>
+                                    <div class="rc-text-xs rc-text-muted">Path: {{index $.poolFolders "unassigned"}}</div>
                                 </div>
                             </div>
-                            <div class="rc-flex rc-flex-gap-xs">
+                            <div class="rc-flex rc-flex-gap-xs rc-flex-align-center rc-flex-wrap">
+                                {{if .Description}}
+                                <span class="rc-chip rc-chip-ghost rc-text-xs" title="{{.Description}}"><i class="bi bi-card-text"></i> Note</span>
+                                {{end}}
+                                {{if .Uploader}}
+                                <span class="rc-chip rc-chip-ghost rc-text-xs"><i class="bi bi-person-circle"></i> {{.Uploader.Username}}</span>
+                                {{end}}
                                 <button type="button" class="rc-btn rc-btn-ghost rc-btn-icon" onclick="deleteDoc({{.DocumentID}}, '{{.OriginalFilename}}')" title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -166,19 +264,21 @@
                         </div>
                         {{end}}
                     </div>
-                    {{else}}
-                    <div class="rc-empty-state">
+                    <div id="unused-empty-default" class="rc-empty-state {{if .unused}}rc-hidden{{end}}">
                         <i class="bi bi-inbox rc-empty-icon"></i>
-                        <p class="rc-text-muted">No unused files available.</p>
+                        <p class="rc-text-muted">No unused files found in {{index .poolFolders "unassigned"}}.</p>
                     </div>
-                    {{end}}
+                    <div id="unused-empty-filter" class="rc-empty-state rc-hidden">
+                        <i class="bi bi-search rc-empty-icon"></i>
+                        <p class="rc-text-muted">No unassigned files match your filters.</p>
+                    </div>
                 </div>
             </div>
         </section>
     </main>
     <script>
         async function deleteDoc(id, name) {
-            if (!confirm(`Wirklich löschen?\\n${name}`)) return;
+            if (!confirm(`Wirklich löschen?\n${name}`)) return;
             const res = await fetch(`/documents/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 window.location.reload();
@@ -186,6 +286,91 @@
                 alert('Löschen fehlgeschlagen');
             }
         }
+
+        const docCards = Array.from(document.querySelectorAll('[data-doc-card]'));
+        const assignedList = document.getElementById('assigned-list');
+        const unusedList = document.getElementById('unused-list');
+        const searchInput = document.getElementById('pool-search');
+        const typeFilter = document.getElementById('pool-type-filter');
+        const sortSelect = document.getElementById('pool-sort');
+        const resetBtn = document.getElementById('reset-filters');
+
+        function sortLists() {
+            const mode = sortSelect.value;
+            [assignedList, unusedList].forEach(list => {
+                const cards = Array.from(list.querySelectorAll('[data-doc-card]'));
+                cards.sort((a, b) => compareCards(a, b, mode));
+                cards.forEach(card => list.appendChild(card));
+            });
+        }
+
+        function compareCards(a, b, mode) {
+            if (mode === 'name') {
+                return a.dataset.name.localeCompare(b.dataset.name);
+            }
+            if (mode === 'size') {
+                return Number(b.dataset.size) - Number(a.dataset.size);
+            }
+            const aDate = Number(a.dataset.date);
+            const bDate = Number(b.dataset.date);
+            return mode === 'oldest' ? aDate - bDate : bDate - aDate;
+        }
+
+        function applyFilters() {
+            const term = (searchInput.value || '').toLowerCase();
+            const type = typeFilter.value;
+
+            docCards.forEach(card => {
+                const name = (card.dataset.name || '').toLowerCase();
+                const entity = (card.dataset.entity || '').toLowerCase();
+                const matchesTerm = term === '' || name.includes(term) || entity.includes(term);
+                const matchesType = type === '' || card.dataset.type === type;
+                card.classList.toggle('rc-hidden', !(matchesTerm && matchesType));
+            });
+
+            updateEmptyState(assignedList, 'assigned');
+            updateEmptyState(unusedList, 'unused');
+        }
+
+        function updateEmptyState(listEl, prefix) {
+            const visible = listEl.querySelectorAll('[data-doc-card]:not(.rc-hidden)').length;
+            const total = listEl.querySelectorAll('[data-doc-card]').length;
+            const emptyDefault = document.getElementById(`${prefix}-empty-default`);
+            const emptyFilter = document.getElementById(`${prefix}-empty-filter`);
+
+            if (visible === 0 && total > 0) {
+                emptyFilter.classList.remove('rc-hidden');
+                emptyDefault.classList.add('rc-hidden');
+            } else if (visible === 0) {
+                emptyFilter.classList.add('rc-hidden');
+                emptyDefault.classList.remove('rc-hidden');
+            } else {
+                emptyFilter.classList.add('rc-hidden');
+                emptyDefault.classList.add('rc-hidden');
+            }
+        }
+
+        if (searchInput && typeFilter && sortSelect) {
+            searchInput.addEventListener('input', applyFilters);
+            typeFilter.addEventListener('change', applyFilters);
+            sortSelect.addEventListener('change', () => {
+                sortLists();
+                applyFilters();
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                typeFilter.value = '';
+                sortSelect.value = 'newest';
+                sortLists();
+                applyFilters();
+            });
+        }
+
+        sortLists();
+        applyFilters();
     </script>
 </body>
 </html>

@@ -300,6 +300,8 @@ NEXTCLOUD_WEBDAV_URL=https://cloud.example.com/remote.php/dav/files/username
 NEXTCLOUD_WEBDAV_USER=your-nextcloud-user
 NEXTCLOUD_WEBDAV_PASSWORD=your-nextcloud-app-password
 NEXTCLOUD_WEBDAV_BASE_PATH=rentalcore-filepool
+FILEPOOL_ASSIGNED_ROOT=assigned
+FILEPOOL_UNASSIGNED_ROOT=unassigned
 # Disable automatic migration of existing local uploads by setting to false
 # NEXTCLOUD_BACKFILL_ON_START=false
 
@@ -309,6 +311,7 @@ SMTP_PORT=587
 SMTP_USERNAME=noreply@yourdomain.com
 SMTP_PASSWORD=email_password
 ```
+`FILEPOOL_ASSIGNED_ROOT` and `FILEPOOL_UNASSIGNED_ROOT` control which WebDAV folders appear in the Assigned vs. Unassigned cards—the pool UI only shows files that actually live inside those directories.
 
 ### **Application Configuration (config.json)**
 - **UI Theming**: Professional dark theme with customizable colors
