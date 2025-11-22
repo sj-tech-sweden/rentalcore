@@ -73,56 +73,6 @@
             </div>
         </div>
 
-        <div class="rc-card rc-card-glow rc-mb-lg">
-            <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
-                <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
-                    <i class="bi bi-sliders2"></i>
-                    <div>
-                        <div class="rc-text-strong">Pool controls</div>
-                        <div class="rc-text-sm rc-text-muted">Filter and sort files before assigning them</div>
-                    </div>
-                </div>
-                <div class="rc-flex rc-flex-gap-xs rc-flex-wrap">
-                    <span class="rc-chip rc-chip-ghost"><i class="bi bi-folder"></i> {{index .poolFolders "assigned"}}</span>
-                    <span class="rc-chip rc-chip-ghost"><i class="bi bi-folder2-open"></i> {{index .poolFolders "unassigned"}}</span>
-                </div>
-            </div>
-            <div class="rc-card-body rc-grid rc-grid-4 rc-grid-gap-md rc-flex-align-end">
-                <label class="rc-form-field">
-                    <span class="rc-form-label">Search</span>
-                    <input class="rc-input" type="text" id="pool-search" placeholder="Filename, entity, description">
-                </label>
-                <label class="rc-form-field">
-                    <span class="rc-form-label">Document type</span>
-                    <select class="rc-input" id="pool-type-filter">
-                        <option value="">All types</option>
-                        <option value="contract">Contract</option>
-                        <option value="manual">Manual</option>
-                        <option value="photo">Photo</option>
-                        <option value="invoice">Invoice</option>
-                        <option value="receipt">Receipt</option>
-                        <option value="signature">Signature</option>
-                        <option value="other">Other</option>
-                    </select>
-                </label>
-                <label class="rc-form-field">
-                    <span class="rc-form-label">Sort by</span>
-                    <select class="rc-input" id="pool-sort">
-                        <option value="newest">Newest first</option>
-                        <option value="oldest">Oldest first</option>
-                        <option value="name">Name (A → Z)</option>
-                        <option value="size">Size (largest)</option>
-                    </select>
-                </label>
-                <div class="rc-flex rc-flex-gap-sm rc-flex-align-center rc-flex-wrap rc-mt-auto">
-                    <button type="button" class="rc-btn rc-btn-ghost rc-btn-icon" id="reset-filters" title="Reset filters">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
-                    <div class="rc-text-xs rc-text-muted">Only files inside the assigned/unassigned folders are shown.</div>
-                </div>
-            </div>
-        </div>
-
         <div class="rc-card rc-mb-lg rc-card-glow">
             <div class="rc-card-header rc-flex rc-flex-between rc-flex-align-center">
                 <div class="rc-flex rc-flex-gap-sm rc-flex-align-center">
@@ -193,6 +143,29 @@
                 </div>
             </div>
             <div class="rc-card-body rc-flex rc-flex-column rc-flex-gap-md">
+                <div class="rc-flex rc-flex-gap-sm rc-flex-wrap rc-flex-align-center rc-mb-sm">
+                    <input class="rc-input" type="text" id="pool-search" placeholder="Filter files" style="max-width: 240px;">
+                    <select class="rc-input" id="pool-type-filter" style="max-width: 180px;">
+                        <option value="">All types</option>
+                        <option value="contract">Contract</option>
+                        <option value="manual">Manual</option>
+                        <option value="photo">Photo</option>
+                        <option value="invoice">Invoice</option>
+                        <option value="receipt">Receipt</option>
+                        <option value="signature">Signature</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <select class="rc-input" id="pool-sort" style="max-width: 180px;">
+                        <option value="newest">Newest</option>
+                        <option value="oldest">Oldest</option>
+                        <option value="name">Name</option>
+                        <option value="size">Size</option>
+                    </select>
+                    <button type="button" class="rc-btn rc-btn-ghost rc-btn-icon" id="reset-filters" title="Reset filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </div>
+
                 <div id="assigned-wrapper">
                     <div id="assigned-list" class="rc-grid rc-grid-1 rc-grid-gap-sm">
                         {{range .assigned}}
