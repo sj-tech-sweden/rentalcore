@@ -1344,14 +1344,14 @@ func setupRoutes(r *gin.Engine,
 				apiProducts.GET("/:id", productHandler.GetProductAPI)
 
 				// Product Accessories
-				apiProducts.GET("/:productID/accessories", accessoriesConsumablesHandler.GetProductAccessoriesAPI)
-				apiProducts.POST("/:productID/accessories", accessoriesConsumablesHandler.AddProductAccessoryAPI)
-				apiProducts.DELETE("/:productID/accessories/:accessoryID", accessoriesConsumablesHandler.RemoveProductAccessoryAPI)
+				apiProducts.GET("/:id/accessories", accessoriesConsumablesHandler.GetProductAccessoriesAPI)
+				apiProducts.POST("/:id/accessories", accessoriesConsumablesHandler.AddProductAccessoryAPI)
+				apiProducts.DELETE("/:id/accessories/:accessoryID", accessoriesConsumablesHandler.RemoveProductAccessoryAPI)
 
 				// Product Consumables
-				apiProducts.GET("/:productID/consumables", accessoriesConsumablesHandler.GetProductConsumablesAPI)
-				apiProducts.POST("/:productID/consumables", accessoriesConsumablesHandler.AddProductConsumableAPI)
-				apiProducts.DELETE("/:productID/consumables/:consumableID", accessoriesConsumablesHandler.RemoveProductConsumableAPI)
+				apiProducts.GET("/:id/consumables", accessoriesConsumablesHandler.GetProductConsumablesAPI)
+				apiProducts.POST("/:id/consumables", accessoriesConsumablesHandler.AddProductConsumableAPI)
+				apiProducts.DELETE("/:id/consumables/:consumableID", accessoriesConsumablesHandler.RemoveProductConsumableAPI)
 			}
 
 			// Accessories & Consumables API
@@ -1374,13 +1374,13 @@ func setupRoutes(r *gin.Engine,
 			// Job Accessories API
 			apiJobAccessories := api.Group("/jobs")
 			{
-				apiJobAccessories.GET("/:jobID/accessories", accessoriesConsumablesHandler.GetJobAccessoriesAPI)
-				apiJobAccessories.POST("/:jobID/accessories", accessoriesConsumablesHandler.CreateJobAccessoryAPI)
+				apiJobAccessories.GET("/:id/accessories", accessoriesConsumablesHandler.GetJobAccessoriesAPI)
+				apiJobAccessories.POST("/:id/accessories", accessoriesConsumablesHandler.CreateJobAccessoryAPI)
 				apiJobAccessories.PUT("/accessories/:id", accessoriesConsumablesHandler.UpdateJobAccessoryAPI)
 				apiJobAccessories.DELETE("/accessories/:id", accessoriesConsumablesHandler.DeleteJobAccessoryAPI)
 
-				apiJobAccessories.GET("/:jobID/consumables", accessoriesConsumablesHandler.GetJobConsumablesAPI)
-				apiJobAccessories.POST("/:jobID/consumables", accessoriesConsumablesHandler.CreateJobConsumableAPI)
+				apiJobAccessories.GET("/:id/consumables", accessoriesConsumablesHandler.GetJobConsumablesAPI)
+				apiJobAccessories.POST("/:id/consumables", accessoriesConsumablesHandler.CreateJobConsumableAPI)
 				apiJobAccessories.PUT("/consumables/:id", accessoriesConsumablesHandler.UpdateJobConsumableAPI)
 				apiJobAccessories.DELETE("/consumables/:id", accessoriesConsumablesHandler.DeleteJobConsumableAPI)
 			}
