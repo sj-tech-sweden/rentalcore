@@ -12,6 +12,7 @@ import (
 	"go-barcode-webapp/internal/models"
 	"go-barcode-webapp/internal/repository"
 	"go-barcode-webapp/internal/services"
+	"go-barcode-webapp/internal/services/warehousecore"
 
 	"github.com/gin-gonic/gin"
 )
@@ -119,11 +120,34 @@ type JobHandler struct {
 	jobCategoryRepo    *repository.JobCategoryRepository
 	jobEditSessionRepo *repository.JobEditSessionRepository
 	jobHistoryService  *services.JobHistoryService
+	rentalEquipRepo    *repository.RentalEquipmentRepository
+	warehouseClient    *warehousecore.Client
 }
 
 type JobProductSelection struct {
 	ProductID uint `json:"product_id"`
 	Quantity  int  `json:"quantity"`
+}
+
+type RentalEquipmentSelection struct {
+	EquipmentID uint   `json:"equipment_id"`
+	Quantity    uint   `json:"quantity"`
+	DaysUsed    uint   `json:"days_used"`
+	Notes       string `json:"notes"`
+}
+
+func parseRentalEquipmentSelections(raw string) ([]RentalEquipmentSelection, error) {
+	clean := strings.TrimSpace(raw)
+	if clean == "" {
+		return nil, nil
+	}
+
+	var selections []RentalEquipmentSelection
+	if err := json.Unmarshal([]byte(clean), &selections); err != nil {
+		return nil, err
+	}
+
+	return selections, nil
 }
 
 func formatUserDisplayName(user *models.User) string {
@@ -146,7 +170,7 @@ func formatUserDisplayName(user *models.User) string {
 	}
 }
 
-func NewJobHandler(jobRepo *repository.JobRepository, jobPackageRepo *repository.JobPackageRepository, deviceRepo *repository.DeviceRepository, customerRepo *repository.CustomerRepository, statusRepo *repository.StatusRepository, jobCategoryRepo *repository.JobCategoryRepository, jobEditSessionRepo *repository.JobEditSessionRepository, jobHistoryService *services.JobHistoryService) *JobHandler {
+func NewJobHandler(jobRepo *repository.JobRepository, jobPackageRepo *repository.JobPackageRepository, deviceRepo *repository.DeviceRepository, customerRepo *repository.CustomerRepository, statusRepo *repository.StatusRepository, jobCategoryRepo *repository.JobCategoryRepository, jobEditSessionRepo *repository.JobEditSessionRepository, jobHistoryService *services.JobHistoryService, rentalEquipRepo *repository.RentalEquipmentRepository) *JobHandler {
 	return &JobHandler{
 		jobRepo:            jobRepo,
 		jobPackageRepo:     jobPackageRepo,
@@ -156,7 +180,50 @@ func NewJobHandler(jobRepo *repository.JobRepository, jobPackageRepo *repository
 		jobCategoryRepo:    jobCategoryRepo,
 		jobEditSessionRepo: jobEditSessionRepo,
 		jobHistoryService:  jobHistoryService,
+		rentalEquipRepo:    rentalEquipRepo,
+		warehouseClient:    warehousecore.NewClient(),
 	}
+}
+
+// processRentalEquipmentSelections handles adding/updating rental equipment to a job
+func (h *JobHandler) processRentalEquipmentSelections(jobID uint, selections []RentalEquipmentSelection) error {
+	if h.rentalEquipRepo == nil {
+		return nil
+	}
+
+	// First, remove all existing rental equipment for this job
+	var existingRentals []models.JobRentalEquipment
+	if err := h.rentalEquipRepo.GetJobRentalEquipment(jobID, &existingRentals); err == nil {
+		for _, rental := range existingRentals {
+			h.rentalEquipRepo.RemoveRentalFromJob(jobID, rental.EquipmentID)
+		}
+	}
+
+	// Add the new selections
+	for _, selection := range selections {
+		if selection.Quantity == 0 {
+			continue
+		}
+
+		daysUsed := selection.DaysUsed
+		if daysUsed == 0 {
+			daysUsed = 1
+		}
+
+		jobRental := &models.JobRentalEquipment{
+			JobID:       jobID,
+			EquipmentID: selection.EquipmentID,
+			Quantity:    selection.Quantity,
+			DaysUsed:    daysUsed,
+			Notes:       selection.Notes,
+		}
+
+		if err := h.rentalEquipRepo.AddRentalToJob(jobRental); err != nil {
+			return fmt.Errorf("failed to add rental equipment %d: %v", selection.EquipmentID, err)
+		}
+	}
+
+	return nil
 }
 
 func (h *JobHandler) renderJobFormWithError(c *gin.Context, job *models.Job, title, errorText string) {
@@ -165,14 +232,25 @@ func (h *JobHandler) renderJobFormWithError(c *gin.Context, job *models.Job, tit
 	statuses, _ := h.statusRepo.List()
 	jobCategories, _ := h.jobCategoryRepo.List()
 
+	// Fetch rental equipment from WarehouseCore
+	rentalEquipBySupplier, _ := h.warehouseClient.GetRentalEquipmentBySupplier()
+
+	// Get existing job rental equipment if editing
+	var jobRentalEquipment []models.JobRentalEquipment
+	if job != nil && job.JobID > 0 {
+		h.rentalEquipRepo.GetJobRentalEquipment(job.JobID, &jobRentalEquipment)
+	}
+
 	c.HTML(http.StatusBadRequest, "job_form.html", gin.H{
-		"title":         title,
-		"job":           job,
-		"customers":     customers,
-		"statuses":      statuses,
-		"jobCategories": jobCategories,
-		"error":         errorText,
-		"user":          user,
+		"title":                 title,
+		"job":                   job,
+		"customers":             customers,
+		"statuses":              statuses,
+		"jobCategories":         jobCategories,
+		"error":                 errorText,
+		"user":                  user,
+		"rentalEquipBySupplier": rentalEquipBySupplier,
+		"jobRentalEquipment":    jobRentalEquipment,
 	})
 }
 
@@ -259,13 +337,18 @@ func (h *JobHandler) NewJobForm(c *gin.Context) {
 		return
 	}
 
+	// Fetch rental equipment from WarehouseCore
+	rentalEquipBySupplier, _ := h.warehouseClient.GetRentalEquipmentBySupplier()
+
 	c.HTML(http.StatusOK, "job_form.html", gin.H{
-		"title":         "New Job",
-		"job":           &models.Job{},
-		"customers":     customers,
-		"statuses":      statuses,
-		"jobCategories": jobCategories,
-		"user":          user,
+		"title":                 "New Job",
+		"job":                   &models.Job{},
+		"customers":             customers,
+		"statuses":              statuses,
+		"jobCategories":         jobCategories,
+		"user":                  user,
+		"rentalEquipBySupplier": rentalEquipBySupplier,
+		"jobRentalEquipment":    []models.JobRentalEquipment{},
 	})
 }
 
@@ -423,6 +506,19 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 			_ = h.jobRepo.Delete(job.JobID)
 			h.renderJobFormWithError(c, &job, "New Job", err.Error())
 			return
+		}
+	}
+
+	// Process rental equipment selections
+	if rentalStr := c.PostForm("selected_rental_equipment"); rentalStr != "" {
+		rentalSelections, err := parseRentalEquipmentSelections(rentalStr)
+		if err != nil {
+			// Log but don't fail - rental equipment is optional
+			fmt.Printf("Warning: Failed to parse rental equipment selections: %v\n", err)
+		} else if len(rentalSelections) > 0 {
+			if err := h.processRentalEquipmentSelections(job.JobID, rentalSelections); err != nil {
+				fmt.Printf("Warning: Failed to process rental equipment: %v\n", err)
+			}
 		}
 	}
 
@@ -614,6 +710,19 @@ func (h *JobHandler) UpdateJob(c *gin.Context) {
 		if err := h.applyProductSelections(job, selections); err != nil {
 			h.renderJobFormWithError(c, job, "Edit Job", err.Error())
 			return
+		}
+	}
+
+	// Process rental equipment selections
+	if rentalStr := c.PostForm("selected_rental_equipment"); rentalStr != "" {
+		rentalSelections, err := parseRentalEquipmentSelections(rentalStr)
+		if err != nil {
+			// Log but don't fail - rental equipment is optional
+			fmt.Printf("Warning: Failed to parse rental equipment selections: %v\n", err)
+		} else if len(rentalSelections) > 0 {
+			if err := h.processRentalEquipmentSelections(job.JobID, rentalSelections); err != nil {
+				fmt.Printf("Warning: Failed to process rental equipment: %v\n", err)
+			}
 		}
 	}
 

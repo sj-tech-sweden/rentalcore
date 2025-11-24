@@ -372,7 +372,7 @@ func main() {
 	jobPackageRepo := repository.NewJobPackageRepository(db)
 
 	// Initialize handlers
-	jobHandler := handlers.NewJobHandler(jobRepo, jobPackageRepo, deviceRepo, customerRepo, statusRepo, jobCategoryRepo, jobEditSessionRepo, jobHistoryService)
+	jobHandler := handlers.NewJobHandler(jobRepo, jobPackageRepo, deviceRepo, customerRepo, statusRepo, jobCategoryRepo, jobEditSessionRepo, jobHistoryService, rentalEquipmentRepo)
 	jobHistoryHandler := handlers.NewJobHistoryHandler(db.DB)
 	deviceHandler := handlers.NewDeviceHandler(deviceRepo, barcodeService, productRepo)
 	customerHandler := handlers.NewCustomerHandler(customerRepo)

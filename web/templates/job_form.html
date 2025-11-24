@@ -346,6 +346,145 @@
                             <input type="hidden" name="selected_products" id="selectedProductsInput" value="">
                         </div>
                     </div>
+
+                    <!-- Rental Equipment Section -->
+                    <div class="rc-card rc-mb-lg" style="background: var(--surface-2); border: 1px solid var(--surface-3);">
+                        <div class="rc-card-header">
+                            <h4 class="rc-card-title" style="color: #8b5cf6;">
+                                <i class="bi bi-truck"></i> Rental Equipment (External Suppliers)
+                            </h4>
+                            <div class="rc-text-sm rc-text-secondary">
+                                Add equipment rented from external suppliers for this job.
+                            </div>
+                        </div>
+                        <div class="rc-card-body">
+                            {{if .rentalEquipBySupplier}}
+                            <div id="rentalEquipmentContainer">
+                                {{range $supplier, $items := .rentalEquipBySupplier}}
+                                <div class="rc-mb-lg">
+                                    <h5 style="color: #8b5cf6; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                        <i class="bi bi-building"></i> {{$supplier}}
+                                        <span class="rc-chip rc-chip-pill" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; font-size: 0.7rem;">
+                                            {{len $items}} items
+                                        </span>
+                                    </h5>
+                                    <div class="rc-table-scroll">
+                                        <table class="rc-table rc-table-compact">
+                                            <thead>
+                                                <tr>
+                                                    <th>Product</th>
+                                                    <th style="width: 100px;">Category</th>
+                                                    <th style="width: 100px;">Rental</th>
+                                                    <th style="width: 100px;">Customer</th>
+                                                    <th style="width: 80px;">Qty</th>
+                                                    <th style="width: 80px;">Days</th>
+                                                    <th style="width: 150px;">Notes</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {{range $items}}
+                                                <tr data-equipment-id="{{.EquipmentID}}">
+                                                    <td>
+                                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                            <span class="rc-chip rc-chip-pill" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa; font-size: 0.65rem; padding: 2px 6px;">
+                                                                Mietprodukt
+                                                            </span>
+                                                            <strong>{{.ProductName}}</strong>
+                                                        </div>
+                                                        {{if .Description}}
+                                                        <div class="rc-text-xs rc-text-secondary" style="margin-top: 2px;">{{.Description}}</div>
+                                                        {{end}}
+                                                    </td>
+                                                    <td>
+                                                        {{if .Category}}
+                                                        <span class="rc-chip rc-chip-neutral rc-chip-pill" style="font-size: 0.65rem;">{{.Category}}</span>
+                                                        {{else}}
+                                                        <span class="rc-text-muted">-</span>
+                                                        {{end}}
+                                                    </td>
+                                                    <td style="font-family: 'JetBrains Mono', monospace; color: #f97316;">
+                                                        {{printf "%.2f" .RentalPrice}} EUR
+                                                    </td>
+                                                    <td style="font-family: 'JetBrains Mono', monospace; color: #22c55e;">
+                                                        {{printf "%.2f" .CustomerPrice}} EUR
+                                                    </td>
+                                                    <td>
+                                                        <input type="number"
+                                                               class="rc-input rental-qty-input"
+                                                               name="rental_qty_{{.EquipmentID}}"
+                                                               min="0"
+                                                               value="0"
+                                                               style="width: 70px; padding: 4px 8px; text-align: center;"
+                                                               data-equipment-id="{{.EquipmentID}}"
+                                                               data-rental-price="{{.RentalPrice}}"
+                                                               data-customer-price="{{.CustomerPrice}}">
+                                                    </td>
+                                                    <td>
+                                                        <input type="number"
+                                                               class="rc-input rental-days-input"
+                                                               name="rental_days_{{.EquipmentID}}"
+                                                               min="1"
+                                                               value="1"
+                                                               style="width: 70px; padding: 4px 8px; text-align: center;"
+                                                               data-equipment-id="{{.EquipmentID}}">
+                                                    </td>
+                                                    <td>
+                                                        <input type="text"
+                                                               class="rc-input rental-notes-input"
+                                                               name="rental_notes_{{.EquipmentID}}"
+                                                               placeholder="Notes..."
+                                                               style="padding: 4px 8px; font-size: 0.85rem;"
+                                                               data-equipment-id="{{.EquipmentID}}">
+                                                    </td>
+                                                </tr>
+                                                {{end}}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                {{end}}
+                            </div>
+
+                            <!-- Summary of selected rental equipment -->
+                            <div class="rc-divider rc-mt-lg rc-mb-lg"></div>
+                            <div>
+                                <h5 style="color: #8b5cf6;">Selected Rental Equipment</h5>
+                                <div id="selectedRentalEmpty" class="rc-text-sm rc-text-secondary rc-mb-md">
+                                    No rental equipment selected yet.
+                                </div>
+                                <div class="rc-table-scroll">
+                                    <table class="rc-table rc-table-compact" id="selectedRentalTable" style="display: none;">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Supplier</th>
+                                                <th style="width: 60px;">Qty</th>
+                                                <th style="width: 60px;">Days</th>
+                                                <th style="width: 100px;">Cost</th>
+                                                <th style="width: 100px;">Revenue</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="selectedRentalBody"></tbody>
+                                        <tfoot>
+                                            <tr style="font-weight: 600; background: var(--surface-3);">
+                                                <td colspan="4">Total Rental</td>
+                                                <td id="totalRentalCost" style="color: #f97316;">0.00 EUR</td>
+                                                <td id="totalRentalRevenue" style="color: #22c55e;">0.00 EUR</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                            {{else}}
+                            <div class="rc-alert rc-alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                No rental equipment available from WarehouseCore. Make sure WarehouseCore is running and has rental equipment configured.
+                            </div>
+                            {{end}}
+                            <input type="hidden" name="selected_rental_equipment" id="selectedRentalInput" value="">
+                        </div>
+                    </div>
+
                     <div class="rc-form-group rc-mb-xl">
                         <label class="rc-label">Description</label>
                         <textarea class="rc-textarea" name="description" rows="4" placeholder="Additional job details and notes...">{{derefString .job.Description}}</textarea>
@@ -2041,13 +2180,177 @@
                 .replace(/'/g, '&#39;');
         }
 
+        // Rental Equipment Selection Functionality
+        const rentalSelections = new Map(); // equipmentId -> { equipmentId, productName, supplierName, quantity, days, rentalPrice, customerPrice, notes }
+
+        function initializeRentalEquipment() {
+            const qtyInputs = document.querySelectorAll('.rental-qty-input');
+            const daysInputs = document.querySelectorAll('.rental-days-input');
+            const notesInputs = document.querySelectorAll('.rental-notes-input');
+
+            qtyInputs.forEach(input => {
+                input.addEventListener('change', updateRentalSelection);
+                input.addEventListener('input', updateRentalSelection);
+            });
+
+            daysInputs.forEach(input => {
+                input.addEventListener('change', updateRentalSelection);
+                input.addEventListener('input', updateRentalSelection);
+            });
+
+            notesInputs.forEach(input => {
+                input.addEventListener('change', updateRentalSelection);
+                input.addEventListener('input', updateRentalSelection);
+            });
+
+            // Load existing selections if editing
+            loadExistingRentalSelections();
+        }
+
+        function loadExistingRentalSelections() {
+            // Check if we have pre-loaded job rental equipment
+            {{if .jobRentalEquipment}}
+            {{range .jobRentalEquipment}}
+            const equipmentId = '{{.EquipmentID}}';
+            const qtyInput = document.querySelector(`input[name="rental_qty_${equipmentId}"]`);
+            const daysInput = document.querySelector(`input[name="rental_days_${equipmentId}"]`);
+            const notesInput = document.querySelector(`input[name="rental_notes_${equipmentId}"]`);
+
+            if (qtyInput) {
+                qtyInput.value = {{.Quantity}};
+                qtyInput.dispatchEvent(new Event('change'));
+            }
+            if (daysInput) {
+                daysInput.value = {{.DaysUsed}};
+            }
+            if (notesInput && '{{.Notes}}') {
+                notesInput.value = '{{.Notes}}';
+            }
+            {{end}}
+            {{end}}
+        }
+
+        function updateRentalSelection(event) {
+            const input = event.target;
+            const equipmentId = input.dataset.equipmentId;
+            const row = input.closest('tr');
+
+            if (!row) return;
+
+            const qtyInput = row.querySelector('.rental-qty-input');
+            const daysInput = row.querySelector('.rental-days-input');
+            const notesInput = row.querySelector('.rental-notes-input');
+
+            const qty = parseInt(qtyInput.value) || 0;
+            const days = parseInt(daysInput.value) || 1;
+            const notes = notesInput ? notesInput.value : '';
+            const rentalPrice = parseFloat(qtyInput.dataset.rentalPrice) || 0;
+            const customerPrice = parseFloat(qtyInput.dataset.customerPrice) || 0;
+
+            // Get product name and supplier from the row
+            const productName = row.querySelector('strong')?.textContent?.trim() || 'Unknown';
+            const supplierHeader = row.closest('.rc-mb-lg')?.querySelector('h5 i.bi-building')?.parentElement;
+            const supplierName = supplierHeader ? supplierHeader.childNodes[1]?.textContent?.trim() : 'Unknown';
+
+            if (qty > 0) {
+                rentalSelections.set(equipmentId, {
+                    equipmentId: parseInt(equipmentId),
+                    productName: productName,
+                    supplierName: supplierName,
+                    quantity: qty,
+                    days: days,
+                    rentalPrice: rentalPrice,
+                    customerPrice: customerPrice,
+                    notes: notes,
+                    totalCost: rentalPrice * qty * days,
+                    totalRevenue: customerPrice * qty * days
+                });
+            } else {
+                rentalSelections.delete(equipmentId);
+            }
+
+            updateRentalSummary();
+            updateRentalHiddenInput();
+        }
+
+        function updateRentalSummary() {
+            const emptyMsg = document.getElementById('selectedRentalEmpty');
+            const table = document.getElementById('selectedRentalTable');
+            const tbody = document.getElementById('selectedRentalBody');
+            const totalCostEl = document.getElementById('totalRentalCost');
+            const totalRevenueEl = document.getElementById('totalRentalRevenue');
+
+            if (!tbody) return;
+
+            if (rentalSelections.size === 0) {
+                if (emptyMsg) emptyMsg.style.display = 'block';
+                if (table) table.style.display = 'none';
+                return;
+            }
+
+            if (emptyMsg) emptyMsg.style.display = 'none';
+            if (table) table.style.display = 'table';
+
+            let html = '';
+            let totalCost = 0;
+            let totalRevenue = 0;
+
+            rentalSelections.forEach(selection => {
+                const cost = selection.totalCost;
+                const revenue = selection.totalRevenue;
+                totalCost += cost;
+                totalRevenue += revenue;
+
+                html += `
+                    <tr>
+                        <td>
+                            <span class="rc-chip rc-chip-pill" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa; font-size: 0.6rem; padding: 2px 6px; margin-right: 4px;">
+                                Miet
+                            </span>
+                            ${escapeHtml(selection.productName)}
+                        </td>
+                        <td style="font-size: 0.85rem;">${escapeHtml(selection.supplierName)}</td>
+                        <td style="text-align: center;">${selection.quantity}</td>
+                        <td style="text-align: center;">${selection.days}</td>
+                        <td style="font-family: 'JetBrains Mono', monospace; color: #f97316; font-size: 0.85rem;">${cost.toFixed(2)} EUR</td>
+                        <td style="font-family: 'JetBrains Mono', monospace; color: #22c55e; font-size: 0.85rem;">${revenue.toFixed(2)} EUR</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+
+            if (totalCostEl) totalCostEl.textContent = totalCost.toFixed(2) + ' EUR';
+            if (totalRevenueEl) totalRevenueEl.textContent = totalRevenue.toFixed(2) + ' EUR';
+        }
+
+        function updateRentalHiddenInput() {
+            const input = document.getElementById('selectedRentalInput');
+            if (!input) return;
+
+            const selections = [];
+            rentalSelections.forEach(selection => {
+                selections.push({
+                    equipment_id: selection.equipmentId,
+                    quantity: selection.quantity,
+                    days_used: selection.days,
+                    notes: selection.notes
+                });
+            });
+
+            input.value = JSON.stringify(selections);
+        }
+
         // Initialize job form - can be called manually from modal
         function initializeJobForm() {
-            console.log('🚀 initializeJobForm called');
+            console.log('initializeJobForm called');
 
             if (typeof window.setupCustomerInlineCreation === 'function') {
                 window.setupCustomerInlineCreation(document);
             }
+
+            // Initialize rental equipment selection
+            initializeRentalEquipment();
 
             const startDateInput = document.querySelector('input[name="start_date"]');
             const endDateInput = document.querySelector('input[name="end_date"]');

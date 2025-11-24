@@ -1452,6 +1452,7 @@ CREATE TABLE `rental_equipment` (
   `product_name` varchar(200) NOT NULL,
   `supplier_name` varchar(100) NOT NULL,
   `rental_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `customer_price` decimal(12,2) NOT NULL DEFAULT '0.00',
   `category` varchar(50) DEFAULT NULL,
   `description` varchar(1000) DEFAULT NULL,
   `notes` varchar(500) DEFAULT NULL,

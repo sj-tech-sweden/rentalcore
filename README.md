@@ -471,7 +471,17 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v4.1.26** (Latest) - Nextcloud Live Sync
+### **v4.1.27** (Latest) - WarehouseCore Rental Equipment Integration
+- 🚛 **Rental Equipment in Jobs**: Fetch and display rental equipment from WarehouseCore API in job creation/edit forms
+- 📊 **Supplier Grouping**: Rental equipment displayed sorted and grouped by supplier name for easy navigation
+- 🎨 **Visual Distinction**: Purple/violet accent color differentiates rental equipment from owned products (red accent)
+- 💰 **Cost Tracking**: Shows both rental price (internal cost) and customer price (revenue) per item
+- 📦 **Job Integration**: Full CRUD operations for job_rental_equipment assignments with quantity and days tracking
+- 🔢 **Real-time Summary**: Dynamic summary table shows selected rental equipment with cost/revenue totals
+- 📝 **Notes Support**: Add notes per rental equipment item for special instructions or requirements
+- 🔄 **WarehouseCore Client**: New HTTP client with caching for efficient rental equipment API calls
+
+### **v4.1.26** - Nextcloud Live Sync
 - 🔄 **Automatic Nextcloud Sync**: Files added directly to Nextcloud (via Explorer or Nextcloud UI) are automatically detected and tracked in database
 - 📂 **Auto-Sync on Access**: ListFilePool and GetPoolDocumentsForOCR now sync from Nextcloud before returning data
 - 🔌 **Manual Sync Endpoint**: New GET `/api/v1/documents/pool/sync` endpoint for manual sync triggers
