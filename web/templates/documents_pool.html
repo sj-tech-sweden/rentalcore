@@ -561,7 +561,7 @@
 
                 <div class="pool-toolbar-spacer"></div>
 
-                <button type="button" class="pool-btn pool-btn-ghost pool-btn-icon" id="reset-filters" title="Reset">
+                <button type="button" class="pool-btn pool-btn-ghost pool-btn-icon" id="sync-btn" title="Sync from Nextcloud">
                     <i class="bi bi-arrow-counterclockwise"></i>
                 </button>
             </div>
@@ -670,7 +670,7 @@
         const searchInput = document.getElementById('pool-search');
         const typeFilter = document.getElementById('pool-type-filter');
         const sortSelect = document.getElementById('pool-sort');
-        const resetBtn = document.getElementById('reset-filters');
+        const syncBtn = document.getElementById('sync-btn');
         const sectionToggles = document.querySelectorAll('[data-section-toggle]');
         const assignedWrapper = document.getElementById('assigned-wrapper');
         const unassignedWrapper = document.getElementById('unassigned-wrapper');
@@ -740,12 +740,28 @@
             });
         });
 
-        resetBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            typeFilter.value = '';
-            sortSelect.value = 'newest';
-            sortLists();
-            applyFilters();
+        syncBtn.addEventListener('click', async () => {
+            syncBtn.disabled = true;
+            syncBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+
+            try {
+                const response = await fetch('/documents/pool/sync');
+                const data = await response.json();
+
+                if (data.success) {
+                    // Reload page to show synced files
+                    window.location.reload();
+                } else {
+                    alert('Sync failed: ' + (data.error || 'Unknown error'));
+                    syncBtn.disabled = false;
+                    syncBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+                alert('Sync failed. Please try again.');
+                syncBtn.disabled = false;
+                syncBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+            }
         });
 
         function applyIcons() {
