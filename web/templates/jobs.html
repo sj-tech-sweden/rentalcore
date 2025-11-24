@@ -612,114 +612,105 @@
 
     function displayJobDevicesInModal(devices, jobID) {
         console.log('displayJobDevicesInModal called with devices:', devices);
-        const categories = {
-            'Sound': [],
-            'Light': [],
-            'Effect': [],
-            'Stage': [],
-            'Other': []
-        };
+        const groups = {};
 
-        // Group devices by category using categoryID and subcategoryID
+        // Group devices by product so the overview shows product counts first
         devices.forEach(device => {
-            let category = 'Other';
-            if (device.device && device.device.product) {
-                const product = device.device.product;
-                const categoryID = product.categoryID;
-                const subcategoryID = product.subcategoryID;
-                
-                // Debug logging for categorization
-                console.log(`Device ${device.device.deviceID}: CategoryID=${categoryID}, SubcategoryID=${subcategoryID}`);
-                
-                // Categorize based on categoryID and subcategoryID patterns
-                if (categoryID === 1001) { // Sound category
-                    category = 'Sound';
-                } else if (categoryID === 1002) { // Light category  
-                    category = 'Light';
-                } else if (categoryID === 1003) { // Stage category
-                    category = 'Stage';
-                } else if (categoryID === 1004) { // Effect category
-                    category = 'Effect';
-                } else if (subcategoryID) {
-                    // Fallback: categorize based on subcategory prefix
-                    const subcat = subcategoryID.toLowerCase();
-                    if (subcat.startsWith('snd') || subcat.includes('mic') || subcat.includes('mix') || subcat.includes('amp')) {
-                        category = 'Sound';
-                    } else if (subcat.startsWith('lgt') || subcat.includes('light') || subcat.includes('led')) {
-                        category = 'Light';
-                    } else if (subcat.startsWith('stg') || subcat.includes('stage') || subcat.includes('lift') || subcat.includes('lft')) {
-                        category = 'Stage';
-                    } else if (subcat.startsWith('efx') || subcat.includes('effect') || subcat.includes('fog') || subcat.includes('smoke')) {
-                        category = 'Effect';
-                    }
-                }
+            const product = device.device?.product;
+            const productId = product?.productID ?? 'unassigned';
+            if (!groups[productId]) {
+                groups[productId] = { product, devices: [] };
             }
-            console.log(`Device ${device.device?.deviceID} categorized as: ${category}`);
-            categories[category].push(device);
+            groups[productId].devices.push(device);
         });
 
-        let html = '';
-        Object.entries(categories).forEach(([categoryName, categoryDevices]) => {
-            if (categoryDevices.length > 0) {
-                html += `
-                    <div class="rc-card rc-mb-md">
-                        <div class="rc-card-header">
-                            <h4 class="rc-card-title">
-                                <i class="bi bi-${getCategoryIcon(categoryName)}"></i>
-                                ${categoryName} (${categoryDevices.length})
-                            </h4>
-                        </div>
-                        <div class="rc-card-body">
-                `;
-                
-                categoryDevices.forEach(device => {
-                    const deviceName = device.device?.product?.name || device.device?.deviceID || 'Unknown Device';
-                    // Calculate effective price: custom_price if exists and > 0, otherwise product price
-                    const customPrice = device.custom_price;
-                    // Fix: JSON field is "itemcostperday" not "itemCostPerDay"
-                    const productPrice = device.device?.product?.itemcostperday || device.device?.product?.itemCostPerDay || 0;
-                    const price = (customPrice && customPrice > 0) ? customPrice : productPrice;
-                    
-                    // Debug logging for price calculation
-                    console.log(`Device ${device.device?.deviceID}: custom_price=${customPrice}, itemcostperday=${productPrice}, effective_price=${price}`, device);
-                    html += `
-                        <div class="device-item rc-flex rc-flex-between rc-flex-items-center rc-p-sm rc-mb-xs" style="border: 1px solid var(--surface-3); border-radius: var(--radius-sm);">
-                            <div>
-                                <strong>${deviceName}</strong>
-                                <br><small class="rc-text-muted">${device.device?.deviceID}</small>
-                            </div>
-                            <div class="rc-flex rc-flex-items-center rc-flex-gap-sm">
-                                <input type="number" 
-                                       value="${price.toFixed(2)}" 
-                                       class="device-price-input rc-input rc-input-sm" 
-                                       style="width: 100px;" 
-                                       step="0.01"
-                                       onchange="updateDevicePrice(${jobID}, '${device.device?.deviceID}', this.value)"
-                                       placeholder="0.00">
-                                <span class="rc-text-sm">€</span>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                html += `
-                        </div>
-                    </div>
-                `;
+        const sortedGroups = Object.values(groups).sort((a, b) => {
+            const nameA = (a.product?.name || 'Unassigned product').toLowerCase();
+            const nameB = (b.product?.name || 'Unassigned product').toLowerCase();
+            if (nameA === nameB) {
+                return 0;
             }
+            return nameA < nameB ? -1 : 1;
         });
 
-        if (html === '') {
-            html = `
+        if (sortedGroups.length === 0) {
+            document.getElementById('jobDevicesOverview').innerHTML = `
                 <div class="rc-empty-state">
                     <i class="bi bi-cpu rc-empty-icon"></i>
                     <h3 class="rc-heading-3">No devices assigned</h3>
                     <p class="rc-text">This job has no devices assigned yet.</p>
                 </div>
             `;
+            return;
         }
 
+        let html = '';
+        sortedGroups.forEach((group, index) => {
+            const productName = group.product?.name || 'Unassigned product';
+            const productCode = group.product?.productID ? `#${group.product.productID}` : 'No product ID';
+            const deviceCount = group.devices.length;
+            const groupId = `product-device-group-${index}`;
+
+            html += `
+                <div class="rc-card rc-mb-md">
+                    <div class="rc-card-header rc-flex rc-flex-between rc-flex-items-center" style="cursor: pointer;" onclick="toggleProductDevices('${groupId}')">
+                        <div>
+                            <h4 class="rc-card-title rc-mb-xxs">${escapeHtml(productName)}</h4>
+                            <div class="rc-text-sm rc-text-secondary">${deviceCount} device${deviceCount !== 1 ? 's' : ''} • ${productCode}</div>
+                        </div>
+                        <i class="bi bi-chevron-down" id="${groupId}-icon"></i>
+                    </div>
+                    <div class="rc-card-body" id="${groupId}" style="display: none;">
+            `;
+
+            group.devices.forEach(device => {
+                const deviceName = device.device?.product?.name || device.device?.deviceID || 'Unknown Device';
+                const deviceId = device.device?.deviceID || '';
+                const customPrice = device.custom_price;
+                const productPrice = device.device?.product?.itemcostperday || device.device?.product?.itemCostPerDay || 0;
+                const price = (customPrice && customPrice > 0) ? customPrice : productPrice;
+
+                html += `
+                    <div class="device-item rc-flex rc-flex-between rc-flex-items-center rc-p-sm rc-mb-xs" style="border: 1px solid var(--surface-3); border-radius: var(--radius-sm);">
+                        <div>
+                            <strong>${escapeHtml(deviceName)}</strong>
+                            <br><small class="rc-text-muted">${escapeHtml(deviceId || 'Unknown ID')}</small>
+                        </div>
+                        <div class="rc-flex rc-flex-items-center rc-flex-gap-sm">
+                            <input type="number" 
+                                   value="${Number(price || 0).toFixed(2)}" 
+                                   class="device-price-input rc-input rc-input-sm" 
+                                   style="width: 100px;" 
+                                   step="0.01"
+                                   onchange="updateDevicePrice(${jobID}, ${JSON.stringify(deviceId)}, this.value)"
+                                   placeholder="0.00">
+                            <span class="rc-text-sm">€</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
         document.getElementById('jobDevicesOverview').innerHTML = html;
+    }
+
+    function toggleProductDevices(sectionId) {
+        const section = document.getElementById(sectionId);
+        const icon = document.getElementById(`${sectionId}-icon`);
+        if (!section) {
+            return;
+        }
+        const isHidden = section.style.display === 'none' || section.style.display === '';
+        section.style.display = isHidden ? 'block' : 'none';
+        if (icon) {
+            icon.classList.toggle('bi-chevron-down', !isHidden);
+            icon.classList.toggle('bi-chevron-up', isHidden);
+        }
     }
 
     // Job Edit Modal
