@@ -469,7 +469,15 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v4.1.8** (Latest) - Nextcloud Backfill
+### **v4.1.22** (Latest) - File Pool Redesign
+- 🎨 **Slim Professional Theme**: Complete theming overhaul of the File Pool page with modern, minimalist design
+- 📑 **Tab Navigation**: Clean tab-based navigation replacing bulky card layouts
+- 📤 **Streamlined Upload**: Compact upload form with improved file type display and styling
+- 📋 **Clean File List**: Modern file list with hover effects, better spacing, and visual hierarchy
+- 🎯 **Visual Consistency**: Unified design language with CSS custom properties for colors and spacing
+- ⚡ **Improved UX**: Better empty states, refined typography, and polished interactions
+
+### **v4.1.8** - Nextcloud Backfill
 - 🌐 **Nextcloud import**: File Pool scan holt WebDAV-Dateien, die noch nicht in der DB sind (system/unassigned), damit auch manuell hochgeladene Files sichtbar werden
 - 🔧 **Env-Handling**: WebDAV-Variablen werden entquotet/getrimmt, damit `.env`-Werte mit Anführungszeichen korrekt funktionieren
 
