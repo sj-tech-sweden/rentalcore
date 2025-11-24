@@ -371,6 +371,9 @@ func main() {
 	// Initialize job package repository
 	jobPackageRepo := repository.NewJobPackageRepository(db)
 
+	// Initialize accessories and consumables repository
+	accessoriesConsumablesRepo := repository.NewAccessoriesConsumablesRepository(db)
+
 	// Initialize handlers
 	jobHandler := handlers.NewJobHandler(jobRepo, jobPackageRepo, deviceRepo, customerRepo, statusRepo, jobCategoryRepo, jobEditSessionRepo, jobHistoryService, rentalEquipmentRepo)
 	jobHistoryHandler := handlers.NewJobHistoryHandler(db.DB)
@@ -415,6 +418,7 @@ func main() {
 	}
 
 	pdfHandler := handlers.NewPDFHandler(db.DB, "uploads", jobHandler, jobAttachmentRepo, packageAliasCache, documentHandler)
+	accessoriesConsumablesHandler := handlers.NewAccessoriesConsumablesHandler(accessoriesConsumablesRepo)
 
 	// Initialize RBAC middleware for role-based access control
 	rbacMiddleware := middleware.NewRBACMiddleware(db.DB)
@@ -712,7 +716,7 @@ func main() {
 	}
 
 	// Routes
-	setupRoutes(r, cfg, jobHandler, jobHistoryHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, infoHandler, barcodeHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, pdfHandler, rbacMiddleware, complianceMiddleware)
+	setupRoutes(r, cfg, jobHandler, jobHistoryHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, infoHandler, barcodeHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, pdfHandler, accessoriesConsumablesHandler, rbacMiddleware, complianceMiddleware)
 
 	// Add dedicated error route
 	r.GET("/error", func(c *gin.Context) {
@@ -797,6 +801,7 @@ func setupRoutes(r *gin.Engine,
 	monitoringHandler *handlers.MonitoringHandler,
 	jobAttachmentHandler *handlers.JobAttachmentHandler,
 	pdfHandler *handlers.PDFHandler,
+	accessoriesConsumablesHandler *handlers.AccessoriesConsumablesHandler,
 	rbacMiddleware *middleware.RBACMiddleware,
 	complianceMiddleware *compliance.ComplianceMiddleware) {
 
@@ -1331,6 +1336,62 @@ func setupRoutes(r *gin.Engine,
 			{
 				apiProducts.GET("", productHandler.ListProducts)
 				apiProducts.GET("/:id", productHandler.GetProductAPI)
+
+				// Product Accessories
+				apiProducts.GET("/:productID/accessories", accessoriesConsumablesHandler.GetProductAccessoriesAPI)
+				apiProducts.POST("/:productID/accessories", accessoriesConsumablesHandler.AddProductAccessoryAPI)
+				apiProducts.DELETE("/:productID/accessories/:accessoryID", accessoriesConsumablesHandler.RemoveProductAccessoryAPI)
+
+				// Product Consumables
+				apiProducts.GET("/:productID/consumables", accessoriesConsumablesHandler.GetProductConsumablesAPI)
+				apiProducts.POST("/:productID/consumables", accessoriesConsumablesHandler.AddProductConsumableAPI)
+				apiProducts.DELETE("/:productID/consumables/:consumableID", accessoriesConsumablesHandler.RemoveProductConsumableAPI)
+			}
+
+			// Accessories & Consumables API
+			apiAccessories := api.Group("/accessories")
+			{
+				apiAccessories.GET("/products", accessoriesConsumablesHandler.GetAccessoryProductsAPI)
+			}
+
+			apiConsumables := api.Group("/consumables")
+			{
+				apiConsumables.GET("/products", accessoriesConsumablesHandler.GetConsumableProductsAPI)
+			}
+
+			// Count Types API
+			apiCountTypes := api.Group("/count-types")
+			{
+				apiCountTypes.GET("", accessoriesConsumablesHandler.GetCountTypesAPI)
+			}
+
+			// Job Accessories API
+			apiJobAccessories := api.Group("/jobs")
+			{
+				apiJobAccessories.GET("/:jobID/accessories", accessoriesConsumablesHandler.GetJobAccessoriesAPI)
+				apiJobAccessories.POST("/:jobID/accessories", accessoriesConsumablesHandler.CreateJobAccessoryAPI)
+				apiJobAccessories.PUT("/accessories/:id", accessoriesConsumablesHandler.UpdateJobAccessoryAPI)
+				apiJobAccessories.DELETE("/accessories/:id", accessoriesConsumablesHandler.DeleteJobAccessoryAPI)
+
+				apiJobAccessories.GET("/:jobID/consumables", accessoriesConsumablesHandler.GetJobConsumablesAPI)
+				apiJobAccessories.POST("/:jobID/consumables", accessoriesConsumablesHandler.CreateJobConsumableAPI)
+				apiJobAccessories.PUT("/consumables/:id", accessoriesConsumablesHandler.UpdateJobConsumableAPI)
+				apiJobAccessories.DELETE("/consumables/:id", accessoriesConsumablesHandler.DeleteJobConsumableAPI)
+			}
+
+			// Inventory Management API
+			apiInventory := api.Group("/inventory")
+			{
+				apiInventory.GET("/low-stock", accessoriesConsumablesHandler.GetLowStockAlertsAPI)
+				apiInventory.POST("/adjust", accessoriesConsumablesHandler.AdjustStockAPI)
+				apiInventory.GET("/transactions", accessoriesConsumablesHandler.GetInventoryTransactionsAPI)
+			}
+
+			// Scanning API (for WarehouseCore integration)
+			apiScan := api.Group("/scan")
+			{
+				apiScan.POST("/accessory", accessoriesConsumablesHandler.ScanAccessoryAPI)
+				apiScan.POST("/consumable", accessoriesConsumablesHandler.ScanConsumableAPI)
 			}
 
 			// Cable API - removed, now handled by WarehouseCore

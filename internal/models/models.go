@@ -149,11 +149,23 @@ type Product struct {
 	Depth               *float64         `json:"depth" gorm:"column:depth"`
 	PowerConsumption    *float64         `json:"powerconsumption" gorm:"column:powerconsumption"`
 	PosInCategory       *uint            `json:"pos_in_category" gorm:"column:pos_in_category"`
+
+	// Accessory and Consumable fields
+	IsAccessory      bool     `json:"is_accessory" gorm:"column:is_accessory;default:0;index"`
+	IsConsumable     bool     `json:"is_consumable" gorm:"column:is_consumable;default:0;index"`
+	CountTypeID      *uint    `json:"count_type_id" gorm:"column:count_type_id"`
+	StockQuantity    *float64 `json:"stock_quantity" gorm:"column:stock_quantity;type:decimal(10,3)"`
+	MinStockLevel    *float64 `json:"min_stock_level" gorm:"column:min_stock_level;type:decimal(10,3)"`
+	GenericBarcode   *string  `json:"generic_barcode" gorm:"column:generic_barcode;index"`
+	PricePerUnit     *float64 `json:"price_per_unit" gorm:"column:price_per_unit;type:decimal(10,2)"`
+
+	// Relations
 	Category            *Category        `json:"category,omitempty" gorm:"foreignKey:CategoryID;references:CategoryID"`
 	Subcategory         *Subcategory     `json:"subcategory,omitempty" gorm:"foreignKey:SubcategoryID;references:SubcategoryID"`
 	Subbiercategory     *Subbiercategory `json:"subbiercategory,omitempty" gorm:"foreignKey:SubbiercategoryID;references:SubbiercategoryID"`
 	Brand               *Brand           `json:"brand,omitempty" gorm:"foreignKey:BrandID"`
 	Manufacturer        *Manufacturer    `json:"manufacturer,omitempty" gorm:"foreignKey:ManufacturerID"`
+	CountType           *CountType       `json:"count_type,omitempty" gorm:"foreignKey:CountTypeID;references:CountTypeID"`
 }
 
 func (Product) TableName() string {
