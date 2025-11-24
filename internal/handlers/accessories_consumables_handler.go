@@ -21,6 +21,19 @@ func NewAccessoriesConsumablesHandler(repo *repository.AccessoriesConsumablesRep
 }
 
 // ============================================================================
+// Web UI Handlers
+// ============================================================================
+
+func (h *AccessoriesConsumablesHandler) InventoryDashboard(c *gin.Context) {
+	user, _ := GetCurrentUser(c)
+	SafeHTML(c, http.StatusOK, "inventory_dashboard.html", gin.H{
+		"title":       "Inventory Management",
+		"user":        user,
+		"currentPage": "inventory",
+	})
+}
+
+// ============================================================================
 // Count Types API
 // ============================================================================
 

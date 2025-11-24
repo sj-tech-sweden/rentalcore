@@ -255,21 +255,25 @@
                                 </div>
                                 <div class="equipment-devices" style="display: block;">
                                     {{range $group.Devices}}
-                                    <div class="equipment-device rc-flex rc-flex-between rc-mb-sm">
-                                        <div class="device-info">
-                                            <strong>{{if .Device.SerialNumber}}{{derefString .Device.SerialNumber}}{{else}}{{.Device.DeviceID}}{{end}}</strong>
-                                            <div class="rc-text-sm rc-text-secondary">
-                                                {{if .Device.Product}}{{.Device.Product.Name}}{{else}}No Product{{end}}
+                                    <div class="equipment-device-wrapper rc-mb-sm">
+                                        <div class="equipment-device rc-flex rc-flex-between">
+                                            <div class="device-info">
+                                                <strong>{{if .Device.SerialNumber}}{{derefString .Device.SerialNumber}}{{else}}{{.Device.DeviceID}}{{end}}</strong>
+                                                <div class="rc-text-sm rc-text-secondary">
+                                                    {{if .Device.Product}}{{.Device.Product.Name}}{{else}}No Product{{end}}
+                                                </div>
+                                            </div>
+                                            <div class="device-actions rc-flex rc-flex-gap-xs">
+                                                <button class="rc-btn rc-btn-outline rc-btn-sm" onclick="showDeviceDetails({{.Device.DeviceID}})" title="Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="rc-btn rc-btn-outline rc-btn-sm" onclick="removeDeviceFromJob({{$.job.JobID}}, {{.Device.DeviceID}})" title="Remove">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
                                             </div>
                                         </div>
-                                        <div class="device-actions rc-flex rc-flex-gap-xs">
-                                            <button class="rc-btn rc-btn-outline rc-btn-sm" onclick="showDeviceDetails({{.Device.DeviceID}})" title="Details">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button class="rc-btn rc-btn-outline rc-btn-sm" onclick="removeDeviceFromJob({{$.job.JobID}}, {{.Device.DeviceID}})" title="Remove">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
+                                        <!-- Accessories/Consumables container (populated by JavaScript) -->
+                                        <div class="device-accessories" data-device-id="{{.Device.DeviceID}}" data-job-id="{{$.job.JobID}}" style="margin-left: 2rem; margin-top: 0.5rem;"></div>
                                     </div>
                                     {{end}}
                                 </div>
@@ -429,6 +433,108 @@
     function showDeviceDetails(deviceID) {
         // This function can be imported from the devices page if needed
         window.open('/devices/' + deviceID, '_blank');
+    }
+
+    // ===== ACCESSORIES & CONSUMABLES FUNCTIONS =====
+
+    // Load and display accessories/consumables for all devices
+    async function loadAccessoriesAndConsumables() {
+        const jobID = {{.job.JobID}};
+        const deviceContainers = document.querySelectorAll('.device-accessories');
+
+        if (deviceContainers.length === 0) return;
+
+        try {
+            // Fetch accessories and consumables for this job
+            const [accessoriesRes, consumablesRes] = await Promise.all([
+                fetch(`/api/jobs/${jobID}/accessories`),
+                fetch(`/api/jobs/${jobID}/consumables`)
+            ]);
+
+            if (!accessoriesRes.ok || !consumablesRes.ok) {
+                console.error('Failed to fetch accessories/consumables');
+                return;
+            }
+
+            const accessoriesData = await accessoriesRes.json();
+            const consumablesData = await consumablesRes.json();
+
+            const accessories = accessoriesData.accessories || [];
+            const consumables = consumablesData.consumables || [];
+
+            // Group by parent device ID
+            const accessoriesByDevice = {};
+            const consumablesByDevice = {};
+
+            accessories.forEach(acc => {
+                const deviceId = acc.parent_device_id || 'none';
+                if (!accessoriesByDevice[deviceId]) accessoriesByDevice[deviceId] = [];
+                accessoriesByDevice[deviceId].push(acc);
+            });
+
+            consumables.forEach(cons => {
+                const deviceId = cons.parent_device_id || 'none';
+                if (!consumablesByDevice[deviceId]) consumablesByDevice[deviceId] = [];
+                consumablesByDevice[deviceId].push(cons);
+            });
+
+            // Display for each device
+            deviceContainers.forEach(container => {
+                const deviceId = container.dataset.deviceId;
+                const deviceAccessories = accessoriesByDevice[deviceId] || [];
+                const deviceConsumables = consumablesByDevice[deviceId] || [];
+
+                if (deviceAccessories.length === 0 && deviceConsumables.length === 0) {
+                    return; // Nothing to display
+                }
+
+                let html = '<div style="padding: 0.5rem; background: var(--surface); border-left: 3px solid var(--primary); margin-top: 0.5rem;">';
+
+                // Display accessories
+                deviceAccessories.forEach(acc => {
+                    const product = acc.accessory_product || {};
+                    const name = product.name || 'Unknown Accessory';
+                    const qty = acc.quantity_assigned || 0;
+                    const scannedOut = acc.quantity_scanned_out || 0;
+                    const scannedIn = acc.quantity_scanned_in || 0;
+                    const status = `[${scannedOut}/${scannedIn} scanned]`;
+
+                    html += `
+                        <div class="rc-flex rc-flex-between rc-text-sm" style="padding: 0.25rem 0; color: var(--text-secondary);">
+                            <div>
+                                <i class="bi bi-arrow-return-right"></i>
+                                <i class="bi bi-paperclip"></i> ${name} (${qty}x) ${status}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Display consumables
+                deviceConsumables.forEach(cons => {
+                    const product = cons.consumable_product || {};
+                    const name = product.name || 'Unknown Consumable';
+                    const qty = cons.quantity_assigned || 0;
+                    const scannedOut = cons.quantity_scanned_out || 0;
+                    const scannedIn = cons.quantity_scanned_in || 0;
+                    const status = `[${scannedOut.toFixed(1)}/${scannedIn.toFixed(1)} scanned]`;
+
+                    html += `
+                        <div class="rc-flex rc-flex-between rc-text-sm" style="padding: 0.25rem 0; color: var(--text-secondary);">
+                            <div>
+                                <i class="bi bi-arrow-return-right"></i>
+                                <i class="bi bi-droplet"></i> ${name} (${qty.toFixed(1)}) ${status}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                container.innerHTML = html;
+            });
+
+        } catch (error) {
+            console.error('Error loading accessories/consumables:', error);
+        }
     }
 
     // ===== JOB HISTORY FUNCTIONS =====
@@ -617,6 +723,7 @@
     // Load attachments when page loads
     document.addEventListener('DOMContentLoaded', function() {
         loadAttachments();
+        loadAccessoriesAndConsumables();
     });
 
     // Load attachments for this job

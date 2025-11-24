@@ -1225,6 +1225,12 @@ func setupRoutes(r *gin.Engine,
 			}
 		}
 
+		// Inventory Management routes
+		inventory := protected.Group("/inventory")
+		{
+			inventory.GET("", accessoriesConsumablesHandler.InventoryDashboard)
+		}
+
 		// Profile Settings routes (moved to end to avoid potential conflicts)
 		profile := protected.Group("/profile")
 		{

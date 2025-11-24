@@ -85,6 +85,11 @@
             <span class="rc-nav-label">Customers</span>
         </a>
 
+        <a href="/inventory" class="rc-nav-item {{if eq .currentPage "inventory"}}active{{end}}" title="Inventory">
+            <i class="bi bi-box"></i>
+            <span class="rc-nav-label">Inventory</span>
+        </a>
+
         <!-- Tools Dropdown -->
         <div class="rc-nav-dropdown">
             <button class="rc-nav-dropdown-toggle {{if or (eq .currentPage "analytics") (eq .currentPage "financial") (eq .currentPage "documents_pool")}}active{{end}}" data-dropdown="tools">
