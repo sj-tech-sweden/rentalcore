@@ -2872,6 +2872,231 @@
             return div.innerHTML;
         }
 
+        // ===== ACCESSORIES & CONSUMABLES SELECTION =====
+
+        // Check if product has accessories/consumables and show selection modal
+        async function checkAndPromptAccessoriesConsumables(productID, deviceID) {
+            const jobID = {{if .job}}{{.job.JobID}}{{else}}null{{end}};
+
+            if (!productID || !jobID) return;
+
+            try {
+                // Fetch accessories and consumables for this product
+                const [accRes, consRes] = await Promise.all([
+                    fetch(`/api/products/${productID}/accessories`),
+                    fetch(`/api/products/${productID}/consumables`)
+                ]);
+
+                if (!accRes.ok || !consRes.ok) {
+                    console.error('Failed to fetch accessories/consumables');
+                    return;
+                }
+
+                const accData = await accRes.json();
+                const consData = await consRes.json();
+
+                const accessories = accData.accessories || [];
+                const consumables = consData.consumables || [];
+
+                // Show modals if there are accessories or consumables
+                if (accessories.length > 0) {
+                    await showAccessoriesSelectionModal(jobID, deviceID, accessories);
+                }
+
+                if (consumables.length > 0) {
+                    await showConsumablesInputModal(jobID, deviceID, consumables);
+                }
+            } catch (error) {
+                console.error('Error checking accessories/consumables:', error);
+            }
+        }
+
+        // Show accessories selection modal
+        function showAccessoriesSelectionModal(jobID, deviceID, accessories) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('accessoriesSelectionModal');
+                const content = document.getElementById('accessoriesSelectionContent');
+
+                let html = `<div class="rc-mb-md"><h4>Select Accessories for Device</h4></div>`;
+
+                accessories.forEach((acc, index) => {
+                    const available = acc.accessory_stock || 0;
+                    const isOptional = acc.is_optional;
+
+                    html += `
+                        <div class="rc-flex rc-flex-between rc-p-md rc-mb-sm" style="background: var(--surface); border-radius: 8px;">
+                            <div class="rc-flex rc-flex-gap-md rc-flex-align-center">
+                                <input type="checkbox" id="acc_${index}" class="accessory-checkbox"
+                                       data-product-id="${acc.accessory_product_id}"
+                                       data-default-qty="${acc.default_quantity}"
+                                       data-price="${acc.accessory_price}"
+                                       ${!isOptional ? 'checked disabled' : ''}>
+                                <div>
+                                    <div class="rc-font-semibold">${acc.accessory_name}</div>
+                                    <div class="rc-text-sm rc-text-secondary">
+                                        ${available} ${acc.count_type_abbr} available
+                                        ${!isOptional ? ' • <strong>Required</strong>' : ' • Optional'}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rc-flex rc-flex-align-center rc-flex-gap-sm">
+                                <label class="rc-text-sm">Qty:</label>
+                                <input type="number" id="qty_${index}" min="1" max="${available}"
+                                       value="${acc.default_quantity}" class="rc-input" style="width: 80px;"
+                                       ${!isOptional ? 'required' : ''}>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                content.innerHTML = html;
+                modal.style.display = 'flex';
+
+                // Store resolve function for later
+                window.__accessoriesModalResolve = resolve;
+                window.__accessoriesModalData = { jobID, deviceID };
+            });
+        }
+
+        async function submitAccessoriesSelection() {
+            const { jobID, deviceID } = window.__accessoriesModalData;
+            const checkboxes = document.querySelectorAll('.accessory-checkbox:checked');
+
+            const selections = [];
+            checkboxes.forEach((checkbox, index) => {
+                const productID = checkbox.dataset.productId;
+                const qtyInput = checkbox.parentElement.parentElement.querySelector('input[type="number"]');
+                const quantity = parseInt(qtyInput.value) || 1;
+                const price = parseFloat(checkbox.dataset.price) || 0;
+
+                selections.push({
+                    job_id: jobID,
+                    parent_device_id: deviceID,
+                    accessory_product_id: parseInt(productID),
+                    quantity_assigned: quantity,
+                    price_per_unit: price
+                });
+            });
+
+            // Submit each selection
+            try {
+                for (const selection of selections) {
+                    await fetch(`/api/jobs/${jobID}/accessories`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(selection)
+                    });
+                }
+
+                closeAccessoriesSelectionModal();
+                if (window.__accessoriesModalResolve) {
+                    window.__accessoriesModalResolve();
+                }
+            } catch (error) {
+                console.error('Error submitting accessories:', error);
+                alert('Error adding accessories');
+            }
+        }
+
+        function closeAccessoriesSelectionModal() {
+            document.getElementById('accessoriesSelectionModal').style.display = 'none';
+            if (window.__accessoriesModalResolve) {
+                window.__accessoriesModalResolve();
+            }
+        }
+
+        // Show consumables input modal
+        function showConsumablesInputModal(jobID, deviceID, consumables) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('consumablesInputModal');
+                const content = document.getElementById('consumablesInputContent');
+
+                let html = `<div class="rc-mb-md"><h4>Enter Consumable Quantities for Device</h4></div>`;
+
+                consumables.forEach((cons, index) => {
+                    const available = cons.consumable_stock || 0;
+
+                    html += `
+                        <div class="rc-p-md rc-mb-sm" style="background: var(--surface); border-radius: 8px;">
+                            <div class="rc-flex rc-flex-between rc-flex-align-center">
+                                <div>
+                                    <div class="rc-font-semibold">${cons.consumable_name}</div>
+                                    <div class="rc-text-sm rc-text-secondary">
+                                        ${available} ${cons.count_type_abbr} available
+                                    </div>
+                                </div>
+                                <div class="rc-flex rc-flex-align-center rc-flex-gap-sm">
+                                    <label class="rc-text-sm">Quantity:</label>
+                                    <input type="number" id="cons_qty_${index}"
+                                           min="0" max="${available}" step="0.001"
+                                           value="${cons.default_quantity}"
+                                           data-product-id="${cons.consumable_product_id}"
+                                           data-price="${cons.consumable_price}"
+                                           class="rc-input consumable-quantity" style="width: 100px;">
+                                    <span class="rc-text-sm">${cons.count_type_abbr}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                content.innerHTML = html;
+                modal.style.display = 'flex';
+
+                // Store resolve function for later
+                window.__consumablesModalResolve = resolve;
+                window.__consumablesModalData = { jobID, deviceID };
+            });
+        }
+
+        async function submitConsumablesInput() {
+            const { jobID, deviceID } = window.__consumablesModalData;
+            const inputs = document.querySelectorAll('.consumable-quantity');
+
+            const selections = [];
+            inputs.forEach(input => {
+                const quantity = parseFloat(input.value) || 0;
+                if (quantity > 0) {
+                    const productID = input.dataset.productId;
+                    const price = parseFloat(input.dataset.price) || 0;
+
+                    selections.push({
+                        job_id: jobID,
+                        parent_device_id: deviceID,
+                        consumable_product_id: parseInt(productID),
+                        quantity_assigned: quantity,
+                        price_per_unit: price
+                    });
+                }
+            });
+
+            // Submit each selection
+            try {
+                for (const selection of selections) {
+                    await fetch(`/api/jobs/${jobID}/consumables`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(selection)
+                    });
+                }
+
+                closeConsumablesInputModal();
+                if (window.__consumablesModalResolve) {
+                    window.__consumablesModalResolve();
+                }
+            } catch (error) {
+                console.error('Error submitting consumables:', error);
+                alert('Error adding consumables');
+            }
+        }
+
+        function closeConsumablesInputModal() {
+            document.getElementById('consumablesInputModal').style.display = 'none';
+            if (window.__consumablesModalResolve) {
+                window.__consumablesModalResolve();
+            }
+        }
+
     </script>
 
     <!-- Job History Modal -->
@@ -2936,6 +3161,48 @@
                 <button type="button" class="rc-btn rc-btn-outline" onclick="closePDFUploadModal()">Close</button>
                 <button type="button" class="rc-btn rc-btn-primary" onclick="uploadPDFFile()">
                     <i class="bi bi-upload"></i> Upload & Process
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accessories Selection Modal -->
+    <div id="accessoriesSelectionModal" class="rc-modal" style="display: none;">
+        <div class="rc-modal-content" style="max-width: 600px;">
+            <div class="rc-modal-header">
+                <h3 class="rc-modal-title">
+                    <i class="bi bi-paperclip"></i> Select Accessories
+                </h3>
+                <button type="button" class="rc-modal-close" onclick="closeAccessoriesSelectionModal()">&times;</button>
+            </div>
+            <div class="rc-modal-body">
+                <div id="accessoriesSelectionContent"></div>
+            </div>
+            <div class="rc-modal-footer">
+                <button type="button" class="rc-btn rc-btn-ghost" onclick="closeAccessoriesSelectionModal()">Skip</button>
+                <button type="button" class="rc-btn rc-btn-primary" onclick="submitAccessoriesSelection()">
+                    <i class="bi bi-check-lg"></i> Add Selected
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consumables Input Modal -->
+    <div id="consumablesInputModal" class="rc-modal" style="display: none;">
+        <div class="rc-modal-content" style="max-width: 600px;">
+            <div class="rc-modal-header">
+                <h3 class="rc-modal-title">
+                    <i class="bi bi-droplet"></i> Enter Consumable Quantities
+                </h3>
+                <button type="button" class="rc-modal-close" onclick="closeConsumablesInputModal()">&times;</button>
+            </div>
+            <div class="rc-modal-body">
+                <div id="consumablesInputContent"></div>
+            </div>
+            <div class="rc-modal-footer">
+                <button type="button" class="rc-btn rc-btn-ghost" onclick="closeConsumablesInputModal()">Skip</button>
+                <button type="button" class="rc-btn rc-btn-primary" onclick="submitConsumablesInput()">
+                    <i class="bi bi-check-lg"></i> Add Quantities
                 </button>
             </div>
         </div>

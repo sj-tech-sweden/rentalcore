@@ -1,0 +1,732 @@
+{{template "base.html" .}}
+
+{{define "content"}}
+<div class="rc-container rc-mt-lg">
+    <!-- Page Header -->
+    <div class="rc-flex rc-flex-between rc-mb-lg">
+        <div>
+            <h1 class="rc-heading-2">
+                <i class="bi bi-box-seam"></i>
+                {{if .product.ProductID}}Edit Product{{else}}New Product{{end}}
+            </h1>
+            <p class="rc-text-secondary">{{if .product.ProductID}}Update product information{{else}}Create a new product{{end}}</p>
+        </div>
+        <button onclick="window.history.back()" class="rc-btn rc-btn-ghost">
+            <i class="bi bi-arrow-left"></i> Back
+        </button>
+    </div>
+
+    <form id="productForm" class="rc-form">
+        <div class="rc-grid rc-grid-cols-1 rc-grid-cols-lg-3 rc-gap-lg">
+            <!-- Main Form Column -->
+            <div class="rc-col-span-2">
+                <!-- Basic Information -->
+                <div class="rc-card rc-mb-lg">
+                    <div class="rc-card-header">
+                        <h3 class="rc-card-title">
+                            <i class="bi bi-info-circle"></i> Basic Information
+                        </h3>
+                    </div>
+                    <div class="rc-card-body">
+                        <div class="rc-grid rc-grid-cols-1 rc-grid-cols-md-2 rc-gap-md">
+                            <div class="rc-col-span-2">
+                                <label for="name" class="rc-label">Product Name <span class="rc-text-danger">*</span></label>
+                                <input type="text" id="name" name="name" class="rc-input"
+                                       value="{{if .product}}{{.product.Name}}{{end}}"
+                                       required placeholder="e.g., LED Par 64, Fog Machine">
+                            </div>
+
+                            <div>
+                                <label for="category" class="rc-label">Category</label>
+                                <select id="category" name="category" class="rc-input">
+                                    <option value="">Select Category...</option>
+                                    {{range .categories}}
+                                    <option value="{{.}}" {{if $.product}}{{if eq $.product.Category .}}selected{{end}}{{end}}>{{.}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="manufacturer" class="rc-label">Manufacturer</label>
+                                <input type="text" id="manufacturer" name="manufacturer" class="rc-input"
+                                       value="{{if .product}}{{if .product.Manufacturer}}{{.product.Manufacturer}}{{end}}{{end}}"
+                                       placeholder="e.g., Martin, Showtec">
+                            </div>
+
+                            <div class="rc-col-span-2">
+                                <label for="description" class="rc-label">Description</label>
+                                <textarea id="description" name="description" class="rc-input" rows="3"
+                                          placeholder="Product description...">{{if .product}}{{if .product.Description}}{{.product.Description}}{{end}}{{end}}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accessory/Consumable Configuration -->
+                <div class="rc-card rc-mb-lg">
+                    <div class="rc-card-header">
+                        <h3 class="rc-card-title">
+                            <i class="bi bi-tags"></i> Product Type & Inventory
+                        </h3>
+                    </div>
+                    <div class="rc-card-body">
+                        <!-- Type Selection -->
+                        <div class="rc-mb-lg">
+                            <div class="rc-flex rc-flex-gap-lg">
+                                <label class="rc-checkbox-label">
+                                    <input type="checkbox" id="is_accessory" name="is_accessory"
+                                           {{if .product}}{{if .product.IsAccessory}}checked{{end}}{{end}}>
+                                    <span>This is an Accessory</span>
+                                </label>
+                                <label class="rc-checkbox-label">
+                                    <input type="checkbox" id="is_consumable" name="is_consumable"
+                                           {{if .product}}{{if .product.IsConsumable}}checked{{end}}{{end}}>
+                                    <span>This is a Consumable</span>
+                                </label>
+                            </div>
+                            <p class="rc-text-sm rc-text-secondary rc-mt-sm">
+                                Accessories are optional items (cables, clamps). Consumables are used items (fog fluid, tape).
+                            </p>
+                        </div>
+
+                        <!-- Inventory Fields (shown when accessory or consumable is checked) -->
+                        <div id="inventory-fields" style="display: none;">
+                            <div class="rc-grid rc-grid-cols-1 rc-grid-cols-md-2 rc-gap-md">
+                                <div>
+                                    <label for="count_type_id" class="rc-label">Measurement Unit <span class="rc-text-danger">*</span></label>
+                                    <select id="count_type_id" name="count_type_id" class="rc-input">
+                                        <option value="">Select unit...</option>
+                                        <!-- Populated by JavaScript -->
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="generic_barcode" class="rc-label">Generic Barcode</label>
+                                    <input type="text" id="generic_barcode" name="generic_barcode" class="rc-input"
+                                           value="{{if .product}}{{if .product.GenericBarcode}}{{derefString .product.GenericBarcode}}{{end}}{{end}}"
+                                           placeholder="e.g., ACC-SAFE40, CONS-FOG">
+                                    <p class="rc-text-sm rc-text-secondary">Single barcode for all units of this type</p>
+                                </div>
+
+                                <div>
+                                    <label for="stock_quantity" class="rc-label">Current Stock Quantity</label>
+                                    <input type="number" id="stock_quantity" name="stock_quantity" class="rc-input"
+                                           step="0.001" min="0"
+                                           value="{{if .product}}{{if .product.StockQuantity}}{{.product.StockQuantity}}{{end}}{{end}}"
+                                           placeholder="0.000">
+                                </div>
+
+                                <div>
+                                    <label for="min_stock_level" class="rc-label">Minimum Stock Level</label>
+                                    <input type="number" id="min_stock_level" name="min_stock_level" class="rc-input"
+                                           step="0.001" min="0"
+                                           value="{{if .product}}{{if .product.MinStockLevel}}{{.product.MinStockLevel}}{{end}}{{end}}"
+                                           placeholder="0.000">
+                                    <p class="rc-text-sm rc-text-secondary">Alert when stock falls below this level</p>
+                                </div>
+
+                                <div>
+                                    <label for="price_per_unit" class="rc-label">Price per Unit (€)</label>
+                                    <input type="number" id="price_per_unit" name="price_per_unit" class="rc-input"
+                                           step="0.01" min="0"
+                                           value="{{if .product}}{{if .product.PricePerUnit}}{{.product.PricePerUnit}}{{end}}{{end}}"
+                                           placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accessories Tab (shown when editing existing product) -->
+                {{if .product.ProductID}}
+                <div class="rc-card rc-mb-lg">
+                    <div class="rc-card-header rc-flex rc-flex-between">
+                        <h3 class="rc-card-title">
+                            <i class="bi bi-paperclip"></i> Linked Accessories
+                        </h3>
+                        <button type="button" class="rc-btn rc-btn-primary rc-btn-sm" onclick="showAddAccessoryModal()">
+                            <i class="bi bi-plus-lg"></i> Add Accessory
+                        </button>
+                    </div>
+                    <div class="rc-card-body">
+                        <div id="accessories-list">
+                            <div class="rc-text-center rc-p-lg rc-text-secondary">
+                                <i class="bi bi-paperclip" style="font-size: 2rem;"></i>
+                                <p>No accessories linked yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Consumables Tab (shown when editing existing product) -->
+                <div class="rc-card rc-mb-lg">
+                    <div class="rc-card-header rc-flex rc-flex-between">
+                        <h3 class="rc-card-title">
+                            <i class="bi bi-droplet"></i> Linked Consumables
+                        </h3>
+                        <button type="button" class="rc-btn rc-btn-primary rc-btn-sm" onclick="showAddConsumableModal()">
+                            <i class="bi bi-plus-lg"></i> Add Consumable
+                        </button>
+                    </div>
+                    <div class="rc-card-body">
+                        <div id="consumables-list">
+                            <div class="rc-text-center rc-p-lg rc-text-secondary">
+                                <i class="bi bi-droplet" style="font-size: 2rem;"></i>
+                                <p>No consumables linked yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+
+            <!-- Sidebar -->
+            <div>
+                <!-- Actions Card -->
+                <div class="rc-card rc-mb-lg">
+                    <div class="rc-card-header">
+                        <h3 class="rc-card-title">Actions</h3>
+                    </div>
+                    <div class="rc-card-body">
+                        <button type="submit" class="rc-btn rc-btn-primary rc-w-full rc-mb-sm">
+                            <i class="bi bi-check-lg"></i> Save Product
+                        </button>
+                        <button type="button" onclick="window.history.back()" class="rc-btn rc-btn-ghost rc-w-full">
+                            <i class="bi bi-x-lg"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Info Card -->
+                {{if .product.ProductID}}
+                <div class="rc-card">
+                    <div class="rc-card-header">
+                        <h3 class="rc-card-title">Product Info</h3>
+                    </div>
+                    <div class="rc-card-body">
+                        <div class="rc-text-sm">
+                            <div class="rc-mb-sm">
+                                <span class="rc-text-secondary">Product ID:</span>
+                                <span class="rc-text-mono">{{.product.ProductID}}</span>
+                            </div>
+                            {{if .product.CreatedAt}}
+                            <div class="rc-mb-sm">
+                                <span class="rc-text-secondary">Created:</span>
+                                <span>{{.product.CreatedAt.Format "2006-01-02"}}</span>
+                            </div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Add Accessory Modal -->
+<div id="addAccessoryModal" class="rc-modal" style="display: none;">
+    <div class="rc-modal-content" style="max-width: 600px;">
+        <div class="rc-modal-header">
+            <h3 class="rc-modal-title">Add Accessory</h3>
+            <button type="button" class="rc-modal-close" onclick="closeAddAccessoryModal()">&times;</button>
+        </div>
+        <div class="rc-modal-body">
+            <form id="addAccessoryForm">
+                <div class="rc-mb-md">
+                    <label for="accessory_select" class="rc-label">Select Accessory Product</label>
+                    <select id="accessory_select" class="rc-input" required>
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div class="rc-grid rc-grid-cols-2 rc-gap-md">
+                    <div>
+                        <label for="accessory_is_optional" class="rc-checkbox-label">
+                            <input type="checkbox" id="accessory_is_optional" checked>
+                            <span>Optional</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label for="accessory_default_qty" class="rc-label">Default Quantity</label>
+                        <input type="number" id="accessory_default_qty" class="rc-input" min="1" value="1" required>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="rc-modal-footer">
+            <button type="button" class="rc-btn rc-btn-ghost" onclick="closeAddAccessoryModal()">Cancel</button>
+            <button type="button" class="rc-btn rc-btn-primary" onclick="submitAddAccessory()">
+                <i class="bi bi-check-lg"></i> Add Accessory
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Consumable Modal -->
+<div id="addConsumableModal" class="rc-modal" style="display: none;">
+    <div class="rc-modal-content" style="max-width: 600px;">
+        <div class="rc-modal-header">
+            <h3 class="rc-modal-title">Add Consumable</h3>
+            <button type="button" class="rc-modal-close" onclick="closeAddConsumableModal()">&times;</button>
+        </div>
+        <div class="rc-modal-body">
+            <form id="addConsumableForm">
+                <div class="rc-mb-md">
+                    <label for="consumable_select" class="rc-label">Select Consumable Product</label>
+                    <select id="consumable_select" class="rc-input" required>
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="consumable_default_qty" class="rc-label">Default Quantity</label>
+                    <input type="number" id="consumable_default_qty" class="rc-input" step="0.001" min="0.001" value="1" required>
+                </div>
+            </form>
+        </div>
+        <div class="rc-modal-footer">
+            <button type="button" class="rc-btn rc-btn-ghost" onclick="closeAddConsumableModal()">Cancel</button>
+            <button type="button" class="rc-btn rc-btn-primary" onclick="submitAddConsumable()">
+                <i class="bi bi-check-lg"></i> Add Consumable
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Current product ID (if editing)
+const productID = {{if .product.ProductID}}{{.product.ProductID}}{{else}}null{{end}};
+
+// Load count types on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadCountTypes();
+    toggleInventoryFields();
+
+    // Load accessories and consumables if editing
+    if (productID) {
+        loadProductAccessories();
+        loadProductConsumables();
+    }
+});
+
+// Toggle inventory fields based on checkboxes
+document.getElementById('is_accessory').addEventListener('change', toggleInventoryFields);
+document.getElementById('is_consumable').addEventListener('change', toggleInventoryFields);
+
+function toggleInventoryFields() {
+    const isAccessory = document.getElementById('is_accessory').checked;
+    const isConsumable = document.getElementById('is_consumable').checked;
+    const inventoryFields = document.getElementById('inventory-fields');
+
+    if (isAccessory || isConsumable) {
+        inventoryFields.style.display = 'block';
+        document.getElementById('count_type_id').required = true;
+    } else {
+        inventoryFields.style.display = 'none';
+        document.getElementById('count_type_id').required = false;
+    }
+}
+
+// Load count types from API
+async function loadCountTypes() {
+    try {
+        const res = await fetch('/api/count-types');
+        const data = await res.json();
+
+        const select = document.getElementById('count_type_id');
+        select.innerHTML = '<option value="">Select unit...</option>';
+
+        (data.count_types || []).forEach(ct => {
+            const option = document.createElement('option');
+            option.value = ct.count_type_id;
+            option.textContent = `${ct.name} (${ct.abbreviation})`;
+            {{if .product}}{{if .product.CountTypeID}}
+            if (ct.count_type_id === {{.product.CountTypeID}}) {
+                option.selected = true;
+            }
+            {{end}}{{end}}
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading count types:', error);
+    }
+}
+
+// Form submission
+document.getElementById('productForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = {
+        name: document.getElementById('name').value,
+        category: document.getElementById('category').value || null,
+        manufacturer: document.getElementById('manufacturer').value || null,
+        description: document.getElementById('description').value || null,
+        is_accessory: document.getElementById('is_accessory').checked,
+        is_consumable: document.getElementById('is_consumable').checked
+    };
+
+    // Add inventory fields if accessory or consumable
+    if (formData.is_accessory || formData.is_consumable) {
+        formData.count_type_id = parseInt(document.getElementById('count_type_id').value) || null;
+        formData.stock_quantity = parseFloat(document.getElementById('stock_quantity').value) || 0;
+        formData.min_stock_level = parseFloat(document.getElementById('min_stock_level').value) || 0;
+        formData.generic_barcode = document.getElementById('generic_barcode').value || null;
+        formData.price_per_unit = parseFloat(document.getElementById('price_per_unit').value) || 0;
+    }
+
+    try {
+        const url = productID ? `/api/products/${productID}` : '/api/products';
+        const method = productID ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        if (res.ok) {
+            alert('Product saved successfully!');
+            window.history.back();
+        } else {
+            const error = await res.json();
+            alert('Error: ' + (error.error || 'Failed to save product'));
+        }
+    } catch (error) {
+        console.error('Error saving product:', error);
+        alert('Error saving product');
+    }
+});
+
+// ===== ACCESSORIES MANAGEMENT =====
+
+async function loadProductAccessories() {
+    if (!productID) return;
+
+    try {
+        const res = await fetch(`/api/products/${productID}/accessories`);
+        const data = await res.json();
+
+        const container = document.getElementById('accessories-list');
+        const accessories = data.accessories || [];
+
+        if (accessories.length === 0) {
+            container.innerHTML = `
+                <div class="rc-text-center rc-p-lg rc-text-secondary">
+                    <i class="bi bi-paperclip" style="font-size: 2rem;"></i>
+                    <p>No accessories linked yet</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="rc-space-y-sm">';
+        accessories.forEach(acc => {
+            html += `
+                <div class="rc-flex rc-flex-between rc-p-md" style="background: var(--surface); border-radius: 8px;">
+                    <div>
+                        <div class="rc-font-semibold">${acc.accessory_name}</div>
+                        <div class="rc-text-sm rc-text-secondary">
+                            ${acc.is_optional ? 'Optional' : 'Required'} • Default: ${acc.default_quantity} ${acc.count_type_abbr}
+                            ${acc.generic_barcode ? ` • Barcode: ${acc.generic_barcode}` : ''}
+                        </div>
+                        <div class="rc-text-sm">
+                            Stock: ${acc.accessory_stock} ${acc.count_type_abbr} • €${acc.accessory_price}/unit
+                        </div>
+                    </div>
+                    <button type="button" class="rc-btn rc-btn-ghost rc-btn-sm" onclick="removeAccessory(${acc.accessory_product_id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading accessories:', error);
+    }
+}
+
+async function showAddAccessoryModal() {
+    document.getElementById('addAccessoryModal').style.display = 'flex';
+
+    // Load accessory products
+    try {
+        const res = await fetch('/api/accessories/products');
+        const data = await res.json();
+
+        const select = document.getElementById('accessory_select');
+        select.innerHTML = '<option value="">Select accessory...</option>';
+
+        (data.products || []).forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.productID;
+            option.textContent = `${product.name} (${product.stock_quantity} ${product.count_type.abbreviation} available)`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading accessory products:', error);
+    }
+}
+
+function closeAddAccessoryModal() {
+    document.getElementById('addAccessoryModal').style.display = 'none';
+}
+
+async function submitAddAccessory() {
+    const accessoryID = document.getElementById('accessory_select').value;
+    const isOptional = document.getElementById('accessory_is_optional').checked;
+    const defaultQty = parseInt(document.getElementById('accessory_default_qty').value);
+
+    if (!accessoryID) {
+        alert('Please select an accessory');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/products/${productID}/accessories`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                product_id: productID,
+                accessory_product_id: parseInt(accessoryID),
+                is_optional: isOptional,
+                default_quantity: defaultQty
+            })
+        });
+
+        if (res.ok) {
+            closeAddAccessoryModal();
+            loadProductAccessories();
+        } else {
+            const error = await res.json();
+            alert('Error: ' + (error.error || 'Failed to add accessory'));
+        }
+    } catch (error) {
+        console.error('Error adding accessory:', error);
+        alert('Error adding accessory');
+    }
+}
+
+async function removeAccessory(accessoryID) {
+    if (!confirm('Remove this accessory?')) return;
+
+    try {
+        const res = await fetch(`/api/products/${productID}/accessories/${accessoryID}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            loadProductAccessories();
+        } else {
+            alert('Error removing accessory');
+        }
+    } catch (error) {
+        console.error('Error removing accessory:', error);
+        alert('Error removing accessory');
+    }
+}
+
+// ===== CONSUMABLES MANAGEMENT =====
+
+async function loadProductConsumables() {
+    if (!productID) return;
+
+    try {
+        const res = await fetch(`/api/products/${productID}/consumables`);
+        const data = await res.json();
+
+        const container = document.getElementById('consumables-list');
+        const consumables = data.consumables || [];
+
+        if (consumables.length === 0) {
+            container.innerHTML = `
+                <div class="rc-text-center rc-p-lg rc-text-secondary">
+                    <i class="bi bi-droplet" style="font-size: 2rem;"></i>
+                    <p>No consumables linked yet</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="rc-space-y-sm">';
+        consumables.forEach(cons => {
+            html += `
+                <div class="rc-flex rc-flex-between rc-p-md" style="background: var(--surface); border-radius: 8px;">
+                    <div>
+                        <div class="rc-font-semibold">${cons.consumable_name}</div>
+                        <div class="rc-text-sm rc-text-secondary">
+                            Default: ${cons.default_quantity} ${cons.count_type_abbr}
+                            ${cons.generic_barcode ? ` • Barcode: ${cons.generic_barcode}` : ''}
+                        </div>
+                        <div class="rc-text-sm">
+                            Stock: ${cons.consumable_stock} ${cons.count_type_abbr} • €${cons.consumable_price}/unit
+                        </div>
+                    </div>
+                    <button type="button" class="rc-btn rc-btn-ghost rc-btn-sm" onclick="removeConsumable(${cons.consumable_product_id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading consumables:', error);
+    }
+}
+
+async function showAddConsumableModal() {
+    document.getElementById('addConsumableModal').style.display = 'flex';
+
+    // Load consumable products
+    try {
+        const res = await fetch('/api/consumables/products');
+        const data = await res.json();
+
+        const select = document.getElementById('consumable_select');
+        select.innerHTML = '<option value="">Select consumable...</option>';
+
+        (data.products || []).forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.productID;
+            option.textContent = `${product.name} (${product.stock_quantity} ${product.count_type.abbreviation} available)`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading consumable products:', error);
+    }
+}
+
+function closeAddConsumableModal() {
+    document.getElementById('addConsumableModal').style.display = 'none';
+}
+
+async function submitAddConsumable() {
+    const consumableID = document.getElementById('consumable_select').value;
+    const defaultQty = parseFloat(document.getElementById('consumable_default_qty').value);
+
+    if (!consumableID) {
+        alert('Please select a consumable');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/products/${productID}/consumables`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                product_id: productID,
+                consumable_product_id: parseInt(consumableID),
+                default_quantity: defaultQty
+            })
+        });
+
+        if (res.ok) {
+            closeAddConsumableModal();
+            loadProductConsumables();
+        } else {
+            const error = await res.json();
+            alert('Error: ' + (error.error || 'Failed to add consumable'));
+        }
+    } catch (error) {
+        console.error('Error adding consumable:', error);
+        alert('Error adding consumable');
+    }
+}
+
+async function removeConsumable(consumableID) {
+    if (!confirm('Remove this consumable?')) return;
+
+    try {
+        const res = await fetch(`/api/products/${productID}/consumables/${consumableID}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            loadProductConsumables();
+        } else {
+            alert('Error removing consumable');
+        }
+    } catch (error) {
+        console.error('Error removing consumable:', error);
+        alert('Error removing consumable');
+    }
+}
+</script>
+
+<style>
+.rc-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.rc-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.rc-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.rc-modal-content {
+    background: var(--surface);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.rc-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.rc-modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.rc-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.rc-modal-body {
+    padding: 1.5rem;
+}
+
+.rc-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.rc-space-y-sm > * + * {
+    margin-top: 0.5rem;
+}
+</style>
+{{end}}
