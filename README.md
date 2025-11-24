@@ -42,6 +42,14 @@ A comprehensive, enterprise-grade equipment rental management system built with 
 - **🆕 Rental Equipment System**: External equipment rental tracking with supplier management
 - **🆕 Manual Entry & Selection**: Add external rentals directly to jobs or select from catalog
 - **🆕 Rental Analytics**: Dedicated analytics for external equipment usage and costs
+- **🆕 Accessories & Consumables System**: Complete inventory tracking for accessories and consumables
+  - **Inventory Dashboard**: Real-time stock monitoring with low stock alerts
+  - **Generic Barcodes**: Single barcode per product type (not individual units)
+  - **Measurement Units**: Flexible count types (pieces, kg, liters, etc.)
+  - **Job Integration**: Accessories/consumables displayed under devices in job views
+  - **Scan Tracking**: Real-time scanning status (scanned out/in quantities)
+  - **Stock Management**: Manual adjustments with reason tracking and audit trail
+  - **Auto-Calculation**: Automatic stock updates when items are scanned
 
 ### 📄 **PDF Processing & OCR**
 - **📤 PDF Upload**: Upload invoices, quotes, and delivery notes for automatic processing
@@ -471,7 +479,34 @@ All documentation is organized in the `docs/` folder for easy access:
 
 ## 🏷️ Version History
 
-### **v4.1.35** (Latest) - Advanced Financial Dashboard & Reports Redesign
+### **v4.1.37** (Latest) - Accessories & Consumables Frontend Implementation
+- 📦 **Inventory Management Dashboard**: New `/inventory` page with comprehensive stock tracking
+  - **Low Stock Alerts**: Real-time monitoring of items below minimum threshold with visual indicators
+  - **Accessories List**: Complete list of all accessory products with current stock levels and prices
+  - **Consumables List**: Tracking of consumable items with measurement units (kg, L, etc.)
+  - **Manual Stock Adjustment**: Modal interface for stock adjustments with reason tracking
+  - **Transaction History**: Full audit trail of all inventory movements with filtering
+- 🔧 **Job Detail View Enhancements**: Accessories and consumables now displayed under devices
+  - **Visual Hierarchy**: Items shown indented under parent devices with distinctive icons
+  - **Scan Status**: Real-time display of scanned quantities (e.g., `[4/0 scanned]`)
+  - **Auto-Loading**: JavaScript automatically fetches and displays items on page load
+  - **Icon Differentiation**: Accessories (📎) and consumables (💧) clearly distinguished
+- 🎯 **Navigation Integration**: Added Inventory link to main sidebar navigation
+- 📚 **Comprehensive Documentation**: New FRONTEND_STATUS.md with implementation details
+  - Complete feature breakdown (completed vs pending)
+  - WarehouseCore integration requirements
+  - Testing checklist and API endpoint documentation
+  - Code locations and file structure reference
+- 🔌 **API Integration**: Full integration with backend accessories/consumables system
+  - `/api/jobs/:id/accessories` - Fetch job accessories
+  - `/api/jobs/:id/consumables` - Fetch job consumables
+  - `/api/inventory/low-stock` - Low stock monitoring
+  - `/api/inventory/adjust` - Manual stock adjustments
+  - `/api/inventory/transactions` - Transaction history
+- 🎨 **Visual Design**: Consistent with RentalCore design system using CSS variables
+- ⚙️ **Backend Foundation**: Complete accessories/consumables system (v4.1.36)
+
+### **v4.1.35** - Advanced Financial Dashboard & Reports Redesign
 - 🎨 **Complete Premium UI Redesign**: Financial dashboard and reports pages rebuilt with enterprise SaaS aesthetics
 - ✨ **Enhanced Glass Morphism**: Advanced backdrop-blur effects with semi-transparent layered card backgrounds and radial gradient overlays
 - 🌈 **Dynamic Animated Backgrounds**: Gradient backgrounds with accent color highlights and smooth animations
