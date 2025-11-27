@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"fmt"
 	"math"
 	"net/http"
@@ -1065,250 +1066,265 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 		conflicts = conflictMap
 	}
 
-	availabilityByProduct, err := h.buildProductAvailabilityMap(conflicts)
+	// Query similar to WarehouseCore tree to guarantee all categories/subcategories/products appear
+	type row struct {
+		CategoryID        uint
+		CategoryName      string
+		SubcategoryID     sql.NullString
+		SubcategoryName   sql.NullString
+		SubbiercategoryID sql.NullString
+		SubbierName       sql.NullString
+		ProductID         sql.NullInt64
+		ProductName       sql.NullString
+		IsConsumable      int
+		IsAccessory       int
+		StockQuantity     sql.NullFloat64
+		Unit              sql.NullString
+		BrandName         sql.NullString
+		ManufacturerName  sql.NullString
+		GenericBarcode    sql.NullString
+		ModelNumber       sql.NullString
+		DeviceID          sql.NullString
+	}
+
+	query := `
+		SELECT
+			c.categoryID,
+			c.name as category_name,
+			sc.subcategoryID,
+			sc.name as subcategory_name,
+			sbc.subbiercategoryID,
+			sbc.name as subbiercategory_name,
+			p.productID,
+			p.name as product_name,
+			COALESCE(p.is_consumable, 0) as is_consumable,
+			COALESCE(p.is_accessory, 0) as is_accessory,
+			COALESCE(p.stock_quantity, 0) as stock_quantity,
+			COALESCE(ct.abbreviation, '') as unit,
+			b.name as brand_name,
+			m.name as manufacturer_name,
+			p.generic_barcode,
+			p.model_number,
+			d.deviceID
+		FROM categories c
+		LEFT JOIN subcategories sc ON c.categoryID = sc.categoryID
+		LEFT JOIN subbiercategories sbc ON sc.subcategoryID = sbc.subcategoryID
+		LEFT JOIN products p ON (p.categoryID = c.categoryID AND (p.subcategoryID IS NULL OR p.subcategoryID = sc.subcategoryID) AND (p.subbiercategoryID IS NULL OR p.subbiercategoryID = sbc.subbiercategoryID))
+		LEFT JOIN count_types ct ON p.count_type_id = ct.count_type_id
+		LEFT JOIN brands b ON p.brandID = b.brandID
+		LEFT JOIN manufacturer m ON p.manufacturerID = m.manufacturerID
+		LEFT JOIN devices d ON p.productID = d.productID
+		ORDER BY c.name, sc.name, sbc.name, p.name, d.deviceID
+	`
+
+	db := h.productRepo.GetDB()
+	rows, err := db.Raw(query).Rows()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query product tree: %v", err)
+	}
+	defer rows.Close()
+
+	categories := make(map[uint]*TreeCategory)
+	subcategories := make(map[string]*TreeSubcategory)
+	subbiercategories := make(map[string]*TreeSubbiercategory)
+
+	type productRef struct {
+		product *TreeProduct
 	}
 
-	// Preload hierarchy
-	var categories []models.Category
-	if err := h.productRepo.GetDB().Find(&categories).Error; err != nil {
-		return nil, fmt.Errorf("failed to load categories: %v", err)
-	}
+	catProducts := make(map[uint]map[uint]*productRef)
+	subProducts := make(map[string]map[uint]*productRef)
+	subBierProducts := make(map[string]map[uint]*productRef)
 
-	var subcategories []models.Subcategory
-	if err := h.productRepo.GetDB().Find(&subcategories).Error; err != nil {
-		return nil, fmt.Errorf("failed to load subcategories: %v", err)
-	}
-
-	var subbiercategories []models.Subbiercategory
-	if err := h.productRepo.GetDB().Find(&subbiercategories).Error; err != nil {
-		return nil, fmt.Errorf("failed to load subbiercategories: %v", err)
-	}
-
-	var products []models.Product
-	if err := h.productRepo.GetDB().
-		Preload("Category").
-		Preload("Subcategory").
-		Preload("Subbiercategory").
-		Preload("Brand").
-		Preload("Manufacturer").
-		Preload("CountType").
-		Find(&products).Error; err != nil {
-		return nil, fmt.Errorf("failed to load products: %v", err)
-	}
-
-	catMap := make(map[uint]*TreeCategory)
-	for _, cat := range categories {
-		catCopy := TreeCategory{
-			ID:            cat.CategoryID,
-			Name:          cat.Name,
-			DirectDevices: []TreeDevice{},
-			Products:      []TreeProduct{},
-			Subcategories: []TreeSubcategory{},
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(
+			&r.CategoryID,
+			&r.CategoryName,
+			&r.SubcategoryID,
+			&r.SubcategoryName,
+			&r.SubbiercategoryID,
+			&r.SubbierName,
+			&r.ProductID,
+			&r.ProductName,
+			&r.IsConsumable,
+			&r.IsAccessory,
+			&r.StockQuantity,
+			&r.Unit,
+			&r.BrandName,
+			&r.ManufacturerName,
+			&r.GenericBarcode,
+			&r.ModelNumber,
+			&r.DeviceID,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan product tree row: %v", err)
 		}
-		catMap[cat.CategoryID] = &catCopy
-	}
 
-	// Allow uncategorized bucket
-	if _, exists := catMap[0]; !exists {
-		catMap[0] = &TreeCategory{
-			ID:            0,
-			Name:          "Uncategorized",
-			DirectDevices: []TreeDevice{},
-			Products:      []TreeProduct{},
-			Subcategories: []TreeSubcategory{},
-		}
-	}
-
-	subMap := make(map[string]*TreeSubcategory)
-	for _, sub := range subcategories {
-		parent := catMap[sub.CategoryID]
-		if parent == nil {
-			parent = &TreeCategory{
-				ID:            sub.CategoryID,
-				Name:          "",
+		cat := categories[r.CategoryID]
+		if cat == nil {
+			cat = &TreeCategory{
+				ID:            r.CategoryID,
+				Name:          r.CategoryName,
 				DirectDevices: []TreeDevice{},
 				Products:      []TreeProduct{},
 				Subcategories: []TreeSubcategory{},
 			}
-			catMap[sub.CategoryID] = parent
+			categories[r.CategoryID] = cat
 		}
 
-		subCopy := TreeSubcategory{
-			ID:                sub.SubcategoryID,
-			Name:              sub.Name,
-			DirectDevices:     []TreeDevice{},
-			Products:          []TreeProduct{},
-			Subbiercategories: []TreeSubbiercategory{},
-		}
-		parent.Subcategories = append(parent.Subcategories, subCopy)
-		subMap[sub.SubcategoryID] = &parent.Subcategories[len(parent.Subcategories)-1]
-	}
-
-	subBierMap := make(map[string]*TreeSubbiercategory)
-	for _, subbier := range subbiercategories {
-		parent := subMap[subbier.SubcategoryID]
-		if parent == nil {
-			// Create missing subcategory placeholder on uncategorized bucket
-			uncat := catMap[0]
-			placeholder := TreeSubcategory{
-				ID:                subbier.SubcategoryID,
-				Name:              subbier.Name,
-				DirectDevices:     []TreeDevice{},
-				Products:          []TreeProduct{},
-				Subbiercategories: []TreeSubbiercategory{},
-			}
-			uncat.Subcategories = append(uncat.Subcategories, placeholder)
-			parent = &uncat.Subcategories[len(uncat.Subcategories)-1]
-			subMap[subbier.SubcategoryID] = parent
-		}
-
-		subBier := TreeSubbiercategory{
-			ID:             subbier.SubbiercategoryID,
-			Name:           subbier.Name,
-			Devices:        []TreeDevice{},
-			Products:       []TreeProduct{},
-			DeviceCount:    0,
-			AvailableCount: 0,
-		}
-		parent.Subbiercategories = append(parent.Subbiercategories, subBier)
-		subBierMap[subbier.SubbiercategoryID] = &parent.Subbiercategories[len(parent.Subbiercategories)-1]
-	}
-
-	for _, product := range products {
-		catID := uint(0)
-		catName := "Uncategorized"
-		if product.Category != nil {
-			catID = product.Category.CategoryID
-			catName = product.Category.Name
-		}
-
-		category := catMap[catID]
-		if category == nil {
-			category = &TreeCategory{
-				ID:            catID,
-				Name:          catName,
-				DirectDevices: []TreeDevice{},
-				Products:      []TreeProduct{},
-				Subcategories: []TreeSubcategory{},
-			}
-			catMap[catID] = category
-		} else if category.Name == "" {
-			category.Name = catName
-		}
-
-		counts := availabilityByProduct[product.ProductID]
-		total := counts.total
-		available := counts.available
-
-		if (product.IsConsumable || product.IsAccessory) && product.StockQuantity != nil {
-			rounded := int(math.Round(*product.StockQuantity))
-			total = rounded
-			available = rounded
-		}
-
-		treeProduct := TreeProduct{
-			ID:             product.ProductID,
-			Name:           product.Name,
-			DeviceCount:    total,
-			AvailableCount: available,
-			IsAccessory:    product.IsAccessory,
-			IsConsumable:   product.IsConsumable,
-			StockQuantity:  product.StockQuantity,
-		}
-
-		if product.Brand != nil {
-			treeProduct.BrandName = product.Brand.Name
-		}
-		if product.Manufacturer != nil {
-			treeProduct.Manufacturer = product.Manufacturer.Name
-		}
-		if product.GenericBarcode != nil {
-			treeProduct.GenericBarcode = *product.GenericBarcode
-		}
-		if product.CountType != nil {
-			treeProduct.CountTypeAbbr = product.CountType.Abbreviation
-		}
-
-		applyCounts := func(cat *TreeCategory, sub *TreeSubcategory, subbier *TreeSubbiercategory) {
-			cat.DeviceCount += total
-			cat.AvailableCount += available
-			if sub != nil {
-				sub.DeviceCount += total
-				sub.AvailableCount += available
-			}
-			if subbier != nil {
-				subbier.DeviceCount += total
-				subbier.AvailableCount += available
-			}
-		}
-
-		if product.Subcategory != nil {
-			sub := subMap[product.Subcategory.SubcategoryID]
+		var sub *TreeSubcategory
+		if r.SubcategoryID.Valid && r.SubcategoryID.String != "" {
+			sub = subcategories[r.SubcategoryID.String]
 			if sub == nil {
-				placeholder := TreeSubcategory{
-					ID:                product.Subcategory.SubcategoryID,
-					Name:              product.Subcategory.Name,
+				newSub := TreeSubcategory{
+					ID:                r.SubcategoryID.String,
+					Name:              r.SubcategoryName.String,
 					DirectDevices:     []TreeDevice{},
 					Products:          []TreeProduct{},
 					Subbiercategories: []TreeSubbiercategory{},
 				}
-				category.Subcategories = append(category.Subcategories, placeholder)
-				sub = &category.Subcategories[len(category.Subcategories)-1]
-				subMap[product.Subcategory.SubcategoryID] = sub
+				cat.Subcategories = append(cat.Subcategories, newSub)
+				sub = &cat.Subcategories[len(cat.Subcategories)-1]
+				subcategories[r.SubcategoryID.String] = sub
 			}
+		}
 
-			if product.Subbiercategory != nil {
-				subBier := subBierMap[product.Subbiercategory.SubbiercategoryID]
-				if subBier == nil {
-					newSubbier := TreeSubbiercategory{
-						ID:             product.Subbiercategory.SubbiercategoryID,
-						Name:           product.Subbiercategory.Name,
-						Devices:        []TreeDevice{},
-						Products:       []TreeProduct{},
-						DeviceCount:    0,
-						AvailableCount: 0,
-					}
-					sub.Subbiercategories = append(sub.Subbiercategories, newSubbier)
-					subBier = &sub.Subbiercategories[len(sub.Subbiercategories)-1]
-					subBierMap[product.Subbiercategory.SubbiercategoryID] = subBier
+		var subbier *TreeSubbiercategory
+		if r.SubbiercategoryID.Valid && r.SubbiercategoryID.String != "" && sub != nil {
+			subbier = subbiercategories[r.SubbiercategoryID.String]
+			if subbier == nil {
+				newSubbier := TreeSubbiercategory{
+					ID:             r.SubbiercategoryID.String,
+					Name:           r.SubbierName.String,
+					Devices:        []TreeDevice{},
+					Products:       []TreeProduct{},
+					DeviceCount:    0,
+					AvailableCount: 0,
 				}
-
-				subBier.Products = append(subBier.Products, treeProduct)
-				applyCounts(category, sub, subBier)
-			} else {
-				sub.Products = append(sub.Products, treeProduct)
-				applyCounts(category, sub, nil)
+				sub.Subbiercategories = append(sub.Subbiercategories, newSubbier)
+				subbier = &sub.Subbiercategories[len(sub.Subbiercategories)-1]
+				subbiercategories[r.SubbiercategoryID.String] = subbier
 			}
-		} else {
-			category.Products = append(category.Products, treeProduct)
-			applyCounts(category, nil, nil)
+		}
+
+		if !r.ProductID.Valid {
+			continue
+		}
+
+		containerKey := fmt.Sprintf("cat-%d", r.CategoryID)
+		productMap := catProducts[r.CategoryID]
+		productSlice := &cat.Products
+		if sub != nil {
+			containerKey = fmt.Sprintf("sub-%s", sub.ID)
+			productMap = subProducts[sub.ID]
+			productSlice = &sub.Products
+			if subbier != nil {
+				containerKey = fmt.Sprintf("subbier-%s", subbier.ID)
+				productMap = subBierProducts[subbier.ID]
+				productSlice = &subbier.Products
+			}
+		}
+		if productMap == nil {
+			productMap = make(map[uint]*productRef)
+			switch {
+			case strings.HasPrefix(containerKey, "cat-"):
+				catProducts[r.CategoryID] = productMap
+			case strings.HasPrefix(containerKey, "subbier-"):
+				subBierProducts[subbier.ID] = productMap
+			default:
+				subProducts[sub.ID] = productMap
+			}
+		}
+
+		pid := uint(r.ProductID.Int64)
+		ref := productMap[pid]
+		if ref == nil {
+			tp := TreeProduct{
+				ID:             pid,
+				Name:           r.ProductName.String,
+				DeviceCount:    0,
+				AvailableCount: 0,
+				IsAccessory:    r.IsAccessory == 1,
+				IsConsumable:   r.IsConsumable == 1,
+				StockQuantity:  nil,
+			}
+			if r.BrandName.Valid {
+				tp.BrandName = r.BrandName.String
+			}
+			if r.ManufacturerName.Valid {
+				tp.Manufacturer = r.ManufacturerName.String
+			}
+			if r.GenericBarcode.Valid {
+				tp.GenericBarcode = r.GenericBarcode.String
+			}
+			if r.Unit.Valid {
+				tp.CountTypeAbbr = r.Unit.String
+			}
+			productMap[pid] = &productRef{product: &tp}
+			*productSlice = append(*productSlice, tp)
+			ref = productMap[pid]
+		}
+
+		// Update counts from stock for accessories/consumables
+		if (r.IsAccessory == 1 || r.IsConsumable == 1) && r.StockQuantity.Valid {
+			stockCount := int(math.Round(r.StockQuantity.Float64))
+			if stockCount > ref.product.DeviceCount {
+				ref.product.DeviceCount = stockCount
+				ref.product.AvailableCount = stockCount
+			}
+		}
+
+		// Update counts per device for availability
+		if r.DeviceID.Valid && r.DeviceID.String != "" {
+			ref.product.DeviceCount++
+			if !conflicts[r.DeviceID.String] {
+				ref.product.AvailableCount++
+			}
 		}
 	}
 
-	// Convert map to sorted slice
-	treeCategories := make([]TreeCategory, 0, len(catMap))
-	for _, cat := range catMap {
-		// Sort nested collections for consistency
-		sort.Slice(cat.Subcategories, func(i, j int) bool {
-			return strings.ToLower(cat.Subcategories[i].Name) < strings.ToLower(cat.Subcategories[j].Name)
-		})
+	// Aggregate counts to parents and sort
+	treeCategories := make([]TreeCategory, 0, len(categories))
+	for _, cat := range categories {
 		for si := range cat.Subcategories {
 			sub := &cat.Subcategories[si]
+			for bi := range sub.Subbiercategories {
+				subbier := &sub.Subbiercategories[bi]
+				for pi := range subbier.Products {
+					p := &subbier.Products[pi]
+					subbier.DeviceCount += p.DeviceCount
+					subbier.AvailableCount += p.AvailableCount
+					sub.DeviceCount += p.DeviceCount
+					sub.AvailableCount += p.AvailableCount
+					cat.DeviceCount += p.DeviceCount
+					cat.AvailableCount += p.AvailableCount
+				}
+				sort.Slice(subbier.Products, func(i, j int) bool {
+					return strings.ToLower(subbier.Products[i].Name) < strings.ToLower(subbier.Products[j].Name)
+				})
+			}
+			for pi := range sub.Products {
+				p := &sub.Products[pi]
+				sub.DeviceCount += p.DeviceCount
+				sub.AvailableCount += p.AvailableCount
+				cat.DeviceCount += p.DeviceCount
+				cat.AvailableCount += p.AvailableCount
+			}
 			sort.Slice(sub.Subbiercategories, func(i, j int) bool {
 				return strings.ToLower(sub.Subbiercategories[i].Name) < strings.ToLower(sub.Subbiercategories[j].Name)
 			})
-			for bi := range sub.Subbiercategories {
-				subBier := &sub.Subbiercategories[bi]
-				sort.Slice(subBier.Products, func(i, j int) bool {
-					return strings.ToLower(subBier.Products[i].Name) < strings.ToLower(subBier.Products[j].Name)
-				})
-			}
 			sort.Slice(sub.Products, func(i, j int) bool {
 				return strings.ToLower(sub.Products[i].Name) < strings.ToLower(sub.Products[j].Name)
 			})
 		}
+		for pi := range cat.Products {
+			p := &cat.Products[pi]
+			cat.DeviceCount += p.DeviceCount
+			cat.AvailableCount += p.AvailableCount
+		}
+		sort.Slice(cat.Subcategories, func(i, j int) bool {
+			return strings.ToLower(cat.Subcategories[i].Name) < strings.ToLower(cat.Subcategories[j].Name)
+		})
 		sort.Slice(cat.Products, func(i, j int) bool {
 			return strings.ToLower(cat.Products[i].Name) < strings.ToLower(cat.Products[j].Name)
 		})
