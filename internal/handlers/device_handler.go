@@ -1083,7 +1083,6 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 		BrandName         sql.NullString
 		ManufacturerName  sql.NullString
 		GenericBarcode    sql.NullString
-		ModelNumber       sql.NullString
 		DeviceID          sql.NullString
 	}
 
@@ -1104,7 +1103,6 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 			b.name as brand_name,
 			m.name as manufacturer_name,
 			p.generic_barcode,
-			p.model_number,
 			d.deviceID
 		FROM categories c
 		LEFT JOIN subcategories sc ON c.categoryID = sc.categoryID
@@ -1154,7 +1152,6 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 			&r.BrandName,
 			&r.ManufacturerName,
 			&r.GenericBarcode,
-			&r.ModelNumber,
 			&r.DeviceID,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan product tree row: %v", err)
