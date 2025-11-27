@@ -780,7 +780,7 @@
             background: linear-gradient(135deg, var(--surface-1), var(--surface-0));
             padding: var(--space-md);
             transition: background var(--transition-fast), border var(--transition-fast), box-shadow var(--transition-fast);
-            overflow: hidden;
+            overflow: visible;
         }
         .wc-node::before {
             content: '';
@@ -831,7 +831,7 @@
             gap: var(--space-sm);
             flex-direction: column;
         }
-        .wc-node.open .wc-node-body {
+        .wc-node.open > .wc-node-body {
             display: flex !important;
         }
         .wc-product {
