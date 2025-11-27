@@ -731,131 +731,152 @@
             gap: 10px;
         }
 
-        /* Warehouse-style Tree Card */
+        /* Warehouse-style Tree Card (theme-aligned) */
         .wc-tree-card {
-            background: linear-gradient(135deg, #0f172a 0%, #0b1020 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 18px;
-            padding: 18px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-            color: #f8fafc;
+            background: linear-gradient(145deg, var(--rc-card-bg), var(--surface-1));
+            border: 1px solid var(--rc-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            box-shadow: var(--rc-shadow-sm);
+            color: var(--text-primary);
         }
-
         .wc-tree-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            padding: 12px 14px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 12px;
+            gap: var(--space-sm);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            background: linear-gradient(145deg, var(--surface-1), var(--surface-2));
+            border: 1px solid var(--rc-border);
+            margin-bottom: var(--space-md);
         }
-
         .wc-tree-header .wc-title {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: var(--space-sm);
             font-weight: 700;
-            color: #fff;
+            color: var(--text-primary);
         }
-
+        .wc-tree-header .wc-title i {
+            color: var(--rc-primary);
+        }
         .wc-tree-header .wc-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: var(--space-xs);
         }
-
         .wc-tree-body {
             max-height: 560px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: var(--space-sm);
         }
-
         .wc-node {
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.02);
-            padding: 10px 12px;
+            position: relative;
+            border: 1px solid var(--rc-border);
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--surface-1), var(--surface-0));
+            padding: var(--space-md);
+            transition: background var(--transition-fast), border var(--transition-fast), box-shadow var(--transition-fast);
+            overflow: hidden;
         }
-
+        .wc-node::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            width: 3px;
+            background: transparent;
+            transition: background var(--transition-fast);
+        }
+        .wc-node:hover {
+            border-color: rgba(192, 85, 44, 0.35);
+            background: var(--surface-2);
+        }
+        .wc-node.open {
+            box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+        }
+        .wc-node.open::before {
+            background: linear-gradient(180deg, var(--rc-primary), transparent);
+        }
         .wc-node-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: var(--space-sm);
             cursor: pointer;
         }
-
         .wc-node-title {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: var(--space-sm);
             font-weight: 600;
+            color: var(--text-primary);
         }
-
+        .wc-node-title i {
+            color: var(--text-secondary);
+        }
         .wc-node-chevron {
-            transition: transform 0.2s ease;
+            transition: transform var(--transition-fast);
         }
-
         .wc-node.open .wc-node-chevron {
             transform: rotate(90deg);
         }
-
         .wc-node-body {
-            margin-top: 10px;
-            padding-left: 16px;
+            margin-top: var(--space-sm);
+            padding-left: var(--space-md);
+            border-left: 1px solid var(--rc-border);
             display: none;
-            gap: 8px;
+            gap: var(--space-sm);
             flex-direction: column;
         }
-
         .wc-node.open .wc-node-body {
             display: flex;
         }
-
         .wc-product {
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 10px;
-            padding: 10px;
-            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--rc-border);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            background: linear-gradient(135deg, var(--surface-0), var(--surface-1));
             display: grid;
             grid-template-columns: 1fr auto;
-            gap: 10px;
+            gap: var(--space-sm);
             align-items: center;
         }
-
         .wc-product-info {
             display: flex;
             flex-direction: column;
             gap: 4px;
         }
-
         .wc-product-title {
             display: flex;
             align-items: center;
             gap: 6px;
             font-weight: 700;
         }
-
+        .wc-product-title i {
+            color: var(--rc-primary);
+        }
         .wc-product-meta {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
-            color: #94a3b8;
+            color: var(--text-secondary);
             font-size: 12px;
         }
-
+        .wc-product-meta span {
+            background: var(--surface-2);
+            border: 1px solid var(--rc-border);
+            border-radius: 6px;
+            padding: 2px 6px;
+        }
         .wc-product-inputs {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             gap: 6px;
         }
-
         .wc-chip {
             display: inline-flex;
             align-items: center;
@@ -863,21 +884,25 @@
             padding: 4px 8px;
             border-radius: 999px;
             font-size: 12px;
-            background: rgba(255, 255, 255, 0.06);
-            color: #e2e8f0;
+            background: rgba(192, 85, 44, 0.16);
+            color: var(--rc-accent-200);
+            border: 1px solid rgba(192, 85, 44, 0.3);
         }
-
-        .wc-chip.success { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
-        .wc-chip.danger { background: rgba(248, 113, 113, 0.15); color: #f87171; }
-        .wc-chip.muted { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
-
+        .wc-chip.success { background: rgba(34, 197, 94, 0.18); color: var(--rc-success); border-color: rgba(34, 197, 94, 0.25); }
+        .wc-chip.danger { background: rgba(208, 2, 27, 0.18); color: var(--accent-red); border-color: rgba(208, 2, 27, 0.25); }
+        .wc-chip.muted { background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border-color: var(--surface-4); }
         .wc-qty-input {
             width: 90px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #fff;
+            background: var(--surface-2);
+            border: 1px solid var(--rc-border);
+            color: var(--text-primary);
             padding: 6px 8px;
             border-radius: 8px;
+            transition: all var(--transition-fast);
+        }
+        .wc-qty-input:focus {
+            outline: 1px solid var(--rc-primary);
+            box-shadow: 0 0 0 3px rgba(192, 85, 44, 0.25);
         }
         .rc-chip {
             display: inline-flex;
@@ -1470,6 +1495,7 @@
             const empty = document.getElementById('productTreeEmpty');
             const actions = document.getElementById('productTreeActions');
             const summary = document.getElementById('productTreeSummary');
+            productTreeExpanded = new Set();
 
             const jobId = getJobIdFromUrl();
             let url = `/api/v1/devices/tree/availability`;
@@ -1526,8 +1552,10 @@
             function visitCategory(category) {
                 if (Array.isArray(category.products)) {
                     category.products.forEach(product => {
+                        const productId = resolveProductId(product);
+                        if (productId === null || productId === undefined) return;
                         const stats = extractProductStats(product);
-                        availabilityMap.set(String(product.id), {
+                        availabilityMap.set(String(productId), {
                             available: stats.available,
                             total: stats.total
                         });
@@ -1541,8 +1569,10 @@
             function visitSubcategory(subcategory) {
                 if (Array.isArray(subcategory.products)) {
                     subcategory.products.forEach(product => {
+                        const productId = resolveProductId(product);
+                        if (productId === null || productId === undefined) return;
                         const stats = extractProductStats(product);
-                        availabilityMap.set(String(product.id), {
+                        availabilityMap.set(String(productId), {
                             available: stats.available,
                             total: stats.total
                         });
@@ -1556,8 +1586,10 @@
             function visitSubbiercategory(subbiercategory) {
                 if (Array.isArray(subbiercategory.products)) {
                     subbiercategory.products.forEach(product => {
+                        const productId = resolveProductId(product);
+                        if (productId === null || productId === undefined) return;
                         const stats = extractProductStats(product);
-                        availabilityMap.set(String(product.id), {
+                        availabilityMap.set(String(productId), {
                             available: stats.available,
                             total: stats.total
                         });
@@ -1585,15 +1617,11 @@
             idsToRemove.forEach(id => productSelections.delete(id));
         }
 
-        function toggleProductTreeNodes(open) {
-            const root = document.getElementById('productTreeRoot');
-            if (!root) {
-                return;
+        function resolveProductId(product) {
+            if (!product || typeof product !== 'object') {
+                return null;
             }
-            const nodes = root.querySelectorAll('details');
-            nodes.forEach(detail => {
-                detail.open = open;
-            });
+            return product.id ?? product.productID ?? product.ProductID ?? product.productId ?? product.Id ?? null;
         }
 
         function toNumber(value, fallback = 0) {
@@ -1774,7 +1802,13 @@
 
             const header = document.createElement('div');
             header.className = 'wc-node-header';
-            header.addEventListener('click', () => toggleNode(productTreeExpanded, nodeId));
+            const childIds = [];
+            (category.subcategories || []).forEach(sub => {
+                const subId = `sub-${sub.id}`;
+                childIds.push(subId);
+                (sub.subbiercategories || []).forEach(sb => childIds.push(`subbier-${sb.id}`));
+            });
+            header.addEventListener('click', () => toggleNode(productTreeExpanded, nodeId, childIds));
 
             const title = document.createElement('div');
             title.className = 'wc-node-title';
@@ -1809,7 +1843,8 @@
 
             const header = document.createElement('div');
             header.className = 'wc-node-header';
-            header.addEventListener('click', () => toggleNode(productTreeExpanded, nodeId));
+            const childIds = (subcategory.subbiercategories || []).map(sb => `subbier-${sb.id}`);
+            header.addEventListener('click', () => toggleNode(productTreeExpanded, nodeId, childIds));
 
             const title = document.createElement('div');
             title.className = 'wc-node-title';
@@ -1844,7 +1879,7 @@
 
             const header = document.createElement('div');
             header.className = 'wc-node-header';
-            header.addEventListener('click', () => toggleNode(productTreeExpanded, nodeId));
+            header.addEventListener('click', () => toggleNode(productTreeExpanded, nodeId, []));
 
             const title = document.createElement('div');
             title.className = 'wc-node-title';
@@ -1874,10 +1909,11 @@
             const stats = extractProductStats(product);
             const available = stats.available;
             const total = stats.total;
+            const productId = resolveProductId(product);
 
             const card = document.createElement('div');
             card.className = 'wc-product';
-            card.dataset.productId = String(product.id);
+            card.dataset.productId = productId !== null && productId !== undefined ? String(productId) : 'unknown';
 
             const info = document.createElement('div');
             info.className = 'wc-product-info';
@@ -1895,7 +1931,7 @@
             if (brand) meta.innerHTML += `<span>${escapeHtml(brand)}</span>`;
             if (manufacturer) meta.innerHTML += `<span>${escapeHtml(manufacturer)}</span>`;
             if (barcode) meta.innerHTML += `<span class="wc-chip muted">${escapeHtml(barcode)}</span>`;
-            if (meta.innerHTML === '') meta.innerHTML = '<span style="color:#64748b;">Keine Zusatzinfos</span>';
+            if (meta.innerHTML === '') meta.innerHTML = '<span style="color: var(--text-secondary);">Keine Zusatzinfos</span>';
             info.appendChild(meta);
 
             const inputs = document.createElement('div');
@@ -1910,13 +1946,17 @@
             input.type = 'number';
             input.min = '0';
             input.step = '1';
-            input.value = getCurrentQuantity(product.id);
+            input.value = getCurrentQuantity(productId);
             input.className = 'wc-qty-input';
             input.addEventListener('input', () => {
                 const value = Math.max(0, parseInt(input.value || '0', 10));
                 input.value = value;
                 setProductSelection(product, value);
             });
+            if (productId === null || productId === undefined) {
+                input.disabled = true;
+                input.title = 'Produkt-ID fehlt, Auswahl nicht möglich';
+            }
 
             inputs.appendChild(availChip);
             inputs.appendChild(input);
@@ -1926,8 +1966,13 @@
             return card;
         }
 
-        function toggleNode(set, id) {
-            if (set.has(id)) set.delete(id); else set.add(id);
+        function toggleNode(set, id, childIds = []) {
+            if (set.has(id)) {
+                set.delete(id);
+                childIds.forEach(child => set.delete(child));
+            } else {
+                set.add(id);
+            }
             renderProductTree(productTreeData);
         }
 
@@ -1944,194 +1989,10 @@
             renderProductTree(productTreeData);
         }
 
-        function renderSubcategory(subcategory, renderedProducts) {
-            const subDetails = document.createElement('details');
-            subDetails.open = false; // Collapsed by default
-            subDetails.className = 'rc-product-node rc-product-node-subcategory';
-
-            const summary = document.createElement('summary');
-            const subStats = collectNodeStats(subcategory);
-            summary.innerHTML = buildNodeHeader('subcategory', subcategory.name || 'Subcategory', subStats);
-            subDetails.appendChild(summary);
-
-            const body = document.createElement('div');
-            body.className = 'rc-product-node-body';
-
-            if (Array.isArray(subcategory.subbiercategories) && subcategory.subbiercategories.length > 0) {
-                subcategory.subbiercategories.forEach(subbiercategory => {
-                    const detail = document.createElement('details');
-                    detail.open = false; // Collapsed by default
-                    detail.className = 'rc-product-node rc-product-node-subbiercategory';
-                    const summary = document.createElement('summary');
-                    const subbierStats = collectNodeStats(subbiercategory);
-                    summary.innerHTML = buildNodeHeader('subbiercategory', subbiercategory.name || 'Group', subbierStats);
-                    detail.appendChild(summary);
-                    const list = document.createElement('div');
-                    list.className = 'rc-product-list';
-                    if (Array.isArray(subbiercategory.products)) {
-                        subbiercategory.products.forEach(product => {
-                            renderedProducts.add(String(product.id));
-                            list.appendChild(renderProductEntry(product));
-                        });
-                    }
-                    detail.appendChild(list);
-                    body.appendChild(detail);
-                });
-            }
-
-            if (Array.isArray(subcategory.products)) {
-                const remainingProducts = subcategory.products.filter(product => !renderedProducts.has(String(product.id)));
-                if (remainingProducts.length > 0) {
-                    const list = document.createElement('div');
-                    list.className = 'rc-product-list';
-                    remainingProducts.forEach(product => {
-                        renderedProducts.add(String(product.id));
-                        list.appendChild(renderProductEntry(product));
-                    });
-                    body.appendChild(list);
-                }
-            }
-
-            subDetails.appendChild(body);
-            return subDetails;
-        }
-
-        function renderProductEntry(product) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'rc-product-entry';
-            wrapper.dataset.productId = String(product.id);
-
-            const productStats = extractProductStats(product);
-            const available = productStats.available;
-            const total = productStats.total;
-            const percentAvailable = total > 0 ? Math.round((available / total) * 100) : 0;
-
-            const name = document.createElement('div');
-            name.className = 'rc-product-entry-name';
-
-            const title = document.createElement('div');
-            title.className = 'rc-product-entry-title';
-            title.innerHTML = `<i class="bi bi-box-seam"></i><span>${escapeHtml(product.name)}</span>`;
-            name.appendChild(title);
-
-            const subtitleBits = [];
-            const brand = product.brand_name || product.brandName || product.BrandName;
-            if (brand) {
-                subtitleBits.push(escapeHtml(brand));
-            }
-            const manufacturer = product.manufacturer_name || product.manufacturerName || product.ManufacturerName;
-            if (manufacturer) {
-                subtitleBits.push(escapeHtml(manufacturer));
-            }
-            const model = product.model_number || product.modelNumber || product.ModelNumber || product.product_code || product.ProductCode;
-            if (model) {
-                subtitleBits.push(`#${escapeHtml(model)}`);
-            }
-            if (subtitleBits.length > 0) {
-                const subtitle = document.createElement('div');
-                subtitle.className = 'rc-product-entry-subtitle';
-                subtitle.innerHTML = subtitleBits.join(' • ');
-                name.appendChild(subtitle);
-            }
-
-            const inputGroup = document.createElement('div');
-            inputGroup.className = 'rc-product-entry-input';
-
-            const quantityLabel = document.createElement('span');
-            quantityLabel.className = 'rc-product-entry-quantity-label';
-            quantityLabel.textContent = 'Quantity';
-            inputGroup.appendChild(quantityLabel);
-
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.min = '0';
-            input.step = '1';
-            input.value = getCurrentQuantity(product.id);
-            input.setAttribute('aria-label', `Select quantity for ${product.name}`);
-            input.title = `Enter quantity for ${product.name}`;
-
-            const meta = document.createElement('div');
-            meta.className = 'rc-product-entry-meta';
-
-            const availabilityClass = total === 0 ? 'rc-chip-muted' : available > 0 ? 'rc-chip-success' : 'rc-chip-danger';
-            const availabilityIcon = total === 0 ? 'bi-slash-circle' : available > 0 ? 'bi-lightning-charge' : 'bi-exclamation-octagon';
-            const availabilityBadge = document.createElement('span');
-            availabilityBadge.className = `rc-chip ${availabilityClass} rc-chip-pill`;
-            availabilityBadge.innerHTML = `<i class="bi ${availabilityIcon}"></i> ${available} / ${total || 0} ready`;
-            meta.appendChild(availabilityBadge);
-
-            const selectedBadge = document.createElement('span');
-            selectedBadge.className = 'rc-chip rc-chip-accent rc-chip-pill';
-            selectedBadge.style.display = 'none';
-            meta.appendChild(selectedBadge);
-
-            const progress = document.createElement('div');
-            progress.className = 'rc-product-entry-progress';
-            const progressTrack = document.createElement('div');
-            progressTrack.className = 'rc-product-entry-progress-track';
-            const progressBar = document.createElement('div');
-            progressBar.className = 'rc-product-entry-progress-bar';
-            if (available === 0) {
-                progressBar.classList.add('is-empty');
-            }
-            progressBar.style.width = `${Math.max(0, Math.min(100, percentAvailable))}%`;
-            progressTrack.appendChild(progressBar);
-            const progressLabel = document.createElement('span');
-            progressLabel.className = 'rc-product-entry-progress-text';
-            progressLabel.textContent = total > 0 ? `${percentAvailable}% available` : 'No devices yet';
-            progress.appendChild(progressTrack);
-            progress.appendChild(progressLabel);
-
-            inputGroup.appendChild(input);
-            inputGroup.appendChild(meta);
-            inputGroup.appendChild(progress);
-
-            wrapper.appendChild(name);
-            wrapper.appendChild(inputGroup);
-
-            function updateProductEntryState(quantityValue) {
-                const value = quantityValue !== undefined ? quantityValue : Math.max(0, parseInt(input.value || '0', 10));
-                const overbooked = total > 0 && value > available;
-                const hasSelection = value > 0;
-                const unavailable = total === 0 || available === 0;
-
-                wrapper.classList.toggle('rc-product-entry-selected', hasSelection);
-                wrapper.classList.toggle('rc-product-entry-overbooked', overbooked);
-                wrapper.classList.toggle('rc-product-entry-unavailable', unavailable);
-
-                selectedBadge.textContent = `Selected: ${value}`;
-                selectedBadge.style.display = hasSelection ? 'inline-flex' : 'none';
-
-                if (overbooked) {
-                    progressLabel.textContent = `Need ${value - available} more`;
-                    progressBar.classList.add('is-warning');
-                } else {
-                    progressLabel.textContent = total > 0 ? `${percentAvailable}% available` : 'No devices yet';
-                    progressBar.classList.remove('is-warning');
-                }
-            }
-
-            input.addEventListener('input', () => {
-                const value = Math.max(0, parseInt(input.value || '0', 10));
-                input.value = value;
-                setProductSelection(product, value);
-                updateProductEntryState(value);
-            });
-
-            wrapper.addEventListener('click', () => {
-                input.focus();
-            });
-
-            input.addEventListener('click', event => {
-                event.stopPropagation();
-            });
-
-            updateProductEntryState(parseInt(input.value || '0', 10));
-
-            return wrapper;
-        }
-
         function getCurrentQuantity(productID) {
+            if (productID === null || productID === undefined) {
+                return 0;
+            }
             const key = String(productID);
             if (productSelections.has(key)) {
                 return productSelections.get(key).quantity;
@@ -2143,12 +2004,16 @@
         }
 
         function setProductSelection(product, quantity) {
-            const key = String(product.id);
+            const productId = resolveProductId(product);
+            if (productId === null || productId === undefined) {
+                return;
+            }
+            const key = String(productId);
             const stats = extractProductStats(product);
             const previousEntry = productSelections.get(key) || initialProductSelections.get(key);
             const previousQuantity = previousEntry ? previousEntry.quantity || 0 : 0;
             const entry = productSelections.get(key) || {
-                id: product.id,
+                id: productId,
                 name: product.name,
                 available: stats.available,
                 total: stats.total,
@@ -2168,7 +2033,7 @@
             const effectiveJobId = currentJobId || {{if .job.JobID}}{{.job.JobID}}{{else}}null{{end}};
             const increase = quantity - previousQuantity;
             if (increase > 0 && effectiveJobId) {
-                checkAndPromptAccessoriesConsumables(product.id, null, increase, effectiveJobId);
+                checkAndPromptAccessoriesConsumables(productId, null, increase, effectiveJobId);
             }
 
             updateSelectedProductsSummary();
