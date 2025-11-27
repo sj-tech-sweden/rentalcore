@@ -916,26 +916,26 @@
                         </div>
                         <div class="rc-card-body">
                             <div id="editProductSelectionContainer">
-                                <div class="rc-product-tree-frame">
-                                    <div class="rc-product-tree-toolbar" id="editProductTreeActions" style="display: none;">
-                                        <div class="rc-product-tree-status">
+                                <div class="wc-tree-card">
+                                    <div class="wc-tree-header">
+                                        <div class="wc-title">
                                             <i class="bi bi-stars"></i>
-                                            <span id="editProductTreeSummary">Pick a timeframe to see live availability.</span>
+                                            <span id="editProductTreeSummary">Bitte Zeitraum wählen…</span>
                                         </div>
-                                        <div class="rc-product-tree-controls">
+                                        <div class="wc-actions">
                                             <button type="button" class="rc-btn rc-btn-ghost rc-btn-xs" data-action="edit-collapse-product-tree">
-                                                <i class="bi bi-chevron-up"></i> Collapse All
+                                                <i class="bi bi-chevron-up"></i> Collapse
                                             </button>
                                             <button type="button" class="rc-btn rc-btn-outline rc-btn-xs" data-action="edit-expand-product-tree">
-                                                <i class="bi bi-arrows-expand"></i> Expand All
+                                                <i class="bi bi-arrows-expand"></i> Expand
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="rc-flex rc-flex-center rc-py-xl" id="editProductTreeLoading">
+                                    <div class="rc-flex rc-flex-center rc-py-lg" id="editProductTreeLoading">
                                         <i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i>
                                         Please select start and end dates to load available products
                                     </div>
-                                    <div id="editProductTreeRoot" class="rc-product-tree" style="display: none;"></div>
+                                    <div id="editProductTreeRoot" class="wc-tree-body" style="display: none;"></div>
                                     <div id="editProductTreeEmpty" class="rc-alert rc-alert-info rc-mt-lg" style="display: none;">
                                         <i class="bi bi-info-circle"></i> No products found for the selected dates.
                                     </div>
@@ -1441,6 +1441,7 @@
     let editProductValidationErrors = [];
     let currentEditingJobId = null;
     let editProductTreeControlsBound = false;
+    let editProductTreeExpanded = new Set();
 
     function initializeEditProductSelections(jobID, existingDevices) {
         editProductSelections = new Map();
@@ -1489,7 +1490,7 @@
         const loading = document.getElementById('editProductTreeLoading');
         const root = document.getElementById('editProductTreeRoot');
         const empty = document.getElementById('editProductTreeEmpty');
-        const actions = document.getElementById('editProductTreeActions');
+        const actions = null;
 
         if (!startDate || !endDate) {
             if (loading) {
@@ -1741,26 +1742,22 @@
         `;
     }
 
+    // Warehouse-style renderers for edit modal
     function renderEditProductTree(treeData) {
         const loading = document.getElementById('editProductTreeLoading');
         const root = document.getElementById('editProductTreeRoot');
         const empty = document.getElementById('editProductTreeEmpty');
-        const actions = document.getElementById('editProductTreeActions');
+        const summary = document.getElementById('editProductTreeSummary');
 
-        if (!root) {
-            return;
-        }
+        if (!root) return;
 
         root.innerHTML = '';
-
-        if (loading) {
-            loading.style.display = 'none';
-        }
+        if (loading) loading.style.display = 'none';
 
         if (!Array.isArray(treeData) || treeData.length === 0) {
             if (empty) empty.style.display = 'block';
             root.style.display = 'none';
-            if (actions) actions.style.display = 'none';
+            if (summary) summary.textContent = 'No products found for the selected dates.';
             updateEditProductTreeSummary({ products: 0, available: 0, total: 0 }, 0);
             updateEditSelectedProductsSummary();
             updateEditHiddenProductInput();
@@ -1769,267 +1766,198 @@
         }
 
         if (empty) empty.style.display = 'none';
-        root.style.display = 'block';
+        root.style.display = 'flex';
         const totals = editCollectTreeStats(treeData);
         updateEditProductTreeSummary(totals, treeData.length);
-        if (actions) {
-            actions.style.display = 'flex';
-        }
-
-        const renderedProducts = new Set();
 
         treeData.forEach(category => {
-            const categoryDetails = document.createElement('details');
-            categoryDetails.open = false;
-            categoryDetails.className = 'rc-product-node rc-product-node-category';
-
-            const summary = document.createElement('summary');
-            const categoryStats = editCollectNodeStats(category);
-            summary.innerHTML = editBuildNodeHeader('category', category.name, categoryStats);
-            categoryDetails.appendChild(summary);
-
-            const body = document.createElement('div');
-            body.className = 'rc-product-node-body';
-
-            if (Array.isArray(category.subcategories) && category.subcategories.length > 0) {
-                category.subcategories.forEach(subcategory => {
-                    body.appendChild(renderEditSubcategory(subcategory, renderedProducts));
-                });
-            }
-
-            if (Array.isArray(category.products)) {
-                const remaining = category.products.filter(product => !renderedProducts.has(String(product.id)));
-                if (remaining.length > 0) {
-                    const list = document.createElement('div');
-                    list.className = 'rc-product-list';
-                    remaining.forEach(product => {
-                        renderedProducts.add(String(product.id));
-                        list.appendChild(renderEditProductEntry(product));
-                    });
-                    body.appendChild(list);
-                }
-            }
-
-            categoryDetails.appendChild(body);
-            root.appendChild(categoryDetails);
+            root.appendChild(renderEditCategoryNode(category, 'edit-cat-' + category.id));
         });
 
-        toggleEditProductTreeNodes(false);
         updateEditSelectedProductsSummary();
         updateEditHiddenProductInput();
         validateEditProductSelections();
     }
 
-    function renderEditSubcategory(subcategory, renderedProducts) {
-        const subDetails = document.createElement('details');
-        subDetails.open = false;
-        subDetails.className = 'rc-product-node rc-product-node-subcategory';
+    function renderEditCategoryNode(category, nodeId) {
+        const node = document.createElement('div');
+        node.className = 'wc-node';
+        if (editProductTreeExpanded.has(nodeId)) node.classList.add('open');
 
-        const summary = document.createElement('summary');
-        const subStats = editCollectNodeStats(subcategory);
-        summary.innerHTML = editBuildNodeHeader('subcategory', subcategory.name || 'Subcategory', subStats);
-        subDetails.appendChild(summary);
+        const header = document.createElement('div');
+        header.className = 'wc-node-header';
+        header.addEventListener('click', () => toggleEditNode(nodeId));
+
+        const title = document.createElement('div');
+        title.className = 'wc-node-title';
+        title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(category.name || 'Kategorie')}</span>`;
+
+        const stats = editCollectNodeStats(category);
+        const chips = document.createElement('div');
+        chips.className = 'rc-node-metrics';
+        chips.innerHTML = `
+            <span class="wc-chip">${stats.products} Produkte</span>
+            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+        `;
+
+        header.appendChild(title);
+        header.appendChild(chips);
 
         const body = document.createElement('div');
-        body.className = 'rc-product-node-body';
+        body.className = 'wc-node-body';
 
-        if (Array.isArray(subcategory.subbiercategories) && subcategory.subbiercategories.length > 0) {
-            subcategory.subbiercategories.forEach(subbiercategory => {
-                const detail = document.createElement('details');
-                detail.open = false;
-                detail.className = 'rc-product-node rc-product-node-subbiercategory';
-                const summary = document.createElement('summary');
-                const subbierStats = editCollectNodeStats(subbiercategory);
-                summary.innerHTML = editBuildNodeHeader('subbiercategory', subbiercategory.name || 'Group', subbierStats);
-                detail.appendChild(summary);
-                const list = document.createElement('div');
-                list.className = 'rc-product-list';
-                if (Array.isArray(subbiercategory.products)) {
-                    subbiercategory.products.forEach(product => {
-                        renderedProducts.add(String(product.id));
-                        list.appendChild(renderEditProductEntry(product));
-                    });
-                }
-                detail.appendChild(list);
-                body.appendChild(detail);
-            });
-        }
+        (category.subcategories || []).forEach(sub => body.appendChild(renderEditSubcategoryNode(sub, `edit-sub-${sub.id}`)));
+        (category.products || []).forEach(product => body.appendChild(renderEditProductCard(product)));
 
-        if (Array.isArray(subcategory.products)) {
-            const remaining = subcategory.products.filter(product => !renderedProducts.has(String(product.id)));
-            if (remaining.length > 0) {
-                const list = document.createElement('div');
-                list.className = 'rc-product-list';
-                remaining.forEach(product => {
-                    renderedProducts.add(String(product.id));
-                    list.appendChild(renderEditProductEntry(product));
-                });
-                body.appendChild(list);
-            }
-        }
-
-        subDetails.appendChild(body);
-        return subDetails;
+        node.appendChild(header);
+        node.appendChild(body);
+        return node;
     }
 
-    function renderEditProductEntry(product) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'rc-product-entry';
-        wrapper.dataset.productId = String(product.id);
+    function renderEditSubcategoryNode(subcategory, nodeId) {
+        const node = document.createElement('div');
+        node.className = 'wc-node';
+        if (editProductTreeExpanded.has(nodeId)) node.classList.add('open');
 
+        const header = document.createElement('div');
+        header.className = 'wc-node-header';
+        header.addEventListener('click', () => toggleEditNode(nodeId));
+
+        const title = document.createElement('div');
+        title.className = 'wc-node-title';
+        title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(subcategory.name || 'Subcategory')}</span>`;
+
+        const stats = editCollectNodeStats(subcategory);
+        const chips = document.createElement('div');
+        chips.className = 'rc-node-metrics';
+        chips.innerHTML = `
+            <span class="wc-chip">${stats.products} Produkte</span>
+            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+        `;
+
+        header.appendChild(title);
+        header.appendChild(chips);
+
+        const body = document.createElement('div');
+        body.className = 'wc-node-body';
+
+        (subcategory.subbiercategories || []).forEach(sb => body.appendChild(renderEditSubbiercategoryNode(sb, `edit-subbier-${sb.id}`)));
+        (subcategory.products || []).forEach(product => body.appendChild(renderEditProductCard(product)));
+
+        node.appendChild(header);
+        node.appendChild(body);
+        return node;
+    }
+
+    function renderEditSubbiercategoryNode(subbiercategory, nodeId) {
+        const node = document.createElement('div');
+        node.className = 'wc-node';
+        if (editProductTreeExpanded.has(nodeId)) node.classList.add('open');
+
+        const header = document.createElement('div');
+        header.className = 'wc-node-header';
+        header.addEventListener('click', () => toggleEditNode(nodeId));
+
+        const title = document.createElement('div');
+        title.className = 'wc-node-title';
+        title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(subbiercategory.name || 'Group')}</span>`;
+
+        const stats = editCollectNodeStats(subbiercategory);
+        const chips = document.createElement('div');
+        chips.className = 'rc-node-metrics';
+        chips.innerHTML = `
+            <span class="wc-chip">${stats.products} Produkte</span>
+            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+        `;
+
+        header.appendChild(title);
+        header.appendChild(chips);
+
+        const body = document.createElement('div');
+        body.className = 'wc-node-body';
+        (subbiercategory.products || []).forEach(product => body.appendChild(renderEditProductCard(product)));
+
+        node.appendChild(header);
+        node.appendChild(body);
+        return node;
+    }
+
+    function renderEditProductCard(product) {
         const stats = extractEditProductStats(product);
         const available = stats.available;
         const total = stats.total;
-        const percentAvailable = total > 0 ? Math.round((available / total) * 100) : 0;
 
-        const name = document.createElement('div');
-        name.className = 'rc-product-entry-name';
+        const card = document.createElement('div');
+        card.className = 'wc-product';
+        card.dataset.productId = String(product.id);
+
+        const info = document.createElement('div');
+        info.className = 'wc-product-info';
 
         const title = document.createElement('div');
-        title.className = 'rc-product-entry-title';
+        title.className = 'wc-product-title';
         title.innerHTML = `<i class="bi bi-box-seam"></i><span>${escapeHtml(product.name)}</span>`;
-        name.appendChild(title);
+        info.appendChild(title);
 
-        const subtitleBits = [];
+        const meta = document.createElement('div');
+        meta.className = 'wc-product-meta';
         const brand = product.brand_name || product.BrandName;
-        if (brand) {
-            subtitleBits.push(escapeHtml(brand));
-        }
         const manufacturer = product.manufacturer_name || product.ManufacturerName;
-        if (manufacturer) {
-            subtitleBits.push(escapeHtml(manufacturer));
-        }
-        const model = product.model_number || product.modelNumber || product.product_code || product.ProductCode || product.generic_barcode;
-        if (model) {
-            subtitleBits.push(`#${escapeHtml(model)}`);
-        }
-        if (subtitleBits.length > 0) {
-            const subtitle = document.createElement('div');
-            subtitle.className = 'rc-product-entry-subtitle';
-            subtitle.innerHTML = subtitleBits.join(' • ');
-            name.appendChild(subtitle);
-        }
+        const barcode = product.generic_barcode || product.GenericBarcode;
+        if (brand) meta.innerHTML += `<span>${escapeHtml(brand)}</span>`;
+        if (manufacturer) meta.innerHTML += `<span>${escapeHtml(manufacturer)}</span>`;
+        if (barcode) meta.innerHTML += `<span class="wc-chip muted">${escapeHtml(barcode)}</span>`;
+        if (meta.innerHTML === '') meta.innerHTML = '<span style="color:#64748b;">Keine Zusatzinfos</span>';
+        info.appendChild(meta);
 
-        const inputGroup = document.createElement('div');
-        inputGroup.className = 'rc-product-entry-input';
+        const inputs = document.createElement('div');
+        inputs.className = 'wc-product-inputs';
 
-        const quantityLabel = document.createElement('span');
-        quantityLabel.className = 'rc-product-entry-quantity-label';
-        quantityLabel.textContent = 'Quantity';
-        inputGroup.appendChild(quantityLabel);
+        const availChip = document.createElement('span');
+        const availClass = total === 0 ? 'muted' : available > 0 ? 'success' : 'danger';
+        availChip.className = `wc-chip ${availClass}`;
+        availChip.innerHTML = `<i class="bi bi-lightning-charge"></i> ${available} / ${total || 0} frei`;
 
         const input = document.createElement('input');
         input.type = 'number';
         input.min = '0';
         input.step = '1';
         input.value = getEditCurrentQuantity(product.id);
-        input.setAttribute('aria-label', `Select quantity for ${product.name}`);
-        input.title = `Enter quantity for ${product.name}`;
-
-        const meta = document.createElement('div');
-        meta.className = 'rc-product-entry-meta';
-
-        const availabilityClass = total === 0 ? 'rc-chip-muted' : available > 0 ? 'rc-chip-success' : 'rc-chip-danger';
-        const availabilityIcon = total === 0 ? 'bi-slash-circle' : available > 0 ? 'bi-lightning-charge' : 'bi-exclamation-octagon';
-        const availabilityBadge = document.createElement('span');
-        availabilityBadge.className = `rc-chip ${availabilityClass} rc-chip-pill`;
-        availabilityBadge.innerHTML = `<i class="bi ${availabilityIcon}"></i> ${available} / ${total || 0} ready`;
-        meta.appendChild(availabilityBadge);
-
-        const tagRow = document.createElement('div');
-        tagRow.className = 'rc-product-entry-tags';
-        if (product.is_consumable || product.IsConsumable) {
-            const tag = document.createElement('span');
-            tag.className = 'rc-chip rc-chip-accent rc-chip-pill';
-            tag.textContent = 'Consumable';
-            tagRow.appendChild(tag);
-        }
-        if (product.is_accessory || product.IsAccessory) {
-            const tag = document.createElement('span');
-            tag.className = 'rc-chip rc-chip-primary rc-chip-pill';
-            tag.textContent = 'Accessory';
-            tagRow.appendChild(tag);
-        }
-        const unit = product.count_type_abbr || product.CountTypeAbbr;
-        if (unit) {
-            const tag = document.createElement('span');
-            tag.className = 'rc-chip rc-chip-neutral rc-chip-pill';
-            tag.textContent = unit;
-            tagRow.appendChild(tag);
-        }
-        if (tagRow.childNodes.length > 0) {
-            meta.appendChild(tagRow);
-        }
-
-        const selectedBadge = document.createElement('span');
-        selectedBadge.className = 'rc-chip rc-chip-accent rc-chip-pill';
-        selectedBadge.style.display = 'none';
-        meta.appendChild(selectedBadge);
-
-        const progress = document.createElement('div');
-        progress.className = 'rc-product-entry-progress';
-        const progressTrack = document.createElement('div');
-        progressTrack.className = 'rc-product-entry-progress-track';
-        const progressBar = document.createElement('div');
-        progressBar.className = 'rc-product-entry-progress-bar';
-        if (available === 0) {
-            progressBar.classList.add('is-empty');
-        }
-        progressBar.style.width = `${Math.max(0, Math.min(100, percentAvailable))}%`;
-        progressTrack.appendChild(progressBar);
-        const progressLabel = document.createElement('span');
-        progressLabel.className = 'rc-product-entry-progress-text';
-        progressLabel.textContent = total > 0 ? `${percentAvailable}% available` : 'No devices yet';
-        progress.appendChild(progressTrack);
-        progress.appendChild(progressLabel);
-
-        inputGroup.appendChild(input);
-        inputGroup.appendChild(meta);
-        inputGroup.appendChild(progress);
-
-        wrapper.appendChild(name);
-        wrapper.appendChild(inputGroup);
-
-        function updateProductEntryState(quantityValue) {
-            const value = quantityValue !== undefined ? quantityValue : Math.max(0, parseInt(input.value || '0', 10));
-            const overbooked = total > 0 && value > available;
-            const hasSelection = value > 0;
-            const unavailable = total === 0 || available === 0;
-
-            wrapper.classList.toggle('rc-product-entry-selected', hasSelection);
-            wrapper.classList.toggle('rc-product-entry-overbooked', overbooked);
-            wrapper.classList.toggle('rc-product-entry-unavailable', unavailable);
-
-            selectedBadge.textContent = `Selected: ${value}`;
-            selectedBadge.style.display = hasSelection ? 'inline-flex' : 'none';
-
-            if (overbooked) {
-                progressLabel.textContent = `Need ${value - available} more`;
-                progressBar.classList.add('is-warning');
-            } else {
-                progressLabel.textContent = total > 0 ? `${percentAvailable}% available` : 'No devices yet';
-                progressBar.classList.remove('is-warning');
-            }
-        }
-
+        input.className = 'wc-qty-input';
         input.addEventListener('input', () => {
             const value = Math.max(0, parseInt(input.value || '0', 10));
             input.value = value;
             setEditProductSelection(product, value);
-            updateProductEntryState(value);
         });
 
-        wrapper.addEventListener('click', () => {
-            input.focus();
+        inputs.appendChild(availChip);
+        inputs.appendChild(input);
+
+        card.appendChild(info);
+        card.appendChild(inputs);
+        return card;
+    }
+
+    function toggleEditNode(id) {
+        if (editProductTreeExpanded.has(id)) {
+            editProductTreeExpanded.delete(id);
+        } else {
+            editProductTreeExpanded.add(id);
+        }
+        renderEditProductTree(editProductTreeData);
+    }
+
+    function toggleEditProductTreeNodes(open) {
+        const ids = [];
+        editProductTreeData.forEach(cat => {
+            ids.push('edit-cat-' + cat.id);
+            (cat.subcategories || []).forEach(sub => {
+                ids.push('edit-sub-' + sub.id);
+                (sub.subbiercategories || []).forEach(sb => ids.push('edit-subbier-' + sb.id));
+            });
         });
-
-        input.addEventListener('click', event => {
-            event.stopPropagation();
-        });
-
-        updateProductEntryState(parseInt(input.value || '0', 10));
-
-        return wrapper;
+        editProductTreeExpanded = new Set(open ? ids : []);
+        renderEditProductTree(editProductTreeData);
     }
 
     function getEditCurrentQuantity(productID) {
@@ -4710,6 +4638,135 @@ function showToast(message, type) {
             transform: scale(1.1);
         }
 
+        /* Warehouse-style Tree Card */
+        .wc-tree-card {
+            background: linear-gradient(135deg, #0f172a 0%, #0b1020 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+            color: #f8fafc;
+        }
+        .wc-tree-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
+        }
+        .wc-tree-header .wc-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .wc-tree-header .wc-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .wc-tree-body {
+            max-height: 560px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .wc-node {
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px 12px;
+        }
+        .wc-node-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .wc-node-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        .wc-node-chevron {
+            transition: transform 0.2s ease;
+        }
+        .wc-node.open .wc-node-chevron {
+            transform: rotate(90deg);
+        }
+        .wc-node-body {
+            margin-top: 10px;
+            padding-left: 16px;
+            display: none;
+            gap: 8px;
+            flex-direction: column;
+        }
+        .wc-node.open .wc-node-body {
+            display: flex;
+        }
+        .wc-product {
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(15, 23, 42, 0.7);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+        .wc-product-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .wc-product-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+        }
+        .wc-product-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        .wc-product-inputs {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+        .wc-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #e2e8f0;
+        }
+        .wc-chip.success { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+        .wc-chip.danger { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+        .wc-chip.muted { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+        .wc-qty-input {
+            width: 90px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 8px;
+        }
         /* Node Header - Better Layout */
         .rc-node-header {
             display: flex;

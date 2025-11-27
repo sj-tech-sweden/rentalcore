@@ -298,26 +298,26 @@
                         </div>
                         <div class="rc-card-body">
                             <div id="productSelectionContainer">
-                                <div class="rc-product-tree-frame">
-                                    <div class="rc-product-tree-toolbar" id="productTreeActions" style="display: none;">
-                                        <div class="rc-product-tree-status">
+                                <div class="wc-tree-card">
+                                    <div class="wc-tree-header">
+                                        <div class="wc-title">
                                             <i class="bi bi-stars"></i>
-                                            <span id="productTreeSummary">Build the perfect kit by browsing categories or searching below.</span>
+                                            <span id="productTreeSummary">Produkte werden geladen…</span>
                                         </div>
-                                        <div class="rc-product-tree-controls">
+                                        <div class="wc-actions">
                                             <button type="button" class="rc-btn rc-btn-ghost rc-btn-xs" data-action="collapse-product-tree">
-                                                <i class="bi bi-chevron-up"></i> Collapse All
+                                                <i class="bi bi-chevron-up"></i> Collapse
                                             </button>
                                             <button type="button" class="rc-btn rc-btn-outline rc-btn-xs" data-action="expand-product-tree">
-                                                <i class="bi bi-arrows-expand"></i> Expand All
+                                                <i class="bi bi-arrows-expand"></i> Expand
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="rc-flex rc-flex-center rc-py-xl" id="productTreeLoading">
+                                    <div class="rc-flex rc-flex-center rc-py-lg" id="productTreeLoading">
                                         <i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i>
                                         Loading products...
                                     </div>
-                                    <div id="productTreeRoot" class="rc-product-tree" style="display: none;"></div>
+                                    <div id="productTreeRoot" class="wc-tree-body" style="display: none;"></div>
                                     <div id="productTreeEmpty" class="rc-alert rc-alert-info rc-mt-lg" style="display: none;">
                                         <i class="bi bi-info-circle"></i> No products found.
                                     </div>
@@ -731,213 +731,154 @@
             gap: 10px;
         }
 
-        /* Product Tree Container - Premium Dark Card Style */
-        .rc-product-tree-frame {
-            background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-0) 100%);
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--surface-3);
-            padding: var(--space-xl);
-            box-shadow: var(--shadow-xl), 0 0 40px rgba(0, 0, 0, 0.4);
-            position: relative;
-            overflow: hidden;
-            min-height: 360px;
-            isolation: isolate;
+        /* Warehouse-style Tree Card */
+        .wc-tree-card {
+            background: linear-gradient(135deg, #0f172a 0%, #0b1020 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+            color: #f8fafc;
         }
 
-        .rc-product-tree-frame::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-        }
-
-        /* Toolbar - Clean & Modern */
-        .rc-product-tree-toolbar {
+        .wc-tree-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            flex-wrap: wrap;
-            gap: var(--space-lg);
-            padding: var(--space-lg);
-            border-radius: var(--radius-md);
-            background: var(--surface-0);
-            border: 1px solid var(--surface-4);
-            box-shadow: var(--shadow-md);
-            margin-bottom: var(--space-xl);
-            backdrop-filter: blur(8px);
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 12px;
         }
 
-        .rc-product-tree-status {
+        .wc-tree-header .wc-title {
             display: flex;
             align-items: center;
-            gap: var(--space-md);
-            color: var(--text-primary);
-            font-size: 0.95rem;
-            font-weight: 500;
+            gap: 8px;
+            font-weight: 700;
+            color: #fff;
         }
 
-        .rc-product-tree-status i {
-            color: var(--accent-red);
-            font-size: 1.1rem;
-            filter: drop-shadow(0 0 8px rgba(208, 2, 27, 0.4));
-        }
-
-        .rc-product-tree-controls {
+        .wc-tree-header .wc-actions {
             display: flex;
             align-items: center;
-            gap: var(--space-sm);
-            flex-wrap: wrap;
-            justify-content: flex-end;
+            gap: 8px;
         }
 
-        .rc-btn.rc-btn-ghost {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--text-secondary);
-            transition: all var(--transition-fast);
-        }
-
-        .rc-btn.rc-btn-ghost:hover {
-            background: var(--surface-3);
-            color: var(--accent-red);
-            border-color: var(--surface-4);
-            transform: translateY(-1px);
-        }
-
-        /* Product Tree - Enhanced Visual Hierarchy */
-        .rc-product-tree {
+        .wc-tree-body {
+            max-height: 560px;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: var(--space-md);
-            max-height: min(65vh, 640px);
-            overflow-y: auto;
-            padding-right: var(--space-sm);
-            padding-bottom: var(--space-md);
-            margin-right: calc(var(--space-sm) * -1);
-            scrollbar-width: thin;
-            scrollbar-color: var(--surface-3) transparent;
-            scroll-behavior: smooth;
-            scroll-padding-top: var(--space-lg);
+            gap: 8px;
         }
 
-        .rc-product-tree::-webkit-scrollbar {
-            width: 6px;
+        .wc-node {
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px 12px;
         }
 
-        .rc-product-tree::-webkit-scrollbar-thumb {
-            background: var(--surface-3);
-            border-radius: 999px;
-        }
-
-        .rc-product-tree::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .rc-product-tree details {
-            border: 1px solid var(--surface-4);
-            border-radius: var(--radius-md);
-            background: var(--surface-0);
-            transition: all var(--transition-normal);
-            overflow: hidden;
-            box-shadow: var(--shadow-md);
-        }
-
-        .rc-product-tree details[open] {
-            border-color: rgba(208, 2, 27, 0.5);
-            box-shadow: 0 0 0 1px rgba(208, 2, 27, 0.3),
-                        0 8px 24px rgba(0, 0, 0, 0.4),
-                        0 0 20px rgba(208, 2, 27, 0.1);
-            background: var(--surface-1);
-        }
-
-        /* Summary - Improved Touch Target & Style */
-        .rc-product-tree summary {
-            cursor: pointer;
-            padding: var(--space-md) var(--space-lg);
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-            user-select: none;
-            transition: all var(--transition-fast);
-            list-style: none;
-            background: transparent;
-            min-height: 48px;
-        }
-
-        .rc-product-tree summary::marker,
-        .rc-product-tree summary::-webkit-details-marker {
-            display: none;
-        }
-
-        .rc-product-tree summary::before {
-            content: '▸';
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            border-radius: var(--radius-sm);
-            background: var(--surface-3);
-            color: var(--text-primary);
-            font-size: 0.8rem;
-            transition: all var(--transition-normal);
-            flex-shrink: 0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .rc-product-tree details[open] > summary::before {
-            transform: rotate(90deg);
-            background: linear-gradient(135deg, rgba(208, 2, 27, 0.4), rgba(208, 2, 27, 0.2));
-            box-shadow: 0 0 12px rgba(208, 2, 27, 0.3);
-        }
-
-        .rc-product-tree summary:hover {
-            background: var(--surface-2);
-        }
-
-        .rc-product-tree summary:hover::before {
-            background: var(--surface-4);
-            transform: scale(1.1);
-        }
-
-        /* Node Header - Better Layout */
-        .rc-node-header {
+        .wc-node-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: var(--space-lg);
-            width: 100%;
+            gap: 10px;
+            cursor: pointer;
         }
 
-        .rc-node-title {
+        .wc-node-title {
             display: flex;
             align-items: center;
-            gap: var(--space-md);
-            color: var(--text-primary);
-            font-size: 1.05rem;
+            gap: 10px;
+            font-weight: 600;
         }
 
-        .rc-node-title i {
-            padding: var(--space-sm);
-            border-radius: var(--radius-sm);
-            background: linear-gradient(135deg, var(--surface-4), var(--surface-3));
-            color: var(--text-primary);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        .wc-node-chevron {
+            transition: transform 0.2s ease;
         }
 
-        .rc-node-metrics {
+        .wc-node.open .wc-node-chevron {
+            transform: rotate(90deg);
+        }
+
+        .wc-node-body {
+            margin-top: 10px;
+            padding-left: 16px;
+            display: none;
+            gap: 8px;
+            flex-direction: column;
+        }
+
+        .wc-node.open .wc-node-body {
+            display: flex;
+        }
+
+        .wc-product {
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(15, 23, 42, 0.7);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .wc-product-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .wc-product-title {
             display: flex;
             align-items: center;
+            gap: 6px;
+            font-weight: 700;
+        }
+
+        .wc-product-meta {
+            display: flex;
             flex-wrap: wrap;
-            justify-content: flex-end;
-            gap: var(--space-sm);
+            gap: 6px;
+            color: #94a3b8;
+            font-size: 12px;
         }
 
-        /* Chips - Modern Badge Style */
+        .wc-product-inputs {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .wc-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #e2e8f0;
+        }
+
+        .wc-chip.success { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+        .wc-chip.danger { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+        .wc-chip.muted { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+
+        .wc-qty-input {
+            width: 90px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 8px;
+        }
         .rc-chip {
             display: inline-flex;
             align-items: center;
@@ -1470,6 +1411,7 @@
         let productTreeData = [];
         let productValidationErrors = [];
         let productTreeControlsBound = false;
+        let productTreeExpanded = new Set();
 
         function getJobIdFromUrl() {
             const path = window.location.pathname;
@@ -1787,31 +1729,22 @@
             summary.textContent = parts.join(' • ');
         }
 
+        // Warehouse-style product tree rendering
         function renderProductTree(treeData) {
             const loading = document.getElementById('productTreeLoading');
             const root = document.getElementById('productTreeRoot');
             const empty = document.getElementById('productTreeEmpty');
-            const actions = document.getElementById('productTreeActions');
+            const summary = document.getElementById('productTreeSummary');
 
-            console.log('🎨 renderProductTree called with:', treeData);
-            console.log('🎨 productTreeRoot element:', root);
-
-            if (!root) {
-                console.error('❌ productTreeRoot element not found!');
-                return;
-            }
+            if (!root) return;
 
             root.innerHTML = '';
-            if (actions) {
-                actions.style.display = 'none';
-            }
-
             if (loading) loading.style.display = 'none';
 
             if (!Array.isArray(treeData) || treeData.length === 0) {
-                console.log('⚠️ No tree data to render');
                 if (empty) empty.style.display = 'block';
                 root.style.display = 'none';
+                if (summary) summary.textContent = 'Keine Produkte gefunden.';
                 updateProductTreeSummary({ products: 0, available: 0, total: 0 }, 0);
                 updateSelectedProductsSummary();
                 updateHiddenProductInput();
@@ -1819,57 +1752,196 @@
                 return;
             }
 
-            console.log('✅ Rendering', treeData.length, 'categories');
             if (empty) empty.style.display = 'none';
-            root.style.display = 'block';
+            root.style.display = 'flex';
+
             const totals = collectTreeStats(treeData);
             updateProductTreeSummary(totals, treeData.length);
-            if (actions) {
-                actions.style.display = 'flex';
-            }
-
-            const renderedProducts = new Set();
 
             treeData.forEach(category => {
-                const categoryDetails = document.createElement('details');
-                categoryDetails.open = false; // Collapsed by default
-                categoryDetails.className = 'rc-product-node rc-product-node-category';
-
-                const summary = document.createElement('summary');
-                const categoryStats = collectNodeStats(category);
-                summary.innerHTML = buildNodeHeader('category', category.name, categoryStats);
-                categoryDetails.appendChild(summary);
-
-                const body = document.createElement('div');
-                body.className = 'rc-product-node-body';
-
-                if (Array.isArray(category.subcategories) && category.subcategories.length > 0) {
-                    category.subcategories.forEach(subcategory => {
-                        body.appendChild(renderSubcategory(subcategory, renderedProducts));
-                    });
-                }
-
-                if (Array.isArray(category.products)) {
-                    const remainingProducts = category.products.filter(product => !renderedProducts.has(String(product.id)));
-                    if (remainingProducts.length > 0) {
-                        const list = document.createElement('div');
-                        list.className = 'rc-product-list';
-                        remainingProducts.forEach(product => {
-                            renderedProducts.add(String(product.id));
-                            list.appendChild(renderProductEntry(product));
-                        });
-                        body.appendChild(list);
-                    }
-                }
-
-                categoryDetails.appendChild(body);
-                root.appendChild(categoryDetails);
+                root.appendChild(renderCategoryNode(category, 'cat-' + category.id));
             });
 
-            toggleProductTreeNodes(false);
             updateSelectedProductsSummary();
             updateHiddenProductInput();
             validateProductSelections();
+        }
+
+        function renderCategoryNode(category, nodeId) {
+            const node = document.createElement('div');
+            node.className = 'wc-node';
+            if (productTreeExpanded.has(nodeId)) node.classList.add('open');
+
+            const header = document.createElement('div');
+            header.className = 'wc-node-header';
+            header.addEventListener('click', () => toggleNode(productTreeExpanded, nodeId));
+
+            const title = document.createElement('div');
+            title.className = 'wc-node-title';
+            title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(category.name || 'Kategorie')}</span>`;
+
+            const stats = collectNodeStats(category);
+            const chips = document.createElement('div');
+            chips.className = 'rc-node-metrics';
+            chips.innerHTML = `
+                <span class="wc-chip">${stats.products} Produkte</span>
+                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+            `;
+
+            header.appendChild(title);
+            header.appendChild(chips);
+
+            const body = document.createElement('div');
+            body.className = 'wc-node-body';
+
+            (category.subcategories || []).forEach(sub => body.appendChild(renderSubcategoryNode(sub, `sub-${sub.id}`)));
+            (category.products || []).forEach(product => body.appendChild(renderProductCard(product)));
+
+            node.appendChild(header);
+            node.appendChild(body);
+            return node;
+        }
+
+        function renderSubcategoryNode(subcategory, nodeId) {
+            const node = document.createElement('div');
+            node.className = 'wc-node';
+            if (productTreeExpanded.has(nodeId)) node.classList.add('open');
+
+            const header = document.createElement('div');
+            header.className = 'wc-node-header';
+            header.addEventListener('click', () => toggleNode(productTreeExpanded, nodeId));
+
+            const title = document.createElement('div');
+            title.className = 'wc-node-title';
+            title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(subcategory.name || 'Subcategory')}</span>`;
+
+            const stats = collectNodeStats(subcategory);
+            const chips = document.createElement('div');
+            chips.className = 'rc-node-metrics';
+            chips.innerHTML = `
+                <span class="wc-chip">${stats.products} Produkte</span>
+                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+            `;
+
+            header.appendChild(title);
+            header.appendChild(chips);
+
+            const body = document.createElement('div');
+            body.className = 'wc-node-body';
+
+            (subcategory.subbiercategories || []).forEach(sb => body.appendChild(renderSubbiercategoryNode(sb, `subbier-${sb.id}`)));
+            (subcategory.products || []).forEach(product => body.appendChild(renderProductCard(product)));
+
+            node.appendChild(header);
+            node.appendChild(body);
+            return node;
+        }
+
+        function renderSubbiercategoryNode(subbiercategory, nodeId) {
+            const node = document.createElement('div');
+            node.className = 'wc-node';
+            if (productTreeExpanded.has(nodeId)) node.classList.add('open');
+
+            const header = document.createElement('div');
+            header.className = 'wc-node-header';
+            header.addEventListener('click', () => toggleNode(productTreeExpanded, nodeId));
+
+            const title = document.createElement('div');
+            title.className = 'wc-node-title';
+            title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(subbiercategory.name || 'Group')}</span>`;
+
+            const stats = collectNodeStats(subbiercategory);
+            const chips = document.createElement('div');
+            chips.className = 'rc-node-metrics';
+            chips.innerHTML = `
+                <span class="wc-chip">${stats.products} Produkte</span>
+                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+            `;
+
+            header.appendChild(title);
+            header.appendChild(chips);
+
+            const body = document.createElement('div');
+            body.className = 'wc-node-body';
+            (subbiercategory.products || []).forEach(product => body.appendChild(renderProductCard(product)));
+
+            node.appendChild(header);
+            node.appendChild(body);
+            return node;
+        }
+
+        function renderProductCard(product) {
+            const stats = extractProductStats(product);
+            const available = stats.available;
+            const total = stats.total;
+
+            const card = document.createElement('div');
+            card.className = 'wc-product';
+            card.dataset.productId = String(product.id);
+
+            const info = document.createElement('div');
+            info.className = 'wc-product-info';
+
+            const title = document.createElement('div');
+            title.className = 'wc-product-title';
+            title.innerHTML = `<i class="bi bi-box-seam"></i><span>${escapeHtml(product.name)}</span>`;
+            info.appendChild(title);
+
+            const meta = document.createElement('div');
+            meta.className = 'wc-product-meta';
+            const brand = product.brand_name || product.brandName || product.BrandName;
+            const manufacturer = product.manufacturer_name || product.manufacturerName || product.ManufacturerName;
+            const barcode = product.generic_barcode || product.GenericBarcode;
+            if (brand) meta.innerHTML += `<span>${escapeHtml(brand)}</span>`;
+            if (manufacturer) meta.innerHTML += `<span>${escapeHtml(manufacturer)}</span>`;
+            if (barcode) meta.innerHTML += `<span class="wc-chip muted">${escapeHtml(barcode)}</span>`;
+            if (meta.innerHTML === '') meta.innerHTML = '<span style="color:#64748b;">Keine Zusatzinfos</span>';
+            info.appendChild(meta);
+
+            const inputs = document.createElement('div');
+            inputs.className = 'wc-product-inputs';
+
+            const availChip = document.createElement('span');
+            const availClass = total === 0 ? 'muted' : available > 0 ? 'success' : 'danger';
+            availChip.className = `wc-chip ${availClass}`;
+            availChip.innerHTML = `<i class="bi bi-lightning-charge"></i> ${available} / ${total || 0} frei`;
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '0';
+            input.step = '1';
+            input.value = getCurrentQuantity(product.id);
+            input.className = 'wc-qty-input';
+            input.addEventListener('input', () => {
+                const value = Math.max(0, parseInt(input.value || '0', 10));
+                input.value = value;
+                setProductSelection(product, value);
+            });
+
+            inputs.appendChild(availChip);
+            inputs.appendChild(input);
+
+            card.appendChild(info);
+            card.appendChild(inputs);
+            return card;
+        }
+
+        function toggleNode(set, id) {
+            if (set.has(id)) set.delete(id); else set.add(id);
+            renderProductTree(productTreeData);
+        }
+
+        function toggleProductTreeNodes(open) {
+            const ids = [];
+            productTreeData.forEach(cat => {
+                ids.push('cat-' + cat.id);
+                (cat.subcategories || []).forEach(sub => {
+                    ids.push('sub-' + sub.id);
+                    (sub.subbiercategories || []).forEach(sb => ids.push('subbier-' + sb.id));
+                });
+            });
+            productTreeExpanded = new Set(open ? ids : []);
+            renderProductTree(productTreeData);
         }
 
         function renderSubcategory(subcategory, renderedProducts) {
