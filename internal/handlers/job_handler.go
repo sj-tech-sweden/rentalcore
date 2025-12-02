@@ -540,12 +540,62 @@ func (h *JobHandler) GetJob(c *gin.Context) {
 }
 
 func (h *JobHandler) EditJobForm(c *gin.Context) {
+	user, _ := GetCurrentUser(c)
+
 	jobID := strings.TrimSpace(c.Param("id"))
-	target := "/jobs"
-	if jobID != "" {
-		target = fmt.Sprintf("/jobs?editJob=%s", jobID)
+	if jobID == "" {
+		c.Redirect(http.StatusFound, "/jobs")
+		return
 	}
-	c.Redirect(http.StatusFound, target)
+
+	id, err := strconv.ParseUint(jobID, 10, 32)
+	if err != nil {
+		c.HTML(http.StatusBadRequest, "error.html", gin.H{"error": "Invalid job ID", "user": user})
+		return
+	}
+
+	job, err := h.jobRepo.GetByID(uint(id))
+	if err != nil {
+		c.HTML(http.StatusNotFound, "error.html", gin.H{"error": "Job not found", "user": user})
+		return
+	}
+
+	customers, err := h.customerRepo.List(&models.FilterParams{})
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": err.Error(), "user": user})
+		return
+	}
+
+	statuses, err := h.statusRepo.List()
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": err.Error(), "user": user})
+		return
+	}
+
+	jobCategories, err := h.jobCategoryRepo.List()
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": err.Error(), "user": user})
+		return
+	}
+
+	// Fetch rental equipment from WarehouseCore
+	rentalEquipBySupplier, _ := h.warehouseClient.GetRentalEquipmentBySupplier()
+
+	// Force no-cache headers to prevent template caching issues
+	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
+
+	c.HTML(http.StatusOK, "job_edit_v2.html", gin.H{
+		"title":                 "Edit Job",
+		"job":                   job,
+		"customers":             customers,
+		"statuses":              statuses,
+		"jobCategories":         jobCategories,
+		"user":                  user,
+		"rentalEquipBySupplier": rentalEquipBySupplier,
+		"jobRentalEquipment":    []models.JobRentalEquipment{},
+	})
 }
 
 func (h *JobHandler) UpdateJob(c *gin.Context) {
