@@ -2118,6 +2118,25 @@
                         products.forEach(product => body.appendChild(renderEditProductCard(product)));
                     }
                 }
+
+                // Scroll the expanded node into view smoothly
+                setTimeout(() => {
+                    const treeContainer = document.getElementById('editProductTreeRoot');
+                    if (treeContainer && nodeElement) {
+                        const nodeRect = nodeElement.getBoundingClientRect();
+                        const containerRect = treeContainer.getBoundingClientRect();
+
+                        // Check if the expanded content is below the visible area
+                        if (nodeRect.bottom > containerRect.bottom) {
+                            // Scroll to show the node with some padding
+                            const scrollOffset = nodeElement.offsetTop - treeContainer.offsetTop - 20;
+                            treeContainer.scrollTo({
+                                top: scrollOffset,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                }, 100); // Small delay to ensure DOM has updated
             }
             console.log('➕ Expanded:', id);
         }
