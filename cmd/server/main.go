@@ -265,11 +265,12 @@ func main() {
 		log.Printf("Failed to load config, using defaults: %v", err)
 		cfg = &config.Config{}
 		cfg.Database.Host = "localhost"
-		cfg.Database.Port = 3306
-		cfg.Database.Database = "rentalcore"
-		cfg.Database.Username = "rentalcore_user"
-		cfg.Database.Password = "demo_password_change_in_production"
-		cfg.Database.PoolSize = 5
+		cfg.Database.Port = 5432
+		cfg.Database.Name = "rentalcore"
+		cfg.Database.User = "rentalcore"
+		cfg.Database.Password = "rentalcore123"
+		cfg.Database.SSLMode = "disable"
+		cfg.Database.MaxOpenConns = 25
 		cfg.Server.Host = "0.0.0.0"
 		cfg.Server.Port = 8080
 	}

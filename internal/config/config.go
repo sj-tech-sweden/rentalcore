@@ -1,11 +1,13 @@
 package config
 
 import (
+	"fmt"
 	"encoding/json"
 	"os"
 	"strconv"
 	"time"
 	
+	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
@@ -23,34 +25,35 @@ type Config struct {
 }
 
 type DatabaseConfig struct {
-	// SQLite Configuration
-	DatabasePath string `json:"database_path"`
-	JournalMode  string `json:"journal_mode"`  // WAL, DELETE, TRUNCATE, PERSIST, MEMORY, OFF
-	Synchronous  string `json:"synchronous"`   // OFF (0), NORMAL (1), FULL (2), EXTRA (3)
-	CacheSize    int    `json:"cache_size"`    // Negative = KB, Positive = Pages
-	BusyTimeout  int    `json:"busy_timeout"`  // Milliseconds
+// PostgreSQL Configuration
+Host     string `json:"host"`
+Port     int    `json:"port"`
+Name     string `json:"name"`
+User     string `json:"user"`
+Password string `json:"password"`
+SSLMode  string `json:"sslmode"`
 
-	// Connection Pool (SQLite: max 1 for writes)
-	MaxOpenConns    int           `json:"max_open_conns"`
-	MaxIdleConns    int           `json:"max_idle_conns"`
-	ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
-	ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
+// Connection Pool
+MaxOpenConns    int           `json:"max_open_conns"`
+MaxIdleConns    int           `json:"max_idle_conns"`
+ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
+ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
 
-	// Query settings
-	SlowQueryThreshold time.Duration   `json:"slow_query_threshold"`
-	EnableQueryLogging bool            `json:"enable_query_logging"`
-	LogLevel           logger.LogLevel `json:"-"` // Not serializable
-	PrepareStmt        bool            `json:"prepare_stmt"`
-	DisableForeignKeyConstraintWhenMigrating bool `json:"disable_fk_when_migrating"`
-
-	// Legacy MySQL fields (kept for backwards compatibility, ignored)
-	Host     string `json:"host,omitempty"`
-	Port     int    `json:"port,omitempty"`
-	Database string `json:"database,omitempty"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	PoolSize int    `json:"pool_size,omitempty"`
+// Query settings
+SlowQueryThreshold time.Duration   `json:"slow_query_threshold"`
+EnableQueryLogging bool            `json:"enable_query_logging"`
+LogLevel           logger.LogLevel `json:"-"`
+PrepareStmt        bool            `json:"prepare_stmt"`
+DisableForeignKeyConstraintWhenMigrating bool `json:"disable_fk_when_migrating"`
 }
+// DSN returns the PostgreSQL connection string
+func (c *DatabaseConfig) DSN() string {
+        return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+                c.Host, c.Port, c.User, c.Password, c.Name, c.SSLMode)
+}
+
+
+
 
 type ServerConfig struct {
 	Port int    `json:"port"`
@@ -163,22 +166,22 @@ func (c *Config) Save(path string) error {
 func getDefaultConfig() *Config {
 	return &Config{
 		Database: DatabaseConfig{
-			// SQLite defaults
-			DatabasePath:       "./data/rentalcore.db",
-			JournalMode:        "WAL",
-			Synchronous:        "NORMAL",
-			CacheSize:          -64000, // 64MB
-			BusyTimeout:        5000,   // 5 seconds
-			MaxOpenConns:       1,      // SQLite limit
-			MaxIdleConns:       1,
-			ConnMaxLifetime:    time.Hour,
-			ConnMaxIdleTime:    30 * time.Minute,
-			SlowQueryThreshold: 500 * time.Millisecond,
-			EnableQueryLogging: false,
-			LogLevel:           logger.Warn,
-			PrepareStmt:        true,
-			DisableForeignKeyConstraintWhenMigrating: true,
-		},
+Host:               "localhost",
+Port:               5432,
+Name:               "rentalcore",
+User:               "rentalcore",
+Password:           "rentalcore123",
+SSLMode:            "disable",
+MaxOpenConns:       25,
+MaxIdleConns:       10,
+ConnMaxLifetime:    time.Hour,
+ConnMaxIdleTime:    30 * time.Minute,
+SlowQueryThreshold: 500 * time.Millisecond,
+EnableQueryLogging: false,
+LogLevel:           logger.Warn,
+PrepareStmt:        true,
+DisableForeignKeyConstraintWhenMigrating: true,
+},
 		Server: ServerConfig{
 			Port: 8080,
 			Host: "localhost",
@@ -262,25 +265,26 @@ func getDefaultConfig() *Config {
 
 // loadFromEnvironment loads configuration from environment variables
 func loadFromEnvironment(config *Config) {
-	// SQLite Database configuration
-	if dbPath := os.Getenv("DB_PATH"); dbPath != "" {
-		config.Database.DatabasePath = dbPath
+	// PostgreSQL Database configuration
+	if host := os.Getenv("DB_HOST"); host != "" {
+		config.Database.Host = host
 	}
-	if journalMode := os.Getenv("DB_JOURNAL_MODE"); journalMode != "" {
-		config.Database.JournalMode = journalMode
-	}
-	if synchronous := os.Getenv("DB_SYNCHRONOUS"); synchronous != "" {
-		config.Database.Synchronous = synchronous
-	}
-	if cacheSize := os.Getenv("DB_CACHE_SIZE"); cacheSize != "" {
-		if cs, err := strconv.Atoi(cacheSize); err == nil {
-			config.Database.CacheSize = cs
+	if port := os.Getenv("DB_PORT"); port != "" {
+		if p, err := strconv.Atoi(port); err == nil {
+			config.Database.Port = p
 		}
 	}
-	if busyTimeout := os.Getenv("DB_BUSY_TIMEOUT"); busyTimeout != "" {
-		if bt, err := strconv.Atoi(busyTimeout); err == nil {
-			config.Database.BusyTimeout = bt
-		}
+	if name := os.Getenv("DB_NAME"); name != "" {
+		config.Database.Name = name
+	}
+	if user := os.Getenv("DB_USER"); user != "" {
+		config.Database.User = user
+	}
+	if password := os.Getenv("DB_PASSWORD"); password != "" {
+		config.Database.Password = password
+	}
+	if sslMode := os.Getenv("DB_SSLMODE"); sslMode != "" {
+		config.Database.SSLMode = sslMode
 	}
 	if maxOpenConns := os.Getenv("DB_MAX_OPEN_CONNS"); maxOpenConns != "" {
 		if moc, err := strconv.Atoi(maxOpenConns); err == nil {
@@ -379,4 +383,25 @@ func loadFromEnvironment(config *Config) {
 	if scannerEnabled := os.Getenv("SCANNER_ENABLED"); scannerEnabled != "" {
 		config.Features.ScannerEnabled = false // Always false, scanner removed
 	}
+}
+// GetDatabaseStats returns database connection statistics
+func GetDatabaseStats(db *gorm.DB) (map[string]interface{}, error) {
+sqlDB, err := db.DB()
+if err != nil {
+return nil, err
+}
+stats := sqlDB.Stats()
+return map[string]interface{}{
+"database_type":        "PostgreSQL",
+"max_open_connections": stats.MaxOpenConnections,
+"open_connections":     stats.OpenConnections,
+"in_use":               stats.InUse,
+"idle":                 stats.Idle,
+}, nil
+}
+
+// ApplyPerformanceIndexes applies database indexes for performance
+func ApplyPerformanceIndexes(db *gorm.DB) error {
+// PostgreSQL indexes are handled by migrations
+return nil
 }
