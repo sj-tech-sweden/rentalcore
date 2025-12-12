@@ -1,3 +1,5 @@
+// Package config provides SQLite database configuration for RentalCore
+// Diese Datei enthält die SQLite-spezifische Konfiguration
 package config
 
 import (
@@ -7,32 +9,49 @@ import (
 	"strconv"
 	"time"
 
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-// Note: DatabaseConfig is now defined in config.go to avoid duplication
+// SQLiteDatabaseConfig enthält SQLite-spezifische Konfiguration
+type SQLiteDatabaseConfig struct {
+	// Pfad zur Datenbankdatei
+	DatabasePath string `json:"database_path"`
 
-// GetDatabaseConfig returns database configuration from environment
-func GetDatabaseConfig() *DatabaseConfig {
-	config := &DatabaseConfig{
-		Host:                  getEnv("DB_HOST", "mysql"),
-		Port:                  getEnvAsInt("DB_PORT", 3306),
-		Database:              getEnv("DB_DATABASE", "rentalcore"),
-		Username:              getEnv("DB_USERNAME", "rentalcore_user"),
-		Password:              getEnv("DB_PASSWORD", "web"),
-		MaxOpenConns:          getEnvAsInt("DB_MAX_OPEN_CONNS", 25),
-		MaxIdleConns:          getEnvAsInt("DB_MAX_IDLE_CONNS", 5),
-		ConnMaxLifetime:       getEnvAsDuration("DB_CONN_MAX_LIFETIME", 5*time.Minute),
-		ConnMaxIdleTime:       getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 5*time.Minute),
-		SlowQueryThreshold:    getEnvAsDuration("DB_SLOW_QUERY_THRESHOLD", 500*time.Millisecond),
-		EnableQueryLogging:    getEnvAsBool("DB_ENABLE_QUERY_LOGGING", false),
-		PrepareStmt:           getEnvAsBool("DB_PREPARE_STMT", true),
+	// SQLite Pragmas
+	JournalMode string `json:"journal_mode"` // WAL, DELETE, TRUNCATE, PERSIST, MEMORY, OFF
+	Synchronous string `json:"synchronous"`  // OFF (0), NORMAL (1), FULL (2), EXTRA (3)
+	CacheSize   int    `json:"cache_size"`   // Negative Werte = KB, Positive = Pages
+	BusyTimeout int    `json:"busy_timeout"` // Millisekunden
+
+	// Connection Pool (SQLite-angepasst)
+	MaxOpenConns int `json:"max_open_conns"` // Empfohlen: 1 für Writes
+
+	// GORM Einstellungen
+	LogLevel                                 logger.LogLevel `json:"-"`
+	SlowQueryThreshold                       time.Duration   `json:"slow_query_threshold"`
+	EnableQueryLogging                       bool            `json:"enable_query_logging"`
+	PrepareStmt                              bool            `json:"prepare_stmt"`
+	DisableForeignKeyConstraintWhenMigrating bool            `json:"disable_fk_when_migrating"`
+}
+
+// GetSQLiteDatabaseConfig lädt die SQLite-Konfiguration aus Environment-Variablen
+func GetSQLiteDatabaseConfig() *SQLiteDatabaseConfig {
+	config := &SQLiteDatabaseConfig{
+		DatabasePath:       getEnv("DB_PATH", "./data/rentalcore.db"),
+		JournalMode:        getEnv("DB_JOURNAL_MODE", "WAL"),
+		Synchronous:        getEnv("DB_SYNCHRONOUS", "NORMAL"),
+		CacheSize:          getEnvAsInt("DB_CACHE_SIZE", -64000), // 64MB
+		BusyTimeout:        getEnvAsInt("DB_BUSY_TIMEOUT", 5000), // 5 Sekunden
+		MaxOpenConns:       getEnvAsInt("DB_MAX_OPEN_CONNS", 1),  // SQLite-Limit!
+		SlowQueryThreshold: getEnvAsDuration("DB_SLOW_QUERY_THRESHOLD", 500*time.Millisecond),
+		EnableQueryLogging: getEnvAsBool("DB_ENABLE_QUERY_LOGGING", false),
+		PrepareStmt:        getEnvAsBool("DB_PREPARE_STMT", true),
 		DisableForeignKeyConstraintWhenMigrating: getEnvAsBool("DB_DISABLE_FK_WHEN_MIGRATING", true),
 	}
 
-	// Set log level based on environment
+	// Log Level
 	if getEnvAsBool("DB_DEBUG", false) {
 		config.LogLevel = logger.Info
 	} else {
@@ -42,54 +61,120 @@ func GetDatabaseConfig() *DatabaseConfig {
 	return config
 }
 
-// ConnectDatabase connects to the database with optimized settings
-func ConnectDatabase(config *DatabaseConfig) (*gorm.DB, error) {
-	// Build DSN with performance optimizations
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=30s&writeTimeout=30s&interpolateParams=true",
-		config.Username,
-		config.Password,
-		config.Host,
-		config.Port,
-		config.Database,
-	)
+// GetDefaultSQLiteConfig gibt eine Standard-Konfiguration zurück
+func GetDefaultSQLiteConfig() *SQLiteDatabaseConfig {
+	return &SQLiteDatabaseConfig{
+		DatabasePath:                             "./data/rentalcore.db",
+		JournalMode:                              "WAL",
+		Synchronous:                              "NORMAL",
+		CacheSize:                                -64000, // 64MB
+		BusyTimeout:                              5000,   // 5 Sekunden
+		MaxOpenConns:                             1,
+		LogLevel:                                 logger.Warn,
+		SlowQueryThreshold:                       500 * time.Millisecond,
+		EnableQueryLogging:                       false,
+		PrepareStmt:                              true,
+		DisableForeignKeyConstraintWhenMigrating: true,
+	}
+}
 
-	// Configure GORM with performance settings
+// DSN erstellt den SQLite Connection String
+func (c *SQLiteDatabaseConfig) DSN() string {
+	if c.DatabasePath == ":memory:" {
+		return "file::memory:?cache=shared"
+	}
+
+	return fmt.Sprintf("file:%s?_pragma=busy_timeout(%d)&_pragma=foreign_keys(1)",
+		c.DatabasePath,
+		c.BusyTimeout,
+	)
+}
+
+// ConnectSQLiteDatabase verbindet zur SQLite-Datenbank
+func ConnectSQLiteDatabase(config *SQLiteDatabaseConfig) (*gorm.DB, error) {
+	dsn := config.DSN()
+
+	// GORM Konfiguration
 	gormConfig := &gorm.Config{
 		PrepareStmt:                              config.PrepareStmt,
 		DisableForeignKeyConstraintWhenMigrating: config.DisableForeignKeyConstraintWhenMigrating,
-		Logger:                                   createLogger(config),
+		SkipDefaultTransaction:                   true,
+		CreateBatchSize:                          100,
+		Logger:                                   createSQLiteLogger(config),
 	}
 
-	// Connect to database
-	db, err := gorm.Open(mysql.Open(dsn), gormConfig)
+	// Verbinde zur Datenbank
+	db, err := gorm.Open(sqlite.Open(dsn), gormConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to connect to SQLite database: %w", err)
 	}
 
-	// Configure connection pool
+	// Konfiguriere Connection Pool
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
 	}
 
-	// Set connection pool parameters for optimal performance
-	sqlDB.SetMaxOpenConns(config.MaxOpenConns)
-	sqlDB.SetMaxIdleConns(config.MaxIdleConns)
-	sqlDB.SetConnMaxLifetime(config.ConnMaxLifetime)
-	sqlDB.SetConnMaxIdleTime(config.ConnMaxIdleTime)
+	// SQLite-spezifische Pool-Einstellungen
+	// WICHTIG: MaxOpenConns = 1 für korrekte Write-Operationen!
+	maxConns := config.MaxOpenConns
+	if maxConns <= 0 || maxConns > 1 {
+		maxConns = 1
+	}
+	sqlDB.SetMaxOpenConns(maxConns)
+	sqlDB.SetMaxIdleConns(1)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetConnMaxIdleTime(30 * time.Minute)
 
-	// Test the connection
-	if err := sqlDB.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+	// Setze SQLite Pragmas
+	if err := configureSQLitePragmas(db, config); err != nil {
+		return nil, fmt.Errorf("failed to configure SQLite pragmas: %w", err)
 	}
 
-	log.Printf("Database connected successfully with %d max connections", config.MaxOpenConns)
-	
+	// Teste die Verbindung
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping SQLite database: %w", err)
+	}
+
+	log.Printf("SQLite database connected: %s", config.DatabasePath)
+
 	return db, nil
 }
 
-// createLogger creates a configured logger for GORM
-func createLogger(config *DatabaseConfig) logger.Interface {
+// configureSQLitePragmas setzt Performance-Pragmas
+func configureSQLitePragmas(db *gorm.DB, config *SQLiteDatabaseConfig) error {
+	pragmas := []struct {
+		name  string
+		value interface{}
+	}{
+		{"journal_mode", config.JournalMode},
+		{"synchronous", config.Synchronous},
+		{"cache_size", config.CacheSize},
+		{"temp_store", "MEMORY"},
+		{"mmap_size", 268435456}, // 256MB
+	}
+
+	for _, p := range pragmas {
+		sql := fmt.Sprintf("PRAGMA %s = %v", p.name, p.value)
+		if err := db.Exec(sql).Error; err != nil {
+			return fmt.Errorf("failed to set pragma %s: %w", p.name, err)
+		}
+	}
+
+	// Verifiziere und logge
+	var journalMode string
+	db.Raw("PRAGMA journal_mode").Scan(&journalMode)
+	log.Printf("SQLite journal_mode: %s", journalMode)
+
+	var fkEnabled int
+	db.Raw("PRAGMA foreign_keys").Scan(&fkEnabled)
+	log.Printf("SQLite foreign_keys: %d", fkEnabled)
+
+	return nil
+}
+
+// createSQLiteLogger erstellt einen konfigurierten Logger für GORM
+func createSQLiteLogger(config *SQLiteDatabaseConfig) logger.Interface {
 	logConfig := logger.Config{
 		SlowThreshold:             config.SlowQueryThreshold,
 		LogLevel:                  config.LogLevel,
@@ -98,48 +183,90 @@ func createLogger(config *DatabaseConfig) logger.Interface {
 	}
 
 	if config.EnableQueryLogging {
-		return logger.New(
-			log.New(os.Stdout, "\r\n", log.LstdFlags),
-			logConfig,
-		)
+		logConfig.LogLevel = logger.Info
 	}
 
 	return logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
-		logger.Config{
-			SlowThreshold:             config.SlowQueryThreshold,
-			LogLevel:                  logger.Error, // Only log errors in production
-			IgnoreRecordNotFoundError: true,
-			Colorful:                  false,
-		},
+		logConfig,
 	)
+}
+
+// ============================================================================
+// Helper-Funktionen (falls nicht bereits definiert)
+// ============================================================================
+
+// getEnv gibt den Wert einer Environment-Variable zurück oder den Default
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
+
+// getEnvAsInt gibt den Wert einer Environment-Variable als Int zurück
+func getEnvAsInt(key string, defaultValue int) int {
+	if value, exists := os.LookupEnv(key); exists {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
+// getEnvAsBool gibt den Wert einer Environment-Variable als Bool zurück
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if value, exists := os.LookupEnv(key); exists {
+		if boolValue, err := strconv.ParseBool(value); err == nil {
+			return boolValue
+		}
+	}
+	return defaultValue
+}
+
+// getEnvAsDuration gibt den Wert einer Environment-Variable als Duration zurück
+func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
+	if value, exists := os.LookupEnv(key); exists {
+		if duration, err := time.ParseDuration(value); err == nil {
+			return duration
+		}
+	}
+	return defaultValue
+}
+
+// GetDatabaseStats returns database connection statistics
+func GetDatabaseStats(db *gorm.DB) (map[string]interface{}, error) {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	stats := sqlDB.Stats()
+
+	return map[string]interface{}{
+		"database_type":            "SQLite",
+		"max_open_connections":     stats.MaxOpenConnections,
+		"open_connections":         stats.OpenConnections,
+		"in_use":                   stats.InUse,
+		"idle":                     stats.Idle,
+		"wait_count":               stats.WaitCount,
+		"wait_duration":            stats.WaitDuration.String(),
+		"max_idle_closed":          stats.MaxIdleClosed,
+		"max_idle_time_closed":     stats.MaxIdleTimeClosed,
+		"max_lifetime_closed":      stats.MaxLifetimeClosed,
+	}, nil
 }
 
 // ApplyPerformanceIndexes applies database indexes for performance
 func ApplyPerformanceIndexes(db *gorm.DB) error {
-	log.Println("Applying performance indexes...")
+	log.Println("Applying SQLite performance indexes...")
 
-	// Helper function to create index with error handling
+	// Helper function to create index with error handling for SQLite
 	createIndex := func(indexName, tableName, columns string) {
-		// First check if index exists
-		var exists bool
-		checkSQL := fmt.Sprintf("SHOW INDEX FROM %s WHERE Key_name = '%s'", tableName, indexName)
-		
-		rows, err := db.Raw(checkSQL).Rows()
-		if err == nil {
-			if rows.Next() {
-				exists = true
-			}
-			rows.Close()
-		}
-		
-		if !exists {
-			indexSQL := fmt.Sprintf("CREATE INDEX %s ON %s(%s)", indexName, tableName, columns)
-			if err := db.Exec(indexSQL).Error; err != nil {
-				log.Printf("Warning: Failed to create index %s: %v", indexName, err)
-			} else {
-				log.Printf("Created index: %s", indexName)
-			}
+		// SQLite: CREATE INDEX IF NOT EXISTS
+		indexSQL := fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s ON %s(%s)", indexName, tableName, columns)
+		if err := db.Exec(indexSQL).Error; err != nil {
+			log.Printf("Warning: Failed to create index %s: %v", indexName, err)
 		}
 	}
 
@@ -161,95 +288,4 @@ func ApplyPerformanceIndexes(db *gorm.DB) error {
 
 	log.Println("Performance indexes applied successfully")
 	return nil
-}
-
-// GetDatabaseStats returns database connection statistics
-func GetDatabaseStats(db *gorm.DB) (map[string]interface{}, error) {
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, err
-	}
-
-	stats := sqlDB.Stats()
-	
-	return map[string]interface{}{
-		"max_open_connections":     stats.MaxOpenConnections,
-		"open_connections":         stats.OpenConnections,
-		"in_use":                   stats.InUse,
-		"idle":                     stats.Idle,
-		"wait_count":               stats.WaitCount,
-		"wait_duration":            stats.WaitDuration.String(),
-		"max_idle_closed":          stats.MaxIdleClosed,
-		"max_idle_time_closed":     stats.MaxIdleTimeClosed,
-		"max_lifetime_closed":      stats.MaxLifetimeClosed,
-	}, nil
-}
-
-// OptimizeDatabaseSettings applies MySQL-specific optimizations
-func OptimizeDatabaseSettings(db *gorm.DB) error {
-	log.Println("Applying MySQL optimization settings...")
-
-	optimizations := []string{
-		// Query cache optimization
-		"SET SESSION query_cache_type = ON",
-		"SET SESSION query_cache_size = 67108864", // 64MB
-		
-		// InnoDB optimizations
-		"SET SESSION innodb_buffer_pool_size = 134217728", // 128MB
-		"SET SESSION sort_buffer_size = 2097152",           // 2MB
-		"SET SESSION read_buffer_size = 131072",            // 128KB
-		"SET SESSION join_buffer_size = 262144",            // 256KB
-		
-		// Timeout settings
-		"SET SESSION wait_timeout = 28800",                 // 8 hours
-		"SET SESSION interactive_timeout = 28800",          // 8 hours
-		
-		// Character set
-		"SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
-	}
-
-	for _, sql := range optimizations {
-		if err := db.Exec(sql).Error; err != nil {
-			log.Printf("Warning: Failed to apply optimization: %s - %v", sql, err)
-		}
-	}
-
-	log.Println("Database optimization settings applied")
-	return nil
-}
-
-// Helper functions for environment variables
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func getEnvAsInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
-
-func getEnvAsBool(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
-		if boolValue, err := strconv.ParseBool(value); err == nil {
-			return boolValue
-		}
-	}
-	return defaultValue
-}
-
-func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if duration, err := time.ParseDuration(value); err == nil {
-			return duration
-		}
-	}
-	return defaultValue
 }

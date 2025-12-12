@@ -23,21 +23,33 @@ type Config struct {
 }
 
 type DatabaseConfig struct {
-	Host                  string        `json:"host"`
-	Port                  int           `json:"port"`
-	Database              string        `json:"database"`
-	Username              string        `json:"username"`
-	Password              string        `json:"password"`
-	PoolSize              int           `json:"pool_size"` // Kept for backwards compatibility
-	MaxOpenConns          int           `json:"max_open_conns"`
-	MaxIdleConns          int           `json:"max_idle_conns"`
-	ConnMaxLifetime       time.Duration `json:"conn_max_lifetime"`
-	ConnMaxIdleTime       time.Duration `json:"conn_max_idle_time"`
-	SlowQueryThreshold    time.Duration `json:"slow_query_threshold"`
-	EnableQueryLogging    bool          `json:"enable_query_logging"`
-	LogLevel              logger.LogLevel `json:"-"` // Not serializable
-	PrepareStmt           bool          `json:"prepare_stmt"`
+	// SQLite Configuration
+	DatabasePath string `json:"database_path"`
+	JournalMode  string `json:"journal_mode"`  // WAL, DELETE, TRUNCATE, PERSIST, MEMORY, OFF
+	Synchronous  string `json:"synchronous"`   // OFF (0), NORMAL (1), FULL (2), EXTRA (3)
+	CacheSize    int    `json:"cache_size"`    // Negative = KB, Positive = Pages
+	BusyTimeout  int    `json:"busy_timeout"`  // Milliseconds
+
+	// Connection Pool (SQLite: max 1 for writes)
+	MaxOpenConns    int           `json:"max_open_conns"`
+	MaxIdleConns    int           `json:"max_idle_conns"`
+	ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
+	ConnMaxIdleTime time.Duration `json:"conn_max_idle_time"`
+
+	// Query settings
+	SlowQueryThreshold time.Duration   `json:"slow_query_threshold"`
+	EnableQueryLogging bool            `json:"enable_query_logging"`
+	LogLevel           logger.LogLevel `json:"-"` // Not serializable
+	PrepareStmt        bool            `json:"prepare_stmt"`
 	DisableForeignKeyConstraintWhenMigrating bool `json:"disable_fk_when_migrating"`
+
+	// Legacy MySQL fields (kept for backwards compatibility, ignored)
+	Host     string `json:"host,omitempty"`
+	Port     int    `json:"port,omitempty"`
+	Database string `json:"database,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	PoolSize int    `json:"pool_size,omitempty"`
 }
 
 type ServerConfig struct {
@@ -151,20 +163,20 @@ func (c *Config) Save(path string) error {
 func getDefaultConfig() *Config {
 	return &Config{
 		Database: DatabaseConfig{
-			Host:                  "localhost",
-			Port:                  3306,
-			Database:              "jobscanner",
-			Username:              "root",
-			Password:              "",
-			PoolSize:              5,
-			MaxOpenConns:          25,
-			MaxIdleConns:          5,
-			ConnMaxLifetime:       5 * time.Minute,
-			ConnMaxIdleTime:       5 * time.Minute,
-			SlowQueryThreshold:    500 * time.Millisecond,
-			EnableQueryLogging:    false,
-			LogLevel:              logger.Warn,
-			PrepareStmt:           true,
+			// SQLite defaults
+			DatabasePath:       "./data/rentalcore.db",
+			JournalMode:        "WAL",
+			Synchronous:        "NORMAL",
+			CacheSize:          -64000, // 64MB
+			BusyTimeout:        5000,   // 5 seconds
+			MaxOpenConns:       1,      // SQLite limit
+			MaxIdleConns:       1,
+			ConnMaxLifetime:    time.Hour,
+			ConnMaxIdleTime:    30 * time.Minute,
+			SlowQueryThreshold: 500 * time.Millisecond,
+			EnableQueryLogging: false,
+			LogLevel:           logger.Warn,
+			PrepareStmt:        true,
 			DisableForeignKeyConstraintWhenMigrating: true,
 		},
 		Server: ServerConfig{
@@ -250,23 +262,30 @@ func getDefaultConfig() *Config {
 
 // loadFromEnvironment loads configuration from environment variables
 func loadFromEnvironment(config *Config) {
-	// Database configuration
-	if host := os.Getenv("DB_HOST"); host != "" {
-		config.Database.Host = host
+	// SQLite Database configuration
+	if dbPath := os.Getenv("DB_PATH"); dbPath != "" {
+		config.Database.DatabasePath = dbPath
 	}
-	if port := os.Getenv("DB_PORT"); port != "" {
-		if p, err := strconv.Atoi(port); err == nil {
-			config.Database.Port = p
+	if journalMode := os.Getenv("DB_JOURNAL_MODE"); journalMode != "" {
+		config.Database.JournalMode = journalMode
+	}
+	if synchronous := os.Getenv("DB_SYNCHRONOUS"); synchronous != "" {
+		config.Database.Synchronous = synchronous
+	}
+	if cacheSize := os.Getenv("DB_CACHE_SIZE"); cacheSize != "" {
+		if cs, err := strconv.Atoi(cacheSize); err == nil {
+			config.Database.CacheSize = cs
 		}
 	}
-	if database := os.Getenv("DB_NAME"); database != "" {
-		config.Database.Database = database
+	if busyTimeout := os.Getenv("DB_BUSY_TIMEOUT"); busyTimeout != "" {
+		if bt, err := strconv.Atoi(busyTimeout); err == nil {
+			config.Database.BusyTimeout = bt
+		}
 	}
-	if username := os.Getenv("DB_USERNAME"); username != "" {
-		config.Database.Username = username
-	}
-	if password := os.Getenv("DB_PASSWORD"); password != "" {
-		config.Database.Password = password
+	if maxOpenConns := os.Getenv("DB_MAX_OPEN_CONNS"); maxOpenConns != "" {
+		if moc, err := strconv.Atoi(maxOpenConns); err == nil {
+			config.Database.MaxOpenConns = moc
+		}
 	}
 
 	// Server configuration
