@@ -97,7 +97,7 @@ func (r *ProductRepository) GetDevicesBySubbiercategory(subbiercategoryID string
 		Preload("Product.Category").
 		Preload("Product.Subcategory").
 		Preload("Product.Subbiercategory").
-		Joins("LEFT JOIN products ON products.productID = devices.productID").
+		Joins("LEFT JOIN products ON products.productid = devices.productid").
 		Where("products.subbiercategoryID = ?", subbiercategoryID).
 		Order("devices.serialnumber ASC").
 		Find(&devices).Error
@@ -138,7 +138,7 @@ func (r *ProductRepository) GetDevicesBySubcategory(subcategoryID string) ([]mod
 		Preload("Product.Category").
 		Preload("Product.Subcategory").
 		Preload("Product.Subbiercategory").
-		Joins("LEFT JOIN products ON products.productID = devices.productID").
+		Joins("LEFT JOIN products ON products.productid = devices.productid").
 		Where("products.subcategoryID = ? AND (products.subbiercategoryID IS NULL OR products.subbiercategoryID = '' OR products.subbiercategoryID = '0')", subcategoryID).
 		Order("devices.serialnumber ASC").
 		Find(&devices).Error
@@ -180,7 +180,7 @@ func (r *ProductRepository) GetDevicesByCategory(categoryID uint) ([]models.Devi
 		Preload("Product.Category").
 		Preload("Product.Subcategory").
 		Preload("Product.Subbiercategory").
-		Joins("LEFT JOIN products ON products.productID = devices.productID").
+		Joins("LEFT JOIN products ON products.productid = devices.productid").
 		Where("products.categoryID = ?", categoryID).
 		Order("devices.serialnumber ASC").
 		Find(&devices).Error

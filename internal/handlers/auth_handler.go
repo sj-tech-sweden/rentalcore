@@ -451,7 +451,7 @@ func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 
 		// Store user in context (as pointer for downstream middlewares)
 		c.Set("user", &user)
-		c.Set("userID", session.UserID)
+		c.Set("userid", session.UserID)
 		c.Next()
 	}
 }

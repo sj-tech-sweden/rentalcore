@@ -60,8 +60,8 @@ func (h *AnalyticsHandler) Dashboard(c *gin.Context) {
 		"user":        currentUser,
 		"analytics":   analytics,
 		"period":      period,
-		"startDate":   startDate.Format("2006-01-02"),
-		"endDate":     endDate.Format("2006-01-02"),
+		"startdate":   startDate.Format("2006-01-02"),
+		"enddate":     endDate.Format("2006-01-02"),
 	})
 }
 
@@ -362,7 +362,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 			COUNT(DISTINCT j.jobID) as total_rentals,
 			MIN(j.startDate) as first_booking,
 			MAX(j.startDate) as last_booking
-		FROM jobdevices jd
+		FROM job_devices jd
 		JOIN jobs j ON jd.jobID = j.jobID
 		JOIN products p ON jd.deviceID = ? AND p.productID = (
 			SELECT productID FROM devices WHERE deviceID = ?
@@ -380,9 +380,9 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 	type CustomerBooking struct {
 		CustomerName  string    `json:"customer_name" gorm:"column:customer_name"`
 		CustomerEmail *string   `json:"customer_email" gorm:"column:customer_email"`
-		JobID         string    `json:"jobID" gorm:"column:jobID"`
-		StartDate     time.Time `json:"startDate" gorm:"column:startDate"`
-		EndDate       *time.Time `json:"endDate" gorm:"column:endDate"`
+		JobID         string    `json:"jobid" gorm:"column:jobID"`
+		StartDate     time.Time `json:"startdate" gorm:"column:startDate"`
+		EndDate       *time.Time `json:"enddate" gorm:"column:endDate"`
 		Description   *string   `json:"description" gorm:"column:description"`
 		RentalDays    int       `json:"rental_days" gorm:"column:rental_days"`
 		Revenue       float64   `json:"revenue" gorm:"column:revenue"`
@@ -443,7 +443,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 					END
 			END) as revenue,
 			COALESCE(s.status, 'Unknown Status') as job_status
-		FROM jobdevices jd
+		FROM job_devices jd
 		JOIN jobs j ON jd.jobID = j.jobID
 		JOIN customers c ON j.customerID = c.customerID
 		LEFT JOIN devices d ON jd.deviceID = d.deviceID
@@ -490,7 +490,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 				NULL as discount_type,
 				300.0 as revenue,
 				CAST(j.statusID as CHAR) as job_status
-			FROM jobdevices jd
+			FROM job_devices jd
 			JOIN jobs j ON jd.jobID = j.jobID
 			JOIN customers c ON j.customerID = c.customerID
 			WHERE jd.deviceID = ?
@@ -538,7 +538,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 				END
 			), 0) as revenue,
 			COUNT(DISTINCT j.jobID) as bookings
-		FROM jobdevices jd
+		FROM job_devices jd
 		JOIN jobs j ON jd.jobID = j.jobID
 		JOIN devices d ON jd.deviceID = d.deviceID
 		JOIN products p ON d.productID = p.productID
@@ -611,10 +611,10 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 	var transformedBookings []map[string]interface{}
 	for _, booking := range customerBookings {
 		transformedBookings = append(transformedBookings, map[string]interface{}{
-			"jobID":        booking.JobID,
+			"jobid":        booking.JobID,
 			"customerName": booking.CustomerName,
-			"startDate":    booking.StartDate.Format("2006-01-02"),
-			"endDate":      func() string {
+			"startdate":    booking.StartDate.Format("2006-01-02"),
+			"enddate":      func() string {
 				if booking.EndDate != nil {
 					return booking.EndDate.Format("2006-01-02")
 				}
@@ -756,7 +756,7 @@ func (h *AnalyticsHandler) getEquipmentAnalytics(startDate, endDate time.Time) m
 			END
 		), 0)
 		FROM jobs j
-		INNER JOIN jobdevices jd ON j.jobID = jd.jobID
+		INNER JOIN job_devices jd ON j.jobID = jd.jobID
 		INNER JOIN devices d ON jd.deviceID = d.deviceID
 		INNER JOIN products p ON d.productID = p.productID
 		WHERE j.endDate BETWEEN ? AND ?
@@ -893,7 +893,7 @@ func (h *AnalyticsHandler) getTopEquipment(startDate, endDate time.Time, limit i
 			), 0) as avg_revenue
 		FROM devices d
 		LEFT JOIN products p ON d.productID = p.productID
-		LEFT JOIN jobdevices jd ON d.deviceID = jd.deviceID
+		LEFT JOIN job_devices jd ON d.deviceID = jd.deviceID
 		LEFT JOIN jobs j ON jd.jobID = j.jobID AND j.endDate BETWEEN ? AND ? 		GROUP BY d.deviceID, p.name
 		ORDER BY total_revenue DESC
 		LIMIT ?
@@ -912,7 +912,7 @@ func (h *AnalyticsHandler) getTopEquipment(startDate, endDate time.Time, limit i
 		rows.Scan(&deviceID, &productName, &rentalCount, &totalRevenue, &avgRevenue)
 		
 		results = append(results, map[string]interface{}{
-			"deviceID":     deviceID,
+			"deviceid":     deviceID,
 			"productName":  productName,
 			"rentalCount":  rentalCount,
 			"totalRevenue": totalRevenue,
@@ -973,7 +973,7 @@ func (h *AnalyticsHandler) getAllDeviceRevenues(startDate, endDate time.Time, so
 			d.status as device_status
 		FROM devices d
 		LEFT JOIN products p ON d.productID = p.productID
-		LEFT JOIN jobdevices jd ON d.deviceID = jd.deviceID
+		LEFT JOIN job_devices jd ON d.deviceID = jd.deviceID
 		LEFT JOIN jobs j ON jd.jobID = j.jobID AND j.endDate BETWEEN ? AND ? 		GROUP BY d.deviceID, p.name, p.itemcostperday, d.status
 		ORDER BY ` + sortColumn + ` ` + order
 
@@ -991,7 +991,7 @@ func (h *AnalyticsHandler) getAllDeviceRevenues(startDate, endDate time.Time, so
 		rows.Scan(&deviceID, &productName, &rentalCount, &totalRevenue, &avgRevenue, &productPrice, &deviceStatus)
 		
 		results = append(results, map[string]interface{}{
-			"deviceID":     deviceID,
+			"deviceid":     deviceID,
 			"productName":  productName,
 			"rentalCount":  rentalCount,
 			"totalRevenue": totalRevenue,
@@ -1040,7 +1040,7 @@ func (h *AnalyticsHandler) getTopCustomers(startDate, endDate time.Time, limit i
 		rows.Scan(&customerID, &customerName, &jobCount, &totalRevenue, &avgRevenue)
 		
 		results = append(results, map[string]interface{}{
-			"customerID":   customerID,
+			"customerid":   customerID,
 			"customerName": customerName,
 			"jobCount":     jobCount,
 			"totalRevenue": totalRevenue,
@@ -1300,7 +1300,7 @@ func (h *AnalyticsHandler) exportToCSV(c *gin.Context, startDate, endDate time.T
 	if topEquipment, ok := analytics["topEquipment"].([]map[string]interface{}); ok {
 		for _, equipment := range topEquipment {
 			csvData += fmt.Sprintf("%s,%s,%v,%.2f\n",
-				equipment["deviceID"].(string),
+				equipment["deviceid"].(string),
 				equipment["productName"].(string),
 				equipment["rentalCount"],
 				equipment["totalRevenue"].(float64),
@@ -1565,7 +1565,7 @@ func (h *AnalyticsHandler) addTopEquipmentTable(pdf *gofpdf.Fpdf, data interface
 			}
 
 			deviceID := ""
-			if id, ok := equipment["deviceID"].(string); ok {
+			if id, ok := equipment["deviceid"].(string); ok {
 				deviceID = id
 			}
 

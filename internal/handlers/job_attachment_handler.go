@@ -54,7 +54,7 @@ func NewJobAttachmentHandler(repo *repository.JobAttachmentRepository, jobRepo *
 
 // UploadAttachment handles file upload for job attachments
 func (h *JobAttachmentHandler) UploadAttachment(c *gin.Context) {
-	jobIDStr := c.PostForm("jobID")
+	jobIDStr := c.PostForm("jobid")
 	if jobIDStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Job ID is required"})
 		return
@@ -388,7 +388,7 @@ func (h *JobAttachmentHandler) UpdateAttachmentDescription(c *gin.Context) {
 
 func (h *JobAttachmentHandler) getCurrentUserID(c *gin.Context) *uint {
 	// Try to get user ID from session or JWT token
-	if userID, exists := c.Get("userID"); exists {
+	if userID, exists := c.Get("userid"); exists {
 		if id, ok := userID.(uint); ok {
 			return &id
 		}
@@ -397,7 +397,7 @@ func (h *JobAttachmentHandler) getCurrentUserID(c *gin.Context) *uint {
 	// Try to get from session
 	session := getSession(c)
 	if session != nil {
-		if userID, ok := session["userID"].(uint); ok {
+		if userID, ok := session["userid"].(uint); ok {
 			return &userID
 		}
 	}

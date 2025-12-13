@@ -202,7 +202,7 @@ func (PackageDevice) TableName() string {
 // ================================================================
 
 type Role struct {
-	RoleID       uint            `gorm:"primaryKey;autoIncrement;column:roleID" json:"roleID"`
+	RoleID       uint            `gorm:"primaryKey;autoIncrement;column:roleid" json:"roleID"`
 	Name         string          `gorm:"uniqueIndex;not null" json:"name"`
 	DisplayName  string          `gorm:"not null" json:"displayName"`
 	Description  string          `json:"description"`
@@ -222,8 +222,8 @@ func (Role) TableName() string {
 }
 
 type UserRole struct {
-	UserID     uint       `gorm:"primaryKey;column:userID" json:"userID"`
-	RoleID     uint       `gorm:"primaryKey;column:roleID" json:"roleID"`
+	UserID     uint       `gorm:"primaryKey;column:userid" json:"userID"`
+	RoleID     uint       `gorm:"primaryKey;column:roleid" json:"roleID"`
 	AssignedAt time.Time  `json:"assignedAt"`
 	AssignedBy *uint      `json:"assignedBy"`
 	ExpiresAt  *time.Time `json:"expiresAt"`

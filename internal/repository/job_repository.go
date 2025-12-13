@@ -145,7 +145,7 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 
 	// Add device count
 	var deviceCount int64
-	if err := r.db.DB.Table("jobdevices").Where("jobID = ?", job.JobID).Count(&deviceCount).Error; err != nil {
+	if err := r.db.DB.Table("job_devices").Where("jobID = ?", job.JobID).Count(&deviceCount).Error; err != nil {
 		deviceCount = 0
 	}
 	job.DeviceCount = int(deviceCount)
@@ -176,15 +176,15 @@ func (r *JobRepository) Update(job *models.Job) error {
 
 	// Use Updates instead of Save to ensure all fields are updated
 	result := r.db.Model(job).Where("jobID = ?", job.JobID).Updates(map[string]interface{}{
-		"customerID":    job.CustomerID,
-		"statusID":      job.StatusID,
+		"customerid":    job.CustomerID,
+		"statusid":      job.StatusID,
 		"description":   job.Description,
-		"startDate":     job.StartDate,
-		"endDate":       job.EndDate,
+		"startdate":     job.StartDate,
+		"enddate":       job.EndDate,
 		"revenue":       job.Revenue,
 		"discount":      job.Discount,
 		"discount_type": job.DiscountType,
-		"jobcategoryID": job.JobCategoryID,
+		"jobcategoryid": job.JobCategoryID,
 		"final_revenue": finalRevenue,
 	})
 
@@ -274,37 +274,37 @@ func (r *JobRepository) List(params *models.FilterParams) ([]models.JobWithDetai
 	var sqlQuery string
 	var args []interface{}
 
-	sqlQuery = `SELECT j.jobID, j.job_code, j.customerID, j.statusID, j.jobcategoryID,
-			j.description, j.startDate, j.endDate,
+	sqlQuery = `SELECT j.jobid, j.job_code, j.customerid, j.statusid, j.jobcategoryid,
+			j.description, j.startdate, j.enddate,
 			j.revenue, j.final_revenue,
 			CONCAT(COALESCE(c.companyname, ''), ' ', COALESCE(c.firstname, ''), ' ', COALESCE(c.lastname, '')) as customer_name,
 			s.status as status_name,
 			jc.name as category_name,
-			COUNT(DISTINCT jd.deviceID) as device_count,
+			COUNT(DISTINCT jd.deviceid) as device_count,
 			COALESCE(j.final_revenue, j.revenue) as total_revenue
 		FROM jobs j
-		LEFT JOIN customers c ON j.customerID = c.customerID
-		LEFT JOIN status s ON j.statusID = s.statusID
-		LEFT JOIN jobCategory jc ON j.jobcategoryID = jc.jobcategoryID
-		LEFT JOIN jobdevices jd ON j.jobID = jd.jobID`
+		LEFT JOIN customers c ON j.customerid = c.customerid
+		LEFT JOIN status s ON j.statusid = s.statusid
+		LEFT JOIN jobCategory jc ON j.jobcategoryid = jc.jobcategoryid
+		LEFT JOIN job_devices jd ON j.jobid = jd.jobid`
 
 	// Build WHERE conditions
 	var conditions []string
 
 	if params.StartDate != nil {
-		conditions = append(conditions, "j.startDate >= ?")
+		conditions = append(conditions, "j.startdate >= ?")
 		args = append(args, *params.StartDate)
 	}
 	if params.EndDate != nil {
-		conditions = append(conditions, "j.endDate <= ?")
+		conditions = append(conditions, "j.enddate <= ?")
 		args = append(args, *params.EndDate)
 	}
 	if params.CustomerID != nil {
-		conditions = append(conditions, "j.customerID = ?")
+		conditions = append(conditions, "j.customerid = ?")
 		args = append(args, *params.CustomerID)
 	}
 	if params.StatusID != nil {
-		conditions = append(conditions, "j.statusID = ?")
+		conditions = append(conditions, "j.statusid = ?")
 		args = append(args, *params.StatusID)
 	}
 	if params.MinRevenue != nil {
@@ -326,10 +326,10 @@ func (r *JobRepository) List(params *models.FilterParams) ([]models.JobWithDetai
 		sqlQuery += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	sqlQuery += " GROUP BY j.jobID, j.job_code, j.customerID, j.statusID, j.jobcategoryID, j.description, j.startDate, j.endDate, j.revenue, j.final_revenue, customer_name, s.status, category_name"
+	sqlQuery += " GROUP BY j.jobid, j.job_code, j.customerid, j.statusid, j.jobcategoryid, j.description, j.startdate, j.enddate, j.revenue, j.final_revenue, customer_name, s.status, category_name"
 
 	// Add ORDER BY
-	sqlQuery += " ORDER BY j.jobID DESC"
+	sqlQuery += " ORDER BY j.jobid DESC"
 
 	// Add pagination
 	if params.Limit > 0 {
@@ -390,12 +390,12 @@ func (r *JobRepository) AssignDevice(jobID uint, deviceID string, price float64)
 	// Check for conflicting assignments based on date overlap
 	if job.StartDate != nil && job.EndDate != nil {
 		var conflictingJob models.JobDevice
-		err = r.db.Joins("JOIN jobs ON jobdevices.jobID = jobs.jobID").
-			Where(`jobdevices.deviceID = ? 
-				AND jobs.jobID != ? 
-				AND jobs.startDate <= ? 
-				AND jobs.endDate >= ? 
-				AND jobs.statusID IN (
+		err = r.db.Joins("JOIN jobs ON job_devices.jobid = jobs.jobid").
+			Where(`job_devices.deviceid = ? 
+				AND jobs.jobid != ? 
+				AND jobs.startdate <= ? 
+				AND jobs.enddate >= ? 
+				AND jobs.statusid IN (
 					SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 				)`, deviceID, jobID, job.EndDate, job.StartDate).
 			First(&conflictingJob).Error
@@ -532,12 +532,12 @@ func (r *JobRepository) assignDeviceWithoutRevenue(jobID uint, deviceID string, 
 	// Check for conflicting assignments based on date overlap
 	if job.StartDate != nil && job.EndDate != nil {
 		var conflictingJob models.JobDevice
-		err = r.db.Joins("JOIN jobs ON jobdevices.jobID = jobs.jobID").
-			Where(`jobdevices.deviceID = ? 
-				AND jobs.jobID != ? 
-				AND jobs.startDate <= ? 
-				AND jobs.endDate >= ? 
-				AND jobs.statusID IN (
+		err = r.db.Joins("JOIN jobs ON job_devices.jobid = jobs.jobid").
+			Where(`job_devices.deviceid = ? 
+				AND jobs.jobid != ? 
+				AND jobs.startdate <= ? 
+				AND jobs.enddate >= ? 
+				AND jobs.statusid IN (
 					SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 				)`, deviceID, jobID, job.EndDate, job.StartDate).
 			First(&conflictingJob).Error
@@ -713,13 +713,13 @@ func (r *JobRepository) GetJobDeviceProductSummary(jobID uint) ([]ProductSummary
 		SELECT
 			COALESCE(p.name, 'Unknown Product') as product_name,
 			COUNT(*) as count,
-			p.productID,
+			p.productid,
 			p.itemcostperday
-		FROM jobdevices jd
-		LEFT JOIN devices d ON jd.deviceID = d.deviceID
-		LEFT JOIN products p ON d.productID = p.productID
-		WHERE jd.jobID = ?
-		GROUP BY p.productID, p.name, p.itemcostperday
+		FROM job_devices jd
+		LEFT JOIN devices d ON jd.deviceid = d.deviceid
+		LEFT JOIN products p ON d.productid = p.productid
+		WHERE jd.jobid = ?
+		GROUP BY p.productid, p.name, p.itemcostperday
 		ORDER BY count DESC, p.name
 	`, jobID).Rows()
 
@@ -767,12 +767,12 @@ func (r *JobRepository) GetJobDevicesPaginated(jobID uint, productName string, p
 
 	// Filter by product if specified
 	if productName != "" && productName != "Unknown Product" {
-		query = query.Joins("JOIN devices d ON jobdevices.deviceID = d.deviceID").
-			Joins("JOIN products p ON d.productID = p.productID").
+		query = query.Joins("JOIN devices d ON job_devices.deviceid = d.deviceid").
+			Joins("JOIN products p ON d.productid = p.productid").
 			Where("p.name = ?", productName)
 	} else if productName == "Unknown Product" {
-		query = query.Joins("LEFT JOIN devices d ON jobdevices.deviceID = d.deviceID").
-			Where("d.productID IS NULL")
+		query = query.Joins("LEFT JOIN devices d ON job_devices.deviceid = d.deviceid").
+			Where("d.productid IS NULL")
 	}
 
 	err := query.Preload("Device").
@@ -839,7 +839,7 @@ func (r *JobRepository) handlePackageDeviceAssignment(jobID uint, packageDeviceI
 		return fmt.Errorf("failed to start transaction: %w", tx.Error)
 	}
 
-	// 1. Add the package device itself to jobdevices
+	// 1. Add the package device itself to job_devices
 	packageJobDevice := models.JobDevice{
 		JobID:       int(jobID),
 		DeviceID:    packageDeviceID,
@@ -875,7 +875,7 @@ func (r *JobRepository) handlePackageDeviceAssignment(jobID uint, packageDeviceI
 				item.ProductID, product.Name, item.Quantity, len(availableDevices))
 		}
 
-		// Add the found devices to jobdevices with discount applied
+		// Add the found devices to job_devices with discount applied
 		for i := 0; i < item.Quantity; i++ {
 			device := availableDevices[i]
 
@@ -926,12 +926,12 @@ func (r *JobRepository) findAvailableDevicesForProduct(tx *gorm.DB, productID ui
 	// Exclude devices that are assigned to other jobs with overlapping dates
 	if job.StartDate != nil && job.EndDate != nil {
 		query = query.Where(`deviceID NOT IN (
-			SELECT jd.deviceID
-			FROM jobdevices jd
-			JOIN jobs j ON jd.jobID = j.jobID
-			WHERE j.startDate <= ?
-			  AND j.endDate >= ?
-			  AND j.statusID IN (
+			SELECT jd.deviceid
+			FROM job_devices jd
+			JOIN jobs j ON jd.jobid = j.jobid
+			WHERE j.startdate <= ?
+			  AND j.enddate >= ?
+			  AND j.statusid IN (
 			    SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 			  )
 		)`, job.EndDate, job.StartDate)

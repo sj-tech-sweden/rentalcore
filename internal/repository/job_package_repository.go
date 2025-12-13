@@ -107,31 +107,31 @@ func (r *JobPackageRepository) countAvailableDevicesByProduct(tx *Database, prod
 	// Count devices already reserved in overlapping jobs
 	var reservedCount int64
 	query := `
-		SELECT COUNT(DISTINCT d.deviceID)
+		SELECT COUNT(DISTINCT d.deviceid)
 		FROM devices d
-		WHERE d.productID = ?
+		WHERE d.productid = ?
 		AND (
 			EXISTS (
-				SELECT 1 FROM jobdevices jd
-				JOIN jobs j ON jd.jobID COLLATE utf8mb4_unicode_ci = j.jobID COLLATE utf8mb4_unicode_ci
-				WHERE jd.deviceID COLLATE utf8mb4_unicode_ci = d.deviceID COLLATE utf8mb4_unicode_ci
-				AND j.jobID != ?
-				AND j.startDate IS NOT NULL
-				AND j.endDate IS NOT NULL
-				AND j.startDate <= ?
-				AND j.endDate >= ?
+				SELECT 1 FROM job_devices jd
+				JOIN jobs j ON jd.jobid COLLATE utf8mb4_unicode_ci = j.jobid COLLATE utf8mb4_unicode_ci
+				WHERE jd.deviceid COLLATE utf8mb4_unicode_ci = d.deviceid COLLATE utf8mb4_unicode_ci
+				AND j.jobid != ?
+				AND j.startdate IS NOT NULL
+				AND j.enddate IS NOT NULL
+				AND j.startdate <= ?
+				AND j.enddate >= ?
 			)
 			OR EXISTS (
 				SELECT 1 FROM job_package_reservations jpr
 				JOIN job_packages jp ON jpr.job_package_id = jp.job_package_id
-				JOIN jobs j ON jp.job_id = j.jobID
-				WHERE jpr.device_id COLLATE utf8mb4_unicode_ci = d.deviceID COLLATE utf8mb4_unicode_ci
+				JOIN jobs j ON jp.job_id = j.jobid
+				WHERE jpr.device_id COLLATE utf8mb4_unicode_ci = d.deviceid COLLATE utf8mb4_unicode_ci
 				AND jpr.reservation_status = 'reserved'
-				AND j.jobID != ?
-				AND j.startDate IS NOT NULL
-				AND j.endDate IS NOT NULL
-				AND j.startDate <= ?
-				AND j.endDate >= ?
+				AND j.jobid != ?
+				AND j.startdate IS NOT NULL
+				AND j.enddate IS NOT NULL
+				AND j.startdate <= ?
+				AND j.enddate >= ?
 			)
 		)
 	`
@@ -152,30 +152,30 @@ func (r *JobPackageRepository) findAvailableDevicesByProduct(tx *Database, produ
 	var devices []string
 
 	query := `
-		SELECT d.deviceID
+		SELECT d.deviceid
 		FROM devices d
-		WHERE d.productID = ?
+		WHERE d.productid = ?
 		AND NOT EXISTS (
-			SELECT 1 FROM jobdevices jd
-			JOIN jobs j ON jd.jobID COLLATE utf8mb4_unicode_ci = j.jobID COLLATE utf8mb4_unicode_ci
-			WHERE jd.deviceID COLLATE utf8mb4_unicode_ci = d.deviceID COLLATE utf8mb4_unicode_ci
-			AND j.jobID != ?
-			AND j.startDate IS NOT NULL
-			AND j.endDate IS NOT NULL
-			AND j.startDate <= ?
-			AND j.endDate >= ?
+			SELECT 1 FROM job_devices jd
+			JOIN jobs j ON jd.jobid COLLATE utf8mb4_unicode_ci = j.jobid COLLATE utf8mb4_unicode_ci
+			WHERE jd.deviceid COLLATE utf8mb4_unicode_ci = d.deviceid COLLATE utf8mb4_unicode_ci
+			AND j.jobid != ?
+			AND j.startdate IS NOT NULL
+			AND j.enddate IS NOT NULL
+			AND j.startdate <= ?
+			AND j.enddate >= ?
 		)
 		AND NOT EXISTS (
 			SELECT 1 FROM job_package_reservations jpr
 			JOIN job_packages jp ON jpr.job_package_id = jp.job_package_id
-			JOIN jobs j ON jp.job_id = j.jobID
-			WHERE jpr.device_id COLLATE utf8mb4_unicode_ci = d.deviceID COLLATE utf8mb4_unicode_ci
+			JOIN jobs j ON jp.job_id = j.jobid
+			WHERE jpr.device_id COLLATE utf8mb4_unicode_ci = d.deviceid COLLATE utf8mb4_unicode_ci
 			AND jpr.reservation_status = 'reserved'
-			AND j.jobID != ?
-			AND j.startDate IS NOT NULL
-			AND j.endDate IS NOT NULL
-			AND j.startDate <= ?
-			AND j.endDate >= ?
+			AND j.jobid != ?
+			AND j.startdate IS NOT NULL
+			AND j.enddate IS NOT NULL
+			AND j.startdate <= ?
+			AND j.enddate >= ?
 		)
 		LIMIT ?
 	`

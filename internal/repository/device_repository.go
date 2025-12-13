@@ -126,8 +126,8 @@ func (r *DeviceRepository) List(params *models.FilterParams) ([]models.DeviceWit
 	if params.SearchTerm != "" {
 		searchPattern := "%" + params.SearchTerm + "%"
 		query = query.Preload("Product").Preload("Product.Category").
-			Joins("LEFT JOIN products ON products.productID = devices.productID").
-			Where("devices.deviceID LIKE ? OR devices.serialnumber LIKE ? OR products.name LIKE ?", searchPattern, searchPattern, searchPattern)
+			Joins("LEFT JOIN products ON products.productid = devices.productid").
+			Where("devices.deviceid LIKE ? OR devices.serialnumber LIKE ? OR products.name LIKE ?", searchPattern, searchPattern, searchPattern)
 	} else {
 		// For normal list view, preload Product with Category
 		query = query.Preload("Product").Preload("Product.Category")
@@ -172,11 +172,11 @@ func (r *DeviceRepository) ListWithCategories(params *models.FilterParams) ([]mo
 		Preload("Product.Manufacturer")
 
 	// Join products table for search and category filtering
-	query = query.Joins("JOIN products ON products.productID = devices.productID")
+	query = query.Joins("JOIN products ON products.productid = devices.productid")
 
 	if params.SearchTerm != "" {
 		searchPattern := "%" + params.SearchTerm + "%"
-		query = query.Where("devices.deviceID LIKE ? OR devices.serialnumber LIKE ? OR products.name LIKE ?", searchPattern, searchPattern, searchPattern)
+		query = query.Where("devices.deviceid LIKE ? OR devices.serialnumber LIKE ? OR products.name LIKE ?", searchPattern, searchPattern, searchPattern)
 	}
 
 	// Category filter
@@ -192,12 +192,12 @@ func (r *DeviceRepository) ListWithCategories(params *models.FilterParams) ([]mo
 
 	// Filter devices not in any case (for case assignment)
 	if params.AssignmentStatus == "not_in_case" {
-		query = query.Where("devices.deviceID NOT IN (SELECT DISTINCT deviceID FROM devicescases)")
+		query = query.Where("devices.deviceid NOT IN (SELECT DISTINCT deviceID FROM devicescases)")
 	}
 
 	// Available filter (devices not in any case and with free status)
 	if params.Available != nil && *params.Available {
-		query = query.Where("devices.status = 'free' AND devices.deviceID NOT IN (SELECT DISTINCT deviceID FROM devicescases)")
+		query = query.Where("devices.status = 'free' AND devices.deviceid NOT IN (SELECT DISTINCT deviceID FROM devicescases)")
 	}
 
 	if params.Limit > 0 {
@@ -228,10 +228,10 @@ func (r *DeviceRepository) GetAvailableDevices() ([]models.Device, error) {
 	// Get devices that are available and not currently assigned to any active job (considering dates)
 	currentDate := time.Now().Format("2006-01-02")
 	err := r.db.Where(`status = 'free' AND deviceID NOT IN (
-		SELECT DISTINCT jd.deviceID 
-		FROM jobdevices jd
-		JOIN jobs j ON jd.jobID = j.jobID 
-		WHERE j.startDate <= ? AND j.endDate >= ? AND j.statusID IN (
+		SELECT DISTINCT jd.deviceid 
+		FROM job_devices jd
+		JOIN jobs j ON jd.jobid = j.jobid 
+		WHERE j.startdate <= ? AND j.enddate >= ? AND j.statusid IN (
 			SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 		)
 	)`, currentDate, currentDate).Find(&devices).Error
@@ -296,12 +296,12 @@ func (r *DeviceRepository) GetDeviceStats(deviceID string) (map[string]interface
 	// Get total earnings from jobs (simplified calculation)
 	var totalEarnings float64
 	err = r.db.Raw(`
-		SELECT COALESCE(SUM(DATEDIFF(COALESCE(j.endDate, NOW()), j.startDate) * COALESCE(p.itemcostperday, 0)), 0) as total_earnings
-		FROM jobdevices jd
-		JOIN jobs j ON jd.jobID = j.jobID
-		JOIN devices d ON jd.deviceID = d.deviceID
-		LEFT JOIN products p ON d.productID = p.productID
-		WHERE jd.deviceID = ?
+		SELECT COALESCE(SUM(DATEDIFF(COALESCE(j.enddate, NOW()), j.startdate) * COALESCE(p.itemcostperday, 0)), 0) as total_earnings
+		FROM job_devices jd
+		JOIN jobs j ON jd.jobid = j.jobid
+		JOIN devices d ON jd.deviceid = d.deviceid
+		LEFT JOIN products p ON d.productid = p.productid
+		WHERE jd.deviceid = ?
 	`, deviceID).Scan(&totalEarnings).Error
 	if err != nil {
 		log.Printf("Error calculating earnings for device %s: %v", deviceID, err)
@@ -311,10 +311,10 @@ func (r *DeviceRepository) GetDeviceStats(deviceID string) (map[string]interface
 	// Get total days rented
 	var totalDaysRented int64
 	err = r.db.Raw(`
-		SELECT COALESCE(SUM(DATEDIFF(COALESCE(j.endDate, NOW()), j.startDate)), 0) as total_days
-		FROM jobdevices jd
-		JOIN jobs j ON jd.jobID = j.jobID
-		WHERE jd.deviceID = ?
+		SELECT COALESCE(SUM(DATEDIFF(COALESCE(j.enddate, NOW()), j.startdate)), 0) as total_days
+		FROM job_devices jd
+		JOIN jobs j ON jd.jobid = j.jobid
+		WHERE jd.deviceid = ?
 	`, deviceID).Scan(&totalDaysRented).Error
 	if err != nil {
 		log.Printf("Error calculating days rented for device %s: %v", deviceID, err)
@@ -438,10 +438,10 @@ func (r *DeviceRepository) GetAvailableDevicesForDate(targetDate time.Time) ([]m
 	// CORRECTED: Use >= for endDate comparison
 	// This ensures devices are unavailable ON the end date and become available the day AFTER
 	err := r.db.Where(`status = 'free' AND deviceID NOT IN (
-		SELECT DISTINCT jd.deviceID 
-		FROM jobdevices jd
-		JOIN jobs j ON jd.jobID = j.jobID 
-		WHERE j.startDate <= ? AND j.endDate >= ? AND j.statusID IN (
+		SELECT DISTINCT jd.deviceid 
+		FROM job_devices jd
+		JOIN jobs j ON jd.jobid = j.jobid 
+		WHERE j.startdate <= ? AND j.enddate >= ? AND j.statusid IN (
 			SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 		)
 	)`, targetDate, targetDate).Find(&devices).Error
@@ -457,10 +457,10 @@ func (r *DeviceRepository) CountAvailableDevicesForDate(targetDate time.Time) (i
 	// This ensures devices are unavailable ON the end date and become available the day AFTER
 	// Example: If endDate = 2025-07-19, devices are unavailable on 2025-07-19, available on 2025-07-20
 	err := r.db.Model(&models.Device{}).Where(`status = 'free' AND deviceID NOT IN (
-		SELECT DISTINCT jd.deviceID 
-		FROM jobdevices jd
-		JOIN jobs j ON jd.jobID = j.jobID 
-		WHERE j.startDate <= ? AND j.endDate >= ? AND j.statusID IN (
+		SELECT DISTINCT jd.deviceid 
+		FROM job_devices jd
+		JOIN jobs j ON jd.jobid = j.jobid 
+		WHERE j.startdate <= ? AND j.enddate >= ? AND j.statusid IN (
 			SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 		)
 	)`, targetDate, targetDate).Count(&count).Error
@@ -480,10 +480,10 @@ func (r *DeviceRepository) CountAssignedDevicesForDate(targetDate time.Time) (in
 	var count int64
 
 	err := r.db.Model(&models.Device{}).Where(`deviceID IN (
-		SELECT DISTINCT jd.deviceID 
-		FROM jobdevices jd
-		JOIN jobs j ON jd.jobID = j.jobID 
-		WHERE j.startDate <= ? AND j.endDate >= ? AND j.statusID IN (
+		SELECT DISTINCT jd.deviceid 
+		FROM job_devices jd
+		JOIN jobs j ON jd.jobid = j.jobid 
+		WHERE j.startdate <= ? AND j.enddate >= ? AND j.statusid IN (
 			SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 		)
 	)`, targetDate, targetDate).Count(&count).Error
@@ -507,9 +507,9 @@ func (r *DeviceRepository) CountDevicesAssignedToJobs(targetDate time.Time) (int
 
 	// CORRECTED: Use >= for endDate comparison
 	// This ensures devices are unavailable ON the end date and become available the day AFTER
-	err := r.db.Table("jobdevices jd").
-		Joins("JOIN jobs j ON jd.jobID = j.jobID").
-		Where("j.startDate <= ? AND j.endDate >= ? AND j.statusID IN (SELECT statusID FROM status WHERE status IN ('open', 'in_progress'))", targetDate, targetDate).
+	err := r.db.Table("job_devices jd").
+		Joins("JOIN jobs j ON jd.jobid = j.jobid").
+		Where("j.startdate <= ? AND j.enddate >= ? AND j.statusid IN (SELECT statusID FROM status WHERE status IN ('open', 'in_progress'))", targetDate, targetDate).
 		Count(&count).Error
 
 	deviceDebugLog("DeviceRepository.CountDevicesAssignedToJobs: %d devices on %s",
@@ -557,8 +557,8 @@ func (r *DeviceRepository) IsDeviceAvailableForJob(deviceID string, jobID uint, 
 
 		// Check if assigned to any other active job
 		var anyActiveAssignment models.JobDevice
-		err = r.db.Joins("JOIN jobs ON jobdevices.jobID = jobs.jobID").
-			Where(`jobdevices.deviceID = ? AND jobs.statusID IN (
+		err = r.db.Joins("JOIN jobs ON job_devices.jobid = jobs.jobid").
+			Where(`job_devices.deviceid = ? AND jobs.statusid IN (
 				SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 			)`, deviceID).First(&anyActiveAssignment).Error
 		if err == nil {
@@ -579,12 +579,12 @@ func (r *DeviceRepository) IsDeviceAvailableForJob(deviceID string, jobID uint, 
 	// Check for overlapping job assignments
 	deviceDebugLog("IsDeviceAvailableForJob: checking for overlapping assignments")
 	var conflictingJob models.JobDevice
-	err = r.db.Joins("JOIN jobs ON jobdevices.jobID = jobs.jobID").
-		Where(`jobdevices.deviceID = ?
-			AND jobs.jobID != ?
-			AND jobs.startDate <= ?
-			AND jobs.endDate >= ?
-			AND jobs.statusID IN (
+	err = r.db.Joins("JOIN jobs ON job_devices.jobid = jobs.jobid").
+		Where(`job_devices.deviceid = ?
+			AND jobs.jobid != ?
+			AND jobs.startdate <= ?
+			AND jobs.enddate >= ?
+			AND jobs.statusid IN (
 				SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 			)`, deviceID, jobID, endDate, startDate).
 		First(&conflictingJob).Error
@@ -627,13 +627,13 @@ func (r *DeviceRepository) GetAvailableDevicesForJob(jobID uint, startDate, endD
 
 	// Get devices that are not assigned to overlapping jobs
 	err := r.db.Where(`status = 'free' AND deviceID NOT IN (
-		SELECT DISTINCT jd.deviceID 
-		FROM jobdevices jd
-		JOIN jobs j ON jd.jobID = j.jobID 
-		WHERE j.jobID != ? 
-			AND j.startDate <= ? 
-			AND j.endDate >= ? 
-			AND j.statusID IN (
+		SELECT DISTINCT jd.deviceid 
+		FROM job_devices jd
+		JOIN jobs j ON jd.jobid = j.jobid 
+		WHERE j.jobid != ? 
+			AND j.startdate <= ? 
+			AND j.enddate >= ? 
+			AND j.statusid IN (
 				SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 			)
 	)`, jobID, endDate, startDate).Find(&devices).Error
@@ -657,14 +657,14 @@ func (r *DeviceRepository) GetProductAvailabilityForJob(productID uint, jobID *u
 	}
 
 	query := r.db.Table("devices d").
-		Select(`d.deviceID, d.productID, d.status,
-			dc.caseID AS case_id,
+		Select(`d.deviceid, d.productid, d.status,
+			dc.caseid AS case_id,
 			c.name AS case_name,
-			CASE WHEN jd_current.jobID IS NOT NULL THEN TRUE ELSE FALSE END AS assigned_to_job`).
-		Joins("LEFT JOIN devicescases dc ON dc.deviceID = d.deviceID").
-		Joins("LEFT JOIN cases c ON c.caseID = dc.caseID").
-		Joins("LEFT JOIN jobdevices jd_current ON jd_current.deviceID = d.deviceID AND jd_current.jobID = ?", jobIDVal).
-		Where("d.productID = ?", productID)
+			CASE WHEN jd_current.jobid IS NOT NULL THEN TRUE ELSE FALSE END AS assigned_to_job`).
+		Joins("LEFT JOIN devicescases dc ON dc.deviceid = d.deviceid").
+		Joins("LEFT JOIN cases c ON c.caseid = dc.caseid").
+		Joins("LEFT JOIN job_devices jd_current ON jd_current.deviceid = d.deviceid AND jd_current.jobid = ?", jobIDVal).
+		Where("d.productid = ?", productID)
 
 	if err := query.Scan(&rows).Error; err != nil {
 		return nil, err
@@ -678,15 +678,15 @@ func (r *DeviceRepository) GetProductAvailabilityForJob(productID uint, jobID *u
 			DeviceID string `gorm:"column:device_id"`
 		}{}
 
-		conflictQuery := r.db.Table("jobdevices jd").
-			Select("CAST(jd.deviceID AS CHAR) AS device_id").
-			Joins("JOIN jobs j ON jd.jobID = j.jobID").
-			Joins("JOIN status s ON s.statusID = j.statusID").
+		conflictQuery := r.db.Table("job_devices jd").
+			Select("CAST(jd.deviceid AS CHAR) AS device_id").
+			Joins("JOIN jobs j ON jd.jobid = j.jobid").
+			Joins("JOIN status s ON s.statusid = j.statusid").
 			Where("s.status IN ?", []string{"open", "in_progress"}).
-			Where("NOT (COALESCE(j.endDate, j.startDate) < ? OR j.startDate > ?)", end, start)
+			Where("NOT (COALESCE(j.enddate, j.startdate) < ? OR j.startdate > ?)", end, start)
 
 		if jobIDVal != 0 {
-			conflictQuery = conflictQuery.Where("j.jobID != ?", jobIDVal)
+			conflictQuery = conflictQuery.Where("j.jobid != ?", jobIDVal)
 		}
 
 		if err := conflictQuery.Scan(&conflictRows).Error; err != nil {
@@ -736,11 +736,11 @@ func (r *DeviceRepository) IsDeviceCurrentlyAssigned(deviceID string) (bool, *ui
 	currentDate := time.Now().Format("2006-01-02")
 
 	var assignment models.JobDevice
-	err := r.db.Joins("JOIN jobs ON jobdevices.jobID = jobs.jobID").
-		Where(`jobdevices.deviceID = ? 
-			AND jobs.startDate <= ? 
-			AND jobs.endDate >= ? 
-			AND jobs.statusID IN (
+	err := r.db.Joins("JOIN jobs ON job_devices.jobid = jobs.jobid").
+		Where(`job_devices.deviceid = ? 
+			AND jobs.startdate <= ? 
+			AND jobs.enddate >= ? 
+			AND jobs.statusid IN (
 				SELECT statusID FROM status WHERE status IN ('open', 'in_progress')
 			)`, deviceID, currentDate, currentDate).
 		First(&assignment).Error

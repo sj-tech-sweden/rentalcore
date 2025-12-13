@@ -412,8 +412,8 @@ func (r *EquipmentPackageRepository) GetPackageStats(packageID uint) (map[string
 	
 	if err := r.db.DB.Model(&models.PackageDevice{}).
 		Select("package_devices.custom_price, products.item_cost_per_day as product_price, package_devices.quantity").
-		Joins("LEFT JOIN devices ON package_devices.deviceID = devices.deviceID").
-		Joins("LEFT JOIN products ON devices.productID = products.productID").
+		Joins("LEFT JOIN devices ON package_devices.deviceid = devices.deviceid").
+		Joins("LEFT JOIN products ON devices.productid = products.productid").
 		Where("package_devices.packageID = ?", packageID).
 		Scan(&priceData).Error; err != nil {
 		return nil, fmt.Errorf("failed to get price data: %v", err)

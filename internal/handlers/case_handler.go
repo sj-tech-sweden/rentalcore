@@ -681,7 +681,7 @@ type CaseTreeSubbiercategory struct {
 }
 
 type CaseTreeDevice struct {
-	DeviceID       string  `json:"deviceID"`
+	DeviceID       string  `json:"deviceid"`
 	ProductName    string  `json:"productName"`
 	SerialNumber   string  `json:"serialNumber"`
 	Status         string  `json:"status"`

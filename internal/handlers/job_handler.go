@@ -1074,12 +1074,12 @@ func (h *JobHandler) CreateJobAPI(c *gin.Context) {
 
 	// Create job from request data
 	var job models.Job
-	if customerID, ok := requestData["customerID"]; ok {
+	if customerID, ok := requestData["customerid"]; ok {
 		if cid, ok := customerID.(float64); ok {
 			job.CustomerID = uint(cid)
 		}
 	}
-	if statusID, ok := requestData["statusID"]; ok {
+	if statusID, ok := requestData["statusid"]; ok {
 		if sid, ok := statusID.(float64); ok {
 			job.StatusID = uint(sid)
 		}
@@ -1097,7 +1097,7 @@ func (h *JobHandler) CreateJobAPI(c *gin.Context) {
 			cid := uint(catNum)
 			job.JobCategoryID = &cid
 		}
-	} else if catVal, ok := requestData["jobcategoryID"]; ok {
+	} else if catVal, ok := requestData["jobcategoryid"]; ok {
 		if catNum, ok := catVal.(float64); ok && catNum > 0 {
 			cid := uint(catNum)
 			job.JobCategoryID = &cid
@@ -1130,14 +1130,14 @@ func (h *JobHandler) CreateJobAPI(c *gin.Context) {
 	}
 
 	// Handle date fields manually
-	if startDateStr, ok := requestData["startDate"]; ok {
+	if startDateStr, ok := requestData["startdate"]; ok {
 		if dateStr, ok := startDateStr.(string); ok && dateStr != "" {
 			if parsed, err := time.Parse("2006-01-02", dateStr); err == nil {
 				job.StartDate = &parsed
 			}
 		}
 	}
-	if endDateStr, ok := requestData["endDate"]; ok {
+	if endDateStr, ok := requestData["enddate"]; ok {
 		if dateStr, ok := endDateStr.(string); ok && dateStr != "" {
 			if parsed, err := time.Parse("2006-01-02", dateStr); err == nil {
 				job.EndDate = &parsed
@@ -1246,12 +1246,12 @@ func (h *JobHandler) UpdateJobAPI(c *gin.Context) {
 		StartDate:     existingJob.StartDate,
 		EndDate:       existingJob.EndDate,
 	}
-	if customerID, ok := requestData["customerID"]; ok {
+	if customerID, ok := requestData["customerid"]; ok {
 		if cid, ok := customerID.(float64); ok {
 			job.CustomerID = uint(cid)
 		}
 	}
-	if statusID, ok := requestData["statusID"]; ok {
+	if statusID, ok := requestData["statusid"]; ok {
 		if sid, ok := statusID.(float64); ok {
 			job.StatusID = uint(sid)
 		}
@@ -1283,14 +1283,14 @@ func (h *JobHandler) UpdateJobAPI(c *gin.Context) {
 	}
 
 	// Handle date fields manually
-	if startDateStr, ok := requestData["startDate"]; ok {
+	if startDateStr, ok := requestData["startdate"]; ok {
 		if dateStr, ok := startDateStr.(string); ok && dateStr != "" {
 			if parsed, err := time.Parse("2006-01-02", dateStr); err == nil {
 				job.StartDate = &parsed
 			}
 		}
 	}
-	if endDateStr, ok := requestData["endDate"]; ok {
+	if endDateStr, ok := requestData["enddate"]; ok {
 		if dateStr, ok := endDateStr.(string); ok && dateStr != "" {
 			if parsed, err := time.Parse("2006-01-02", dateStr); err == nil {
 				job.EndDate = &parsed
@@ -1571,7 +1571,7 @@ func (h *JobHandler) GetScanBoardData(c *gin.Context) {
 			jd.pack_status as packStatus,
 			jd.deviceID as barcodePayload,
 			pi.file_path as imageUrl
-		FROM jobdevices jd
+		FROM job_devices jd
 		LEFT JOIN devices d ON jd.deviceID = d.deviceID
 		LEFT JOIN products p ON d.productID = p.productID
 		LEFT JOIN product_images pi ON p.productID = pi.productID AND pi.is_primary = 1
@@ -1598,7 +1598,7 @@ func (h *JobHandler) GetScanBoardData(c *gin.Context) {
 		}
 
 		device := gin.H{
-			"deviceID":       deviceID,
+			"deviceid":       deviceID,
 			"productName":    productName,
 			"packStatus":     packStatus,
 			"barcodePayload": barcodePayload,
@@ -1610,7 +1610,7 @@ func (h *JobHandler) GetScanBoardData(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"jobID":       job.JobID,
+		"jobid":       job.JobID,
 		"description": job.Description,
 		"devices":     devices,
 	})
@@ -1647,7 +1647,7 @@ func (h *JobHandler) ScanDeviceForPack(c *gin.Context) {
 
 	// Validate that device belongs to this job
 	var count int64
-	err = h.jobRepo.GetDB().Table("jobdevices").
+	err = h.jobRepo.GetDB().Table("job_devices").
 		Where("jobID = ? AND deviceID = ?", jobID, deviceID).
 		Count(&count).Error
 	if err != nil {
@@ -1663,7 +1663,7 @@ func (h *JobHandler) ScanDeviceForPack(c *gin.Context) {
 
 	// Update pack status to 'packed'
 	now := time.Now()
-	err = h.jobRepo.GetDB().Table("jobdevices").
+	err = h.jobRepo.GetDB().Table("job_devices").
 		Where("jobID = ? AND deviceID = ?", jobID, deviceID).
 		Updates(map[string]interface{}{
 			"pack_status": "packed",
@@ -1678,7 +1678,7 @@ func (h *JobHandler) ScanDeviceForPack(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success":  true,
 		"message":  "Device scanned successfully",
-		"deviceID": deviceID,
+		"deviceid": deviceID,
 	})
 }
 
@@ -1717,7 +1717,7 @@ func (h *JobHandler) UpdateDevicePackStatus(c *gin.Context) {
 
 	// Validate that device is assigned to this job
 	var count int64
-	err = h.jobRepo.GetDB().Table("jobdevices").
+	err = h.jobRepo.GetDB().Table("job_devices").
 		Where("jobID = ? AND deviceID = ?", jobID, deviceID).
 		Count(&count).Error
 	if err != nil {
@@ -1742,7 +1742,7 @@ func (h *JobHandler) UpdateDevicePackStatus(c *gin.Context) {
 		updateData["pack_ts"] = now
 	}
 
-	err = h.jobRepo.GetDB().Table("jobdevices").
+	err = h.jobRepo.GetDB().Table("job_devices").
 		Where("jobID = ? AND deviceID = ?", jobID, deviceID).
 		Updates(updateData).Error
 	if err != nil {
@@ -1754,8 +1754,8 @@ func (h *JobHandler) UpdateDevicePackStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success":    true,
 		"message":    "Pack status updated successfully",
-		"deviceID":   deviceID,
-		"jobID":      jobID,
+		"deviceid":   deviceID,
+		"jobid":      jobID,
 		"packStatus": req.PackStatus,
 		"updatedAt":  now,
 	})
@@ -1782,7 +1782,7 @@ func (h *JobHandler) FinishPack(c *gin.Context) {
 	query := `
 		SELECT
 			CONCAT(COALESCE(p.name, 'Unknown Product'), ' (', jd.deviceID, ')') as missing_item
-		FROM jobdevices jd
+		FROM job_devices jd
 		LEFT JOIN devices d ON jd.deviceID = d.deviceID
 		LEFT JOIN products p ON d.productID = p.productID
 		WHERE jd.jobID = ? AND jd.pack_status = 'pending'
@@ -1821,7 +1821,7 @@ func (h *JobHandler) FinishPack(c *gin.Context) {
 	// Mark all remaining items as packed if forcing
 	if finishReq.Force && len(missing) > 0 {
 		now := time.Now()
-		err = h.jobRepo.GetDB().Table("jobdevices").
+		err = h.jobRepo.GetDB().Table("job_devices").
 			Where("jobID = ? AND pack_status = 'pending'", jobID).
 			Updates(map[string]interface{}{
 				"pack_status": "packed",

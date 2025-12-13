@@ -56,7 +56,7 @@ func (r *AccessoriesConsumablesRepository) GetProductDependencies(productID uint
 			pd.default_quantity,
 			pd.notes
 		FROM product_dependencies pd
-		JOIN products p ON pd.dependency_product_id = p.productID
+		JOIN products p ON pd.dependency_product_id = p.productid
 		LEFT JOIN count_types ct ON p.count_type_id = ct.count_type_id
 		WHERE pd.product_id = ?
 		ORDER BY pd.is_optional ASC, pd.created_at DESC

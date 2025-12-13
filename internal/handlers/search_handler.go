@@ -269,19 +269,19 @@ func (h *SearchHandler) advancedSearchJobs(query string, filters map[string]inte
 	}
 
 	// Apply filters
-	if customerID, ok := filters["customerID"]; ok && customerID != "" {
+	if customerID, ok := filters["customerid"]; ok && customerID != "" {
 		db = db.Where("customerID = ?", customerID)
 	}
 	
-	if statusID, ok := filters["statusID"]; ok && statusID != "" {
+	if statusID, ok := filters["statusid"]; ok && statusID != "" {
 		db = db.Where("statusID = ?", statusID)
 	}
 	
-	if startDate, ok := filters["startDate"]; ok && startDate != "" {
+	if startDate, ok := filters["startdate"]; ok && startDate != "" {
 		db = db.Where("startDate >= ?", startDate)
 	}
 	
-	if endDate, ok := filters["endDate"]; ok && endDate != "" {
+	if endDate, ok := filters["enddate"]; ok && endDate != "" {
 		db = db.Where("endDate <= ?", endDate)
 	}
 	
@@ -337,7 +337,7 @@ func (h *SearchHandler) advancedSearchDevices(query string, filters map[string]i
 		db = db.Where("status = ?", status)
 	}
 	
-	if productID, ok := filters["productID"]; ok && productID != "" {
+	if productID, ok := filters["productid"]; ok && productID != "" {
 		db = db.Where("devices.productID = ?", productID)
 	}
 	
@@ -492,7 +492,7 @@ func (h *SearchHandler) SearchSuggestions(c *gin.Context) {
 			Select("DISTINCT deviceID").
 			Where("LOWER(deviceID) LIKE ?", searchTerm).
 			Limit(limit).
-			Pluck("deviceID", &deviceIDs)
+			Pluck("deviceid", &deviceIDs)
 		suggestions = append(suggestions, deviceIDs...)
 
 	case "jobs":

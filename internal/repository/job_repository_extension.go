@@ -10,7 +10,7 @@ import (
 func (r *JobRepository) FreeDevicesFromCompletedJobs() error {
 	// Find all jobs with "cancelled" status (NOT "paid" - paid jobs should keep device assignments)
 	var cancelledJobs []models.Job
-	err := r.db.Joins("JOIN status ON jobs.statusID = status.statusID").
+	err := r.db.Joins("JOIN status ON jobs.statusid = status.statusid").
 		Where("status.status = ?", "cancelled").
 		Find(&cancelledJobs).Error
 	if err != nil {

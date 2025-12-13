@@ -52,7 +52,7 @@ func (h *AccessoriesConsumablesHandler) GetCountTypesAPI(c *gin.Context) {
 // ============================================================================
 
 func (h *AccessoriesConsumablesHandler) GetProductDependenciesAPI(c *gin.Context) {
-	productIDStr := c.Param("productID")
+	productIDStr := c.Param("productid")
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
@@ -74,7 +74,7 @@ func (h *AccessoriesConsumablesHandler) GetProductDependenciesAPI(c *gin.Context
 // ============================================================================
 
 func (h *AccessoriesConsumablesHandler) GetProductAccessoriesAPI(c *gin.Context) {
-	productIDStr := c.Param("productID")
+	productIDStr := c.Param("productid")
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
@@ -109,7 +109,7 @@ func (h *AccessoriesConsumablesHandler) AddProductAccessoryAPI(c *gin.Context) {
 }
 
 func (h *AccessoriesConsumablesHandler) RemoveProductAccessoryAPI(c *gin.Context) {
-	productIDStr := c.Param("productID")
+	productIDStr := c.Param("productid")
 	accessoryIDStr := c.Param("accessoryID")
 
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
@@ -149,7 +149,7 @@ func (h *AccessoriesConsumablesHandler) GetAccessoryProductsAPI(c *gin.Context) 
 // ============================================================================
 
 func (h *AccessoriesConsumablesHandler) GetProductConsumablesAPI(c *gin.Context) {
-	productIDStr := c.Param("productID")
+	productIDStr := c.Param("productid")
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
@@ -184,7 +184,7 @@ func (h *AccessoriesConsumablesHandler) AddProductConsumableAPI(c *gin.Context) 
 }
 
 func (h *AccessoriesConsumablesHandler) RemoveProductConsumableAPI(c *gin.Context) {
-	productIDStr := c.Param("productID")
+	productIDStr := c.Param("productid")
 	consumableIDStr := c.Param("consumableID")
 
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
@@ -224,7 +224,7 @@ func (h *AccessoriesConsumablesHandler) GetConsumableProductsAPI(c *gin.Context)
 // ============================================================================
 
 func (h *AccessoriesConsumablesHandler) GetJobAccessoriesAPI(c *gin.Context) {
-	jobIDStr := c.Param("jobID")
+	jobIDStr := c.Param("jobid")
 	jobID, err := strconv.ParseUint(jobIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
@@ -305,7 +305,7 @@ func (h *AccessoriesConsumablesHandler) DeleteJobAccessoryAPI(c *gin.Context) {
 // ============================================================================
 
 func (h *AccessoriesConsumablesHandler) GetJobConsumablesAPI(c *gin.Context) {
-	jobIDStr := c.Param("jobID")
+	jobIDStr := c.Param("jobid")
 	jobID, err := strconv.ParseUint(jobIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})

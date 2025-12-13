@@ -304,7 +304,7 @@ func (h *PDFHandler) UploadPDF(c *gin.Context) {
 	upload.JobID = jobID
 
 	// Get user ID from session
-	if userID, exists := c.Get("userID"); exists {
+	if userID, exists := c.Get("userid"); exists {
 		if uid, ok := userID.(int64); ok {
 			upload.UploadedBy = sql.NullInt64{Int64: uid, Valid: true}
 		}
@@ -541,7 +541,7 @@ func (h *PDFHandler) SaveProductMapping(c *gin.Context) {
 	}
 
 	userID := int64(1) // TODO: Get from session
-	if uid, exists := c.Get("userID"); exists {
+	if uid, exists := c.Get("userid"); exists {
 		if id, ok := uid.(int64); ok {
 			userID = id
 		}
@@ -726,12 +726,12 @@ func (h *PDFHandler) ShowReviewScreen(c *gin.Context) {
 		if err := json.Unmarshal([]byte(extraction.Metadata.String), &meta); err == nil {
 			if startStr, ok := meta["start_date"]; ok {
 				if t, err := time.Parse(time.RFC3339, startStr); err == nil {
-					data["startDate"] = t
+					data["startdate"] = t
 				}
 			}
 			if endStr, ok := meta["end_date"]; ok {
 				if t, err := time.Parse(time.RFC3339, endStr); err == nil {
-					data["endDate"] = t
+					data["enddate"] = t
 				}
 			}
 		}
@@ -893,8 +893,8 @@ func (h *PDFHandler) ShowMappingScreen(c *gin.Context) {
 		"upload":        upload,
 		"items":         itemsWithSuggestions,
 		"pageTitle":     "PDF Product Mapping",
-		"startDate":     formatDateInput(startDate),
-		"endDate":       formatDateInput(endDate),
+		"startdate":     formatDateInput(startDate),
+		"enddate":       formatDateInput(endDate),
 		"discountType":  discountType,
 		"totalItems":    totalItems,
 		"mappedCount":   mappedCount,
@@ -1132,7 +1132,7 @@ func (h *PDFHandler) SearchCustomers(c *gin.Context) {
 	results := make([]gin.H, 0, len(customers))
 	for _, customer := range customers {
 		results = append(results, gin.H{
-			"customerID":   customer.CustomerID,
+			"customerid":   customer.CustomerID,
 			"displayName":  customer.GetDisplayName(),
 			"companyname":  customer.CompanyName,
 			"firstname":    customer.FirstName,
@@ -1273,7 +1273,7 @@ func (h *PDFHandler) SaveManualMapping(c *gin.Context) {
 	}
 
 	userID := int64(1)
-	if uid, exists := c.Get("userID"); exists {
+	if uid, exists := c.Get("userid"); exists {
 		if id, ok := uid.(int64); ok {
 			userID = id
 		}
@@ -1351,7 +1351,7 @@ func (h *PDFHandler) SaveCustomerMapping(c *gin.Context) {
 
 	if text != "" && h.CustomerMapper != nil {
 		userID := int64(1)
-		if uid, exists := c.Get("userID"); exists {
+		if uid, exists := c.Get("userid"); exists {
 			if id, ok := uid.(int64); ok {
 				userID = id
 			}
@@ -1670,7 +1670,7 @@ func (h *PDFHandler) findDefaultJobStatus() (uint, error) {
 		return status.StatusID, nil
 	}
 
-	if err := h.DB.Order("statusID").First(&status).Error; err == nil {
+	if err := h.DB.Order("statusid").First(&status).Error; err == nil {
 		return status.StatusID, nil
 	}
 
@@ -2669,7 +2669,7 @@ func (h *PDFHandler) detectDuplicateJobs(customerID uint, productCounts map[uint
 
 	candidateQuery := h.DB.Table("jobs").
 		Select("jobs.jobID").
-		Joins("JOIN jobdevices jd ON jd.jobID = jobs.jobID").
+		Joins("JOIN job_devices jd ON jd.jobID = jobs.jobID").
 		Where("jobs.customerID = ?", customerID)
 	if excludeJobID > 0 {
 		candidateQuery = candidateQuery.Where("jobs.jobID <> ?", excludeJobID)
@@ -2692,7 +2692,7 @@ func (h *PDFHandler) detectDuplicateJobs(customerID uint, productCounts map[uint
 	}
 
 	var rows []jobProductRow
-	if err := h.DB.Table("jobdevices AS jd").
+	if err := h.DB.Table("job_devices AS jd").
 		Select("jd.jobID, dev.productID, COUNT(*) AS quantity").
 		Joins("JOIN devices dev ON dev.deviceID = jd.deviceID").
 		Where("jd.jobID IN ?", candidateIDs).
@@ -2947,7 +2947,7 @@ func (h *PDFHandler) persistExtractionMappings(c *gin.Context, extractionID uint
 	}
 
 	userID := int64(0)
-	if uid, exists := c.Get("userID"); exists {
+	if uid, exists := c.Get("userid"); exists {
 		if id, ok := uid.(int64); ok {
 			userID = id
 		}
@@ -3090,7 +3090,7 @@ func (h *PDFHandler) ProcessPoolDocument(c *gin.Context) {
 
 	// Get user ID from session
 	var uploadedBy sql.NullInt64
-	if userID, exists := c.Get("userID"); exists {
+	if userID, exists := c.Get("userid"); exists {
 		if uid, ok := userID.(int64); ok {
 			uploadedBy = sql.NullInt64{Int64: uid, Valid: true}
 		}

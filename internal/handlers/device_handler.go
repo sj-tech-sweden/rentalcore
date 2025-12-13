@@ -279,7 +279,7 @@ func (h *DeviceHandler) CreateDevice(c *gin.Context) {
 	}
 
 	var productID *uint
-	if productIDStr := c.PostForm("productID"); productIDStr != "" {
+	if productIDStr := c.PostForm("productid"); productIDStr != "" {
 		if pid, err := strconv.ParseUint(productIDStr, 10, 32); err == nil {
 			prodID := uint(pid)
 			productID = &prodID
@@ -447,7 +447,7 @@ func (h *DeviceHandler) UpdateDevice(c *gin.Context) {
 	notes := c.PostForm("notes")
 
 	var productID *uint
-	if productIDStr := c.PostForm("productID"); productIDStr != "" {
+	if productIDStr := c.PostForm("productid"); productIDStr != "" {
 		if pid, err := strconv.ParseUint(productIDStr, 10, 32); err == nil {
 			prodID := uint(pid)
 			productID = &prodID
@@ -1283,7 +1283,7 @@ func (h *DeviceHandler) getConflictingDevices(startDate, endDate time.Time, excl
 	}
 
 	query := h.deviceRepo.GetDB().
-		Table("jobdevices jd").
+		Table("job_devices jd").
 		Select("jd.deviceID").
 		Joins("JOIN jobs j ON jd.jobID = j.jobID").
 		Where("NOT (COALESCE(j.endDate, j.startDate) < ? OR j.startDate > ?)", startDate, endDate)

@@ -198,8 +198,8 @@ func (h *PWAHandler) processCreateJob(action models.OfflineSyncQueue) error {
 	}
 
 	// Create job from offline data
-	customerID := uint(jobData["customerID"].(float64))
-	statusID := uint(jobData["statusID"].(float64))
+	customerID := uint(jobData["customerid"].(float64))
+	statusID := uint(jobData["statusid"].(float64))
 	jobCategoryID := uint(jobData["jobCategoryID"].(float64))
 	description := jobData["description"].(string)
 	
@@ -210,13 +210,13 @@ func (h *PWAHandler) processCreateJob(action models.OfflineSyncQueue) error {
 		Description:   &description,
 	}
 
-	if startDate, ok := jobData["startDate"].(string); ok {
+	if startDate, ok := jobData["startdate"].(string); ok {
 		if parsed, err := time.Parse("2006-01-02", startDate); err == nil {
 			job.StartDate = &parsed
 		}
 	}
 
-	if endDate, ok := jobData["endDate"].(string); ok {
+	if endDate, ok := jobData["enddate"].(string); ok {
 		if parsed, err := time.Parse("2006-01-02", endDate); err == nil {
 			job.EndDate = &parsed
 		}
@@ -232,8 +232,8 @@ func (h *PWAHandler) processAssignDevice(action models.OfflineSyncQueue) error {
 		return err
 	}
 
-	jobID := uint(assignData["jobID"].(float64))
-	deviceID := assignData["deviceID"].(string)
+	jobID := uint(assignData["jobid"].(float64))
+	deviceID := assignData["deviceid"].(string)
 
 	// Check if assignment already exists
 	var existing models.JobDevice

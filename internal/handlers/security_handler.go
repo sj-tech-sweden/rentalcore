@@ -490,13 +490,13 @@ func (h *SecurityHandler) GetAuditLogs(c *gin.Context) {
 		query = query.Where("entity_id = ?", entityID)
 	}
 
-	if startDate := c.Query("startDate"); startDate != "" {
+	if startDate := c.Query("startdate"); startDate != "" {
 		if parsed, err := time.Parse("2006-01-02", startDate); err == nil {
 			query = query.Where("timestamp >= ?", parsed)
 		}
 	}
 
-	if endDate := c.Query("endDate"); endDate != "" {
+	if endDate := c.Query("enddate"); endDate != "" {
 		if parsed, err := time.Parse("2006-01-02", endDate); err == nil {
 			query = query.Where("timestamp <= ?", parsed.Add(24*time.Hour))
 		}
@@ -553,8 +553,8 @@ func (h *SecurityHandler) ExportAuditLogs(c *gin.Context) {
 	userID := c.Query("userId")
 	action := c.Query("action")
 	entityType := c.Query("entityType")
-	startDate := c.Query("startDate")
-	endDate := c.Query("endDate")
+	startDate := c.Query("startdate")
+	endDate := c.Query("enddate")
 
 	if format != "csv" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Only CSV format is supported"})

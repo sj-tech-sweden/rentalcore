@@ -8,13 +8,13 @@ import (
 )
 
 type Customer struct {
-	CustomerID   uint    `json:"customerID" gorm:"primaryKey;column:customerID"`
+	CustomerID   uint    `json:"customerID" gorm:"primaryKey;column:customerid"`
 	CompanyName  *string `json:"companyname" gorm:"column:companyname"`
 	LastName     *string `json:"lastname" gorm:"column:lastname"`
 	FirstName    *string `json:"firstname" gorm:"column:firstname"`
 	Street       *string `json:"street" gorm:"column:street"`
 	HouseNumber  *string `json:"housenumber" gorm:"column:housenumber"`
-	ZIP          *string `json:"ZIP" gorm:"column:ZIP"`
+	ZIP          *string `json:"ZIP" gorm:"column:zip"`
 	City         *string `json:"city" gorm:"column:city"`
 	FederalState *string `json:"federalstate" gorm:"column:federalstate"`
 	Country      *string `json:"country" gorm:"column:country"`
@@ -46,7 +46,7 @@ func (c Customer) GetDisplayName() string {
 }
 
 type Status struct {
-	StatusID uint   `json:"statusID" gorm:"primaryKey;column:statusID"`
+	StatusID uint   `json:"statusID" gorm:"primaryKey;column:statusid"`
 	Status   string `json:"status" gorm:"not null;column:status"`
 	Jobs     []Job  `json:"jobs,omitempty" gorm:"-"`
 }
@@ -56,13 +56,13 @@ func (Status) TableName() string {
 }
 
 type Job struct {
-	JobID         uint         `json:"jobID" gorm:"primaryKey;column:jobID"`
+	JobID         uint         `json:"jobID" gorm:"primaryKey;column:jobid"`
 	JobCode       string       `json:"job_code" gorm:"column:job_code"`
-	CustomerID    uint         `json:"customerID" gorm:"not null;column:customerID"`
+	CustomerID    uint         `json:"customerID" gorm:"not null;column:customerid"`
 	Customer      Customer     `json:"customer,omitempty" gorm:"foreignKey:CustomerID"`
-	StatusID      uint         `json:"statusID" gorm:"not null;column:statusID"`
+	StatusID      uint         `json:"statusID" gorm:"not null;column:statusid"`
 	Status        Status       `json:"status,omitempty" gorm:"foreignKey:StatusID"`
-	JobCategoryID *uint        `json:"jobcategoryID" gorm:"column:jobcategoryID"`
+	JobCategoryID *uint        `json:"jobcategoryID" gorm:"column:jobcategoryid"`
 	JobCategory   *JobCategory `json:"job_category,omitempty" gorm:"foreignKey:JobCategoryID"`
 	CreatedBy     *uint        `json:"created_by" gorm:"column:created_by;index"`
 	CreatedAt     *time.Time   `json:"created_at" gorm:"column:created_at;default:CURRENT_TIMESTAMP;index"`
@@ -73,8 +73,8 @@ type Job struct {
 	DiscountType  string       `json:"discount_type" gorm:"column:discount_type;default:amount"`
 	Revenue       float64      `json:"revenue" gorm:"column:revenue;default:0"`
 	FinalRevenue  *float64     `json:"final_revenue" gorm:"column:final_revenue"`
-	StartDate     *time.Time   `json:"startDate" gorm:"column:startDate;type:date"`
-	EndDate       *time.Time   `json:"endDate" gorm:"column:endDate;type:date"`
+	StartDate     *time.Time   `json:"startDate" gorm:"column:startdate;type:date"`
+	EndDate       *time.Time   `json:"endDate" gorm:"column:enddate;type:date"`
 	JobDevices    []JobDevice  `json:"job_devices,omitempty" gorm:"foreignKey:JobID"`
 	JobPackages   []JobPackage `json:"job_packages,omitempty" gorm:"foreignKey:JobID;references:JobID"`
 	DeviceCount   int          `json:"device_count" gorm:"-:all"`
@@ -105,16 +105,16 @@ func (j *Job) BeforeUpdate(tx *gorm.DB) error {
 }
 
 type Device struct {
-	DeviceID            string      `json:"deviceID" gorm:"primaryKey;column:deviceID"`
-	ProductID           *uint       `json:"productID" gorm:"column:productID"`
+	DeviceID            string      `json:"deviceID" gorm:"primaryKey;column:deviceid"`
+	ProductID           *uint       `json:"productID" gorm:"column:productid"`
 	Product             *Product    `json:"product,omitempty" gorm:"foreignKey:ProductID;references:ProductID"`
 	SerialNumber        *string     `json:"serialnumber" gorm:"column:serialnumber"`
-	PurchaseDate        *time.Time  `json:"purchaseDate" gorm:"column:purchaseDate;type:date"`
+	PurchaseDate        *time.Time  `json:"purchaseDate" gorm:"column:purchasedate;type:date"`
 	LastMaintenance     *time.Time  `json:"lastmaintenance" gorm:"column:lastmaintenance;type:date"`
 	NextMaintenance     *time.Time  `json:"nextmaintenance" gorm:"column:nextmaintenance;type:date"`
 	InsuranceNumber     *string     `json:"insurancenumber" gorm:"column:insurancenumber"`
 	Status              string      `json:"status" gorm:"column:status;default:free"`
-	InsuranceID         *uint       `json:"insuranceID" gorm:"column:insuranceID"`
+	InsuranceID         *uint       `json:"insuranceID" gorm:"column:insuranceid"`
 	QRCode              *string     `json:"qrCode" gorm:"column:qr_code"`
 	CurrentLocation     *string     `json:"currentLocation" gorm:"column:current_location"`
 	GPSLatitude         *float64    `json:"gpsLatitude" gorm:"column:gps_latitude"`
@@ -133,7 +133,7 @@ func (Device) TableName() string {
 }
 
 type Product struct {
-	ProductID           uint             `json:"productID" gorm:"primaryKey;column:productID"`
+	ProductID           uint             `json:"productID" gorm:"primaryKey;column:productid"`
 	Name                string           `json:"name" gorm:"not null;column:name"`
 	CategoryID          *uint            `json:"categoryID" gorm:"column:categoryID"`
 	SubcategoryID       *string          `json:"subcategoryID" gorm:"column:subcategoryID"`
@@ -197,8 +197,8 @@ func (Subbiercategory) TableName() string {
 }
 
 type JobDevice struct {
-	JobID          int        `json:"jobID" gorm:"primaryKey;column:jobID"`
-	DeviceID       string     `json:"deviceID" gorm:"primaryKey;column:deviceID"`
+	JobID          int        `json:"jobID" gorm:"primaryKey;column:jobid"`
+	DeviceID       string     `json:"deviceID" gorm:"primaryKey;column:deviceid"`
 	Job            Job        `json:"job,omitempty" gorm:"foreignKey:JobID"`
 	Device         Device     `json:"device,omitempty" gorm:"foreignKey:DeviceID"`
 	CustomPrice    *float64   `json:"custom_price" gorm:"column:custom_price"`
@@ -214,14 +214,14 @@ func (JobDevice) TableName() string {
 
 // JobWithDetails represents a job with aggregated information
 type JobWithDetails struct {
-	JobID         uint       `json:"jobID" gorm:"column:jobID"`
+	JobID         uint       `json:"jobID" gorm:"column:jobid"`
 	JobCode       string     `json:"job_code" gorm:"column:job_code"`
-	CustomerID    uint       `json:"customerID" gorm:"column:customerID"`
-	StatusID      uint       `json:"statusID" gorm:"column:statusID"`
-	JobCategoryID *uint      `json:"jobcategoryID" gorm:"column:jobcategoryID"`
+	CustomerID    uint       `json:"customerID" gorm:"column:customerid"`
+	StatusID      uint       `json:"statusID" gorm:"column:statusid"`
+	JobCategoryID *uint      `json:"jobcategoryID" gorm:"column:jobcategoryid"`
 	Description   *string    `json:"description" gorm:"column:description"`
-	StartDate     *time.Time `json:"startDate" gorm:"column:startDate"`
-	EndDate       *time.Time `json:"endDate" gorm:"column:endDate"`
+	StartDate     *time.Time `json:"startDate" gorm:"column:startdate"`
+	EndDate       *time.Time `json:"endDate" gorm:"column:enddate"`
 	Revenue       float64    `json:"revenue" gorm:"column:revenue"`
 	FinalRevenue  *float64   `json:"final_revenue" gorm:"column:final_revenue"`
 	CustomerName  string     `json:"customer_name" gorm:"column:customer_name"`
@@ -257,13 +257,13 @@ type ScanResult struct {
 // Additional models matching your database schema
 
 type JobCategory struct {
-	JobCategoryID uint    `json:"jobcategoryID" gorm:"primaryKey;column:jobcategoryID"`
+	JobCategoryID uint    `json:"jobcategoryID" gorm:"primaryKey;column:jobcategoryid"`
 	Name          string  `json:"name" gorm:"column:name"`
 	Abbreviation  *string `json:"abbreviation" gorm:"column:abbreviation"`
 }
 
 func (JobCategory) TableName() string {
-	return "jobCategory"
+	return "jobcategory"
 }
 
 type Category struct {
@@ -345,7 +345,7 @@ func (DeviceAssignmentHistory) TableName() string {
 
 // User represents a user account for authentication
 type User struct {
-	UserID              uint       `json:"userID" gorm:"primaryKey;column:userID"`
+	UserID              uint       `json:"userID" gorm:"primaryKey;column:userid"`
 	Username            string     `json:"username" gorm:"unique;not null;column:username"`
 	Email               string     `json:"email" gorm:"unique;not null;column:email"`
 	PasswordHash        string     `json:"-" gorm:"not null;column:password_hash"`
@@ -421,7 +421,7 @@ func (UserPreferences) TableName() string {
 }
 
 type Case struct {
-	CaseID      uint         `json:"caseID" gorm:"primaryKey;column:caseID"`
+	CaseID      uint         `json:"caseID" gorm:"primaryKey;column:caseid"`
 	Name        string       `json:"name" gorm:"not null;column:name"`
 	Description *string      `json:"description" gorm:"column:description"`
 	Weight      *float64     `json:"weight" gorm:"column:weight"`
@@ -438,8 +438,8 @@ func (Case) TableName() string {
 }
 
 type DeviceCase struct {
-	CaseID   uint   `json:"caseID" gorm:"primaryKey;column:caseID"`
-	DeviceID string `json:"deviceID" gorm:"primaryKey;column:deviceID"`
+	CaseID   uint   `json:"caseID" gorm:"primaryKey;column:caseid"`
+	DeviceID string `json:"deviceID" gorm:"primaryKey;column:deviceid"`
 	Case     Case   `json:"case,omitempty" gorm:"foreignKey:CaseID"`
 	Device   Device `json:"device,omitempty" gorm:"foreignKey:DeviceID"`
 }
@@ -610,8 +610,8 @@ func (WebAuthnSession) TableName() string {
 // JobDeviceEvent represents events in the pack workflow
 type JobDeviceEvent struct {
 	ID        uint      `json:"id" gorm:"primaryKey;column:id"`
-	JobID     uint      `json:"jobID" gorm:"column:jobID"`
-	DeviceID  string    `json:"deviceID" gorm:"column:deviceID"`
+	JobID     uint      `json:"jobID" gorm:"column:jobid"`
+	DeviceID  string    `json:"deviceID" gorm:"column:deviceid"`
 	EventType string    `json:"event_type" gorm:"column:event_type"`
 	Actor     *string   `json:"actor" gorm:"column:actor"`
 	Timestamp time.Time `json:"timestamp" gorm:"column:timestamp;default:CURRENT_TIMESTAMP"`
@@ -625,7 +625,7 @@ func (JobDeviceEvent) TableName() string {
 // ProductImage represents product images
 type ProductImage struct {
 	ImageID      uint      `json:"imageID" gorm:"primaryKey;column:imageID"`
-	ProductID    uint      `json:"productID" gorm:"column:productID"`
+	ProductID    uint      `json:"productID" gorm:"column:productid"`
 	Filename     string    `json:"filename" gorm:"column:filename"`
 	OriginalName *string   `json:"original_name" gorm:"column:original_name"`
 	FilePath     string    `json:"file_path" gorm:"column:file_path"`

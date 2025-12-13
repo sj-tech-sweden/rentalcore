@@ -70,7 +70,7 @@ func (h *FinancialHandler) ListTransactions(c *gin.Context) {
 		query = query.Where("status = ?", status)
 	}
 	
-	if customerID := c.Query("customerID"); customerID != "" {
+	if customerID := c.Query("customerid"); customerID != "" {
 		query = query.Where("customerID = ?", customerID)
 	}
 	
@@ -116,8 +116,8 @@ func (h *FinancialHandler) NewTransactionForm(c *gin.Context) {
 // CreateTransaction creates a new financial transaction
 func (h *FinancialHandler) CreateTransaction(c *gin.Context) {
 	var request struct {
-		JobID           *uint   `json:"jobID"`
-		CustomerID      *uint   `json:"customerID"`
+		JobID           *uint   `json:"jobid"`
+		CustomerID      *uint   `json:"customerid"`
 		Type            string  `json:"type" binding:"required"`
 		Amount          float64 `json:"amount" binding:"required"`
 		Currency        string  `json:"currency"`
@@ -353,8 +353,8 @@ func (h *FinancialHandler) FinancialReports(c *gin.Context) {
 // GetRevenueReport generates revenue report data
 func (h *FinancialHandler) GetRevenueReport(c *gin.Context) {
 	period := c.DefaultQuery("period", "monthly")
-	startDate := c.Query("startDate")
-	endDate := c.Query("endDate")
+	startDate := c.Query("startdate")
+	endDate := c.Query("enddate")
 
 	var results []struct {
 		Period      string  `json:"period"`
@@ -560,7 +560,7 @@ func (h *FinancialHandler) ListTransactionsAPI(c *gin.Context) {
 		query = query.Where("status = ?", status)
 	}
 
-	if customerID := c.Query("customerID"); customerID != "" {
+	if customerID := c.Query("customerid"); customerID != "" {
 		query = query.Where("customer_id = ?", customerID)
 	}
 
@@ -621,8 +621,8 @@ func (h *FinancialHandler) GetFinancialStatsAPI(c *gin.Context) {
 // ExportTransactions exports financial transactions to CSV
 func (h *FinancialHandler) ExportTransactions(c *gin.Context) {
 	format := c.DefaultQuery("format", "csv")
-	startDate := c.Query("startDate")
-	endDate := c.Query("endDate")
+	startDate := c.Query("startdate")
+	endDate := c.Query("enddate")
 	transactionType := c.Query("type")
 	status := c.Query("status")
 
@@ -704,8 +704,8 @@ func (h *FinancialHandler) ExportTransactions(c *gin.Context) {
 func (h *FinancialHandler) ExportRevenue(c *gin.Context) {
 	format := c.DefaultQuery("format", "csv")
 	period := c.DefaultQuery("period", "monthly")
-	startDate := c.Query("startDate")
-	endDate := c.Query("endDate")
+	startDate := c.Query("startdate")
+	endDate := c.Query("enddate")
 
 	if format != "csv" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Only CSV format is supported"})

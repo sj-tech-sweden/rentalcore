@@ -28,7 +28,7 @@ func NewScanBoardHandler(jobRepo *repository.JobRepository, deviceRepo *reposito
 
 // GetScanBoardData returns the devices for a specific job for the scan board
 func (h *ScanBoardHandler) GetScanBoardData(c *gin.Context) {
-	jobIDStr := c.Param("jobID")
+	jobIDStr := c.Param("jobid")
 	jobID, err := strconv.ParseUint(jobIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
@@ -51,7 +51,7 @@ func (h *ScanBoardHandler) GetScanBoardData(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"jobID":       job.JobID,
+		"jobid":       job.JobID,
 		"description": job.Description,
 		"devices":     devices,
 	})
@@ -59,7 +59,7 @@ func (h *ScanBoardHandler) GetScanBoardData(c *gin.Context) {
 
 // ScanDevice handles scanning a device for the pack workflow
 func (h *ScanBoardHandler) ScanDevice(c *gin.Context) {
-	jobIDStr := c.Param("jobID")
+	jobIDStr := c.Param("jobid")
 	jobID, err := strconv.ParseUint(jobIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
@@ -116,13 +116,13 @@ func (h *ScanBoardHandler) ScanDevice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Device scanned successfully",
-		"deviceID": deviceID,
+		"deviceid": deviceID,
 	})
 }
 
 // FinishPack handles finishing the pack process
 func (h *ScanBoardHandler) FinishPack(c *gin.Context) {
-	jobIDStr := c.Param("jobID")
+	jobIDStr := c.Param("jobid")
 	jobID, err := strconv.ParseUint(jobIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
@@ -185,7 +185,7 @@ func (h *ScanBoardHandler) getScanBoardDevices(jobID uint) ([]models.ScanBoardDe
 			jd.pack_status as packStatus,
 			jd.deviceID as barcodePayload,
 			pi.file_path as imageUrl
-		FROM jobdevices jd
+		FROM job_devices jd
 		LEFT JOIN devices d ON jd.deviceID = d.deviceID
 		LEFT JOIN products p ON d.productID = p.productID
 		LEFT JOIN product_images pi ON p.productID = pi.productID AND pi.is_primary = 1
@@ -218,7 +218,7 @@ func (h *ScanBoardHandler) getScanBoardDevices(jobID uint) ([]models.ScanBoardDe
 
 func (h *ScanBoardHandler) deviceBelongsToJob(deviceID string, jobID uint) (bool, error) {
 	var count int64
-	err := h.db.Table("jobdevices").
+	err := h.db.Table("job_devices").
 		Where("jobID = ? AND deviceID = ?", jobID, deviceID).
 		Count(&count).Error
 
@@ -227,7 +227,7 @@ func (h *ScanBoardHandler) deviceBelongsToJob(deviceID string, jobID uint) (bool
 
 func (h *ScanBoardHandler) updatePackStatus(jobID uint, deviceID string, status string) error {
 	now := time.Now()
-	return h.db.Table("jobdevices").
+	return h.db.Table("job_devices").
 		Where("jobID = ? AND deviceID = ?", jobID, deviceID).
 		Updates(map[string]interface{}{
 			"pack_status": status,
@@ -263,7 +263,7 @@ func (h *ScanBoardHandler) getMissingItems(jobID uint) ([]string, error) {
 	query := `
 		SELECT
 			CONCAT(COALESCE(p.name, 'Unknown Product'), ' (', jd.deviceID, ')') as missing_item
-		FROM jobdevices jd
+		FROM job_devices jd
 		LEFT JOIN devices d ON jd.deviceID = d.deviceID
 		LEFT JOIN products p ON d.productID = p.productID
 		WHERE jd.jobID = ? AND jd.pack_status = 'pending'
@@ -291,7 +291,7 @@ func (h *ScanBoardHandler) getMissingItems(jobID uint) ([]string, error) {
 
 func (h *ScanBoardHandler) markAllAsPacked(jobID uint) error {
 	now := time.Now()
-	return h.db.Table("jobdevices").
+	return h.db.Table("job_devices").
 		Where("jobID = ? AND pack_status = 'pending'", jobID).
 		Updates(map[string]interface{}{
 			"pack_status": "packed",

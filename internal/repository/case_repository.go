@@ -162,7 +162,7 @@ func (r *CaseRepository) List(filter *models.FilterParams) ([]models.Case, error
 	// Use direct SQL with COUNT for better performance
 	sqlQuery := `
 		SELECT 
-			c.caseID, 
+			c.caseid, 
 			c.name, 
 			c.description, 
 			c.width, 
@@ -170,9 +170,9 @@ func (r *CaseRepository) List(filter *models.FilterParams) ([]models.Case, error
 			c.depth, 
 			c.weight, 
 			c.status,
-			COALESCE(COUNT(dc.deviceID), 0) as device_count
+			COALESCE(COUNT(dc.deviceid), 0) as device_count
 		FROM cases c 
-		LEFT JOIN devicescases dc ON c.caseID = dc.caseID`
+		LEFT JOIN devicescases dc ON c.caseid = dc.caseid`
 	
 	var args []interface{}
 	if filter != nil && filter.SearchTerm != "" {
@@ -181,7 +181,7 @@ func (r *CaseRepository) List(filter *models.FilterParams) ([]models.Case, error
 		args = append(args, searchTerm, searchTerm)
 	}
 	
-	sqlQuery += " GROUP BY c.caseID ORDER BY c.caseID"
+	sqlQuery += " GROUP BY c.caseid ORDER BY c.caseid"
 	
 	log.Printf("Executing SQL: %s", sqlQuery)
 	
