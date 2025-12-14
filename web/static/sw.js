@@ -1,8 +1,8 @@
 // RentalCore Professional - Enhanced Service Worker for PWA
-const CACHE_NAME = 'rentalcore-professional-v3.1';
-const STATIC_CACHE = 'rentalcore-static-v3.1';
-const DYNAMIC_CACHE = 'rentalcore-dynamic-v3.1';
-const OFFLINE_CACHE = 'rentalcore-offline-v3.1';
+const CACHE_NAME = 'rentalcore-professional-v3.2';
+const STATIC_CACHE = 'rentalcore-static-v3.2';
+const DYNAMIC_CACHE = 'rentalcore-dynamic-v3.2';
+const OFFLINE_CACHE = 'rentalcore-offline-v3.2';
 
 // Files to cache immediately
 const STATIC_FILES = [
