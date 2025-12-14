@@ -184,7 +184,7 @@ DisableForeignKeyConstraintWhenMigrating: true,
 },
 		Server: ServerConfig{
 			Port: 8080,
-			Host: "localhost",
+			Host: "0.0.0.0",
 		},
 		UI: UIConfig{
 			ThemeDark:        "darkly",
