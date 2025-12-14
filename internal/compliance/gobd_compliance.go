@@ -46,25 +46,25 @@ func (GoBDRecord) TableName() string {
 
 // AuditEvent represents a GoBD-compliant audit log entry
 type AuditEvent struct {
-	ID            uint                   `json:"id" gorm:"primaryKey"`
-	EventType     string                 `json:"event_type" gorm:"not null;index"`     // CREATE, READ, UPDATE, DELETE, ARCHIVE
-	ObjectType    string                 `json:"object_type" gorm:"not null;index"`    // invoice, customer, device, etc.
-	ObjectID      string                 `json:"object_id" gorm:"not null;index"`      // ID of the affected object
-	UserID        uint                   `json:"user_id" gorm:"not null;index"`        // User performing the action
-	Username      string                 `json:"username" gorm:"not null"`             // Username for accountability
-	Action        string                 `json:"action" gorm:"not null"`               // Detailed action description
-	OldValues     string                 `json:"old_values" gorm:"type:text"`          // JSON of old values (for updates)
-	NewValues     string                 `json:"new_values" gorm:"type:text"`          // JSON of new values
-	IPAddress     string                 `json:"ip_address" gorm:"not null"`           // Client IP for tracking
-	UserAgent     string                 `json:"user_agent" gorm:"type:text"`          // Browser/client info
-	SessionID     string                 `json:"session_id" gorm:"index"`              // Session tracking
-	Context       map[string]interface{} `json:"context" gorm:"type:json"`             // Additional context
-	EventHash     string                 `json:"event_hash" gorm:"not null;unique"`    // Hash for immutability
-	PreviousHash  string                 `json:"previous_hash" gorm:"index"`           // Chain for integrity
-	IsCompliant   bool                   `json:"is_compliant" gorm:"default:true"`     // GoBD compliance flag
-	RetentionDate time.Time              `json:"retention_date" gorm:"not null;index"` // When it can be deleted
-	Timestamp     time.Time              `json:"timestamp" gorm:"not null;index"`      // Event timestamp
-	CreatedAt     time.Time              `json:"created_at" gorm:"autoCreateTime"`
+	ID            uint      `json:"id" gorm:"primaryKey"`
+	EventType     string    `json:"event_type" gorm:"not null;index"`     // CREATE, READ, UPDATE, DELETE, ARCHIVE
+	ObjectType    string    `json:"object_type" gorm:"not null;index"`    // invoice, customer, device, etc.
+	ObjectID      string    `json:"object_id" gorm:"not null;index"`      // ID of the affected object
+	UserID        uint      `json:"user_id" gorm:"not null;index"`        // User performing the action
+	Username      string    `json:"username" gorm:"not null"`             // Username for accountability
+	Action        string    `json:"action" gorm:"not null"`               // Detailed action description
+	OldValues     string    `json:"old_values" gorm:"type:text"`          // JSON of old values (for updates)
+	NewValues     string    `json:"new_values" gorm:"type:text"`          // JSON of new values
+	IPAddress     string    `json:"ip_address" gorm:"not null"`           // Client IP for tracking
+	UserAgent     string    `json:"user_agent" gorm:"type:text"`          // Browser/client info
+	SessionID     string    `json:"session_id" gorm:"index"`              // Session tracking
+	Context       string    `json:"context" gorm:"type:text"`             // Additional context as JSON
+	EventHash     string    `json:"event_hash" gorm:"not null;unique"`    // Hash for immutability
+	PreviousHash  string    `json:"previous_hash" gorm:"index"`           // Chain for integrity
+	IsCompliant   bool      `json:"is_compliant" gorm:"default:true"`     // GoBD compliance flag
+	RetentionDate time.Time `json:"retention_date" gorm:"not null;index"` // When it can be deleted
+	Timestamp     time.Time `json:"timestamp" gorm:"not null;index"`      // Event timestamp
+	CreatedAt     time.Time `json:"created_at" gorm:"autoCreateTime"`
 }
 
 func (AuditEvent) TableName() string {

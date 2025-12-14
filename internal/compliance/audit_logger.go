@@ -94,6 +94,14 @@ func (al *AuditLogger) LogEventWithContext(
 	// Calculate retention date (10 years for audit logs according to GoBD)
 	retentionDate := time.Now().AddDate(10, 0, 0)
 
+	// Serialize context to JSON
+	var contextJSON string
+	if context != nil && len(context) > 0 {
+		if data, err := json.Marshal(context); err == nil {
+			contextJSON = string(data)
+		}
+	}
+
 	// Create audit event
 	event := &AuditEvent{
 		EventType:     eventType,
@@ -107,7 +115,7 @@ func (al *AuditLogger) LogEventWithContext(
 		IPAddress:     ipAddress,
 		UserAgent:     userAgent,
 		SessionID:     sessionID,
-		Context:       context,
+		Context:       contextJSON,
 		PreviousHash:  al.lastHash,
 		IsCompliant:   true,
 		RetentionDate: retentionDate,
