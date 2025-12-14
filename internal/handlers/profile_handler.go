@@ -95,14 +95,17 @@ func (h *ProfileHandler) ProfileSettingsForm(c *gin.Context) {
 		Limit(5).
 		Find(&recentAttempts)
 
+	storageCoreDomain, _ := GetAppDomains(c)
+
 	c.HTML(http.StatusOK, "profile_settings_standalone.html", gin.H{
-		"title":          "Profile Settings",
-		"user":           currentUser,
-		"preferences":    preferences,
-		"twoFAEnabled":   twoFAEnabled,
-		"passkeys":       passkeys,
-		"recentAttempts": recentAttempts,
-		"currentPage":    "profile",
+		"title":               "Profile Settings",
+		"user":                currentUser,
+		"preferences":         preferences,
+		"twoFAEnabled":        twoFAEnabled,
+		"passkeys":            passkeys,
+		"recentAttempts":      recentAttempts,
+		"currentPage":         "profile-settings",
+		"WarehouseCoreDomain": storageCoreDomain,
 	})
 }
 
