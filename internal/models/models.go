@@ -277,9 +277,9 @@ func (Category) TableName() string {
 }
 
 type Brand struct {
-	BrandID        uint   `json:"brandID" gorm:"primaryKey;column:brandID"`
+	BrandID        uint   `json:"brandID" gorm:"primaryKey;column:brandid"`
 	Name           string `json:"name" gorm:"column:name"`
-	ManufacturerID *uint  `json:"manufacturerID" gorm:"column:manufacturerID"`
+	ManufacturerID *uint  `json:"manufacturerID" gorm:"column:manufacturerid"`
 }
 
 func (Brand) TableName() string {
@@ -287,7 +287,7 @@ func (Brand) TableName() string {
 }
 
 type Manufacturer struct {
-	ManufacturerID uint    `json:"manufacturerID" gorm:"primaryKey;column:manufacturerID"`
+	ManufacturerID uint    `json:"manufacturerID" gorm:"primaryKey;column:manufacturerid"`
 	Name           string  `json:"name" gorm:"column:name"`
 	Website        *string `json:"website" gorm:"column:website"`
 }

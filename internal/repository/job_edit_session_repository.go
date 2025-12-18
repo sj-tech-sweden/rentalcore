@@ -22,11 +22,11 @@ func (r *JobEditSessionRepository) UpsertSession(jobID, userID uint, username, d
 	return r.db.Exec(`
 		INSERT INTO job_edit_sessions (job_id, user_id, username, display_name, started_at, updated_at, last_seen)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-		ON DUPLICATE KEY UPDATE
-			username = VALUES(username),
-			display_name = VALUES(display_name),
-			updated_at = VALUES(updated_at),
-			last_seen = VALUES(last_seen)
+		ON CONFLICT (job_id, user_id) DO UPDATE SET
+			username = EXCLUDED.username,
+			display_name = EXCLUDED.display_name,
+			updated_at = EXCLUDED.updated_at,
+			last_seen = EXCLUDED.last_seen
 	`, jobID, userID, username, displayName, now, now, now).Error
 }
 
