@@ -1525,7 +1525,12 @@
                 return response.json();
             })
             .then(data => {
+                console.log('🌳 Product Tree API Response:', data);
                 editProductTreeData = Array.isArray(data.treeData) ? data.treeData : [];
+                console.log('🌳 Tree Data Categories:', editProductTreeData.length);
+                editProductTreeData.forEach((cat, idx) => {
+                    console.log(`  Category ${idx + 1}: "${cat.name}" - ${cat.subcategories?.length || 0} subcategories, ${cat.products?.length || 0} products`);
+                });
                 applyEditAvailability(editProductTreeData);
                 renderEditProductTree(editProductTreeData);
             })
@@ -1786,17 +1791,23 @@
 
     // Warehouse-style renderers for edit modal
     function renderEditProductTree(treeData) {
+        console.log('🎨 renderEditProductTree called with', treeData?.length || 0, 'categories');
         const loading = document.getElementById('editProductTreeLoading');
         const root = document.getElementById('editProductTreeRoot');
         const empty = document.getElementById('editProductTreeEmpty');
         const summary = document.getElementById('editProductTreeSummary');
 
-        if (!root) return;
+        if (!root) {
+            console.error('❌ editProductTreeRoot element not found!');
+            return;
+        }
 
         root.innerHTML = '';
         if (loading) loading.style.display = 'none';
 
         if (!Array.isArray(treeData) || treeData.length === 0) {
+            console.warn('⚠️ No tree data to render');
+
             if (empty) empty.style.display = 'block';
             root.style.display = 'none';
             if (summary) summary.textContent = 'No products found for the selected dates.';
