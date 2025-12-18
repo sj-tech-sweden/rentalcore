@@ -1082,6 +1082,11 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 	if err := db.Order("name ASC").Find(&categories).Error; err != nil {
 		return nil, fmt.Errorf("failed to load categories: %v", err)
 	}
+	fmt.Printf("🔍 Loaded %d categories from DB\n", len(categories))
+	for i, c := range categories {
+		fmt.Printf("  Cat %d: ID=%d Name=%q\n", i+1, c.CategoryID, c.Name)
+	}
+
 	if err := db.Order("name ASC").Find(&subcategories).Error; err != nil {
 		return nil, fmt.Errorf("failed to load subcategories: %v", err)
 	}
@@ -1093,6 +1098,7 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 	if err := db.Preload("Brand").Preload("Manufacturer").Preload("CountType").Order("name ASC").Find(&products).Error; err != nil {
 		return nil, fmt.Errorf("failed to load products: %v", err)
 	}
+	fmt.Printf("🔍 Loaded %d products from DB\n", len(products))
 
 	// 3. Build Tree Structure - Create Maps
 	categoryMap := make(map[uint]*TreeCategory)
@@ -1273,6 +1279,12 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 	sort.Slice(treeCategories, func(i, j int) bool {
 		return strings.ToLower(treeCategories[i].Name) < strings.ToLower(treeCategories[j].Name)
 	})
+
+	fmt.Printf("🌳 Returning %d tree categories\n", len(treeCategories))
+	for i, tc := range treeCategories {
+		fmt.Printf("  TreeCat %d: ID=%d Name=%q Subcats=%d Products=%d\n",
+			i+1, tc.ID, tc.Name, len(tc.Subcategories), len(tc.Products))
+	}
 
 	return treeCategories, nil
 }
