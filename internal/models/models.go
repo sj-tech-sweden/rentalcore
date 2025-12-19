@@ -135,9 +135,9 @@ func (Device) TableName() string {
 type Product struct {
 	ProductID           uint             `json:"productID" gorm:"primaryKey;column:productid"`
 	Name                string           `json:"name" gorm:"not null;column:name"`
-	CategoryID          *uint            `json:"categoryID" gorm:"column:categoryID"`
-	SubcategoryID       *string          `json:"subcategoryID" gorm:"column:subcategoryID"`
-	SubbiercategoryID   *string          `json:"subbiercategoryID" gorm:"column:subbiercategoryID"`
+	CategoryID          *uint            `json:"categoryID" gorm:"column:categoryid"`
+	SubcategoryID       *string          `json:"subcategoryID" gorm:"column:subcategoryid"`
+	SubbiercategoryID   *string          `json:"subbiercategoryID" gorm:"column:subbiercategoryid"`
 	ManufacturerID      *uint            `json:"manufacturerID" gorm:"column:manufacturerID"`
 	BrandID             *uint            `json:"brandID" gorm:"column:brandID"`
 	Description         *string          `json:"description" gorm:"column:description"`
@@ -173,10 +173,10 @@ func (Product) TableName() string {
 }
 
 type Subcategory struct {
-	SubcategoryID string   `json:"subcategoryID" gorm:"primaryKey;column:subcategoryID"`
+	SubcategoryID string   `json:"subcategoryID" gorm:"primaryKey;column:subcategoryid"`
 	Name          string   `json:"name" gorm:"not null;column:name"`
 	Abbreviation  string   `json:"abbreviation" gorm:"column:abbreviation"`
-	CategoryID    uint     `json:"categoryID" gorm:"column:categoryID"`
+	CategoryID    uint     `json:"categoryID" gorm:"column:categoryid"`
 	Category      Category `json:"category,omitempty" gorm:"foreignKey:CategoryID;references:CategoryID"`
 }
 
@@ -185,10 +185,10 @@ func (Subcategory) TableName() string {
 }
 
 type Subbiercategory struct {
-	SubbiercategoryID string      `json:"subbiercategoryID" gorm:"primaryKey;column:subbiercategoryID"`
+	SubbiercategoryID string      `json:"subbiercategoryID" gorm:"primaryKey;column:subbiercategoryid"`
 	Name              string      `json:"name" gorm:"not null;column:name"`
 	Abbreviation      string      `json:"abbreviation" gorm:"column:abbreviation"`
-	SubcategoryID     string      `json:"subcategoryID" gorm:"column:subcategoryID"`
+	SubcategoryID     string      `json:"subcategoryID" gorm:"column:subcategoryid"`
 	Subcategory       Subcategory `json:"subcategory,omitempty" gorm:"foreignKey:SubcategoryID;references:SubcategoryID"`
 }
 
@@ -267,7 +267,7 @@ func (JobCategory) TableName() string {
 }
 
 type Category struct {
-	CategoryID   uint   `json:"categoryID" gorm:"primaryKey;column:categoryID"`
+	CategoryID   uint   `json:"categoryID" gorm:"primaryKey;column:categoryid"`
 	Name         string `json:"name" gorm:"column:name"`
 	Abbreviation string `json:"abbreviation" gorm:"column:abbreviation"`
 }
