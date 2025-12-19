@@ -1310,17 +1310,17 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 
 func (h *DeviceHandler) getConflictingDevices(startDate, endDate time.Time, excludeJobID string) (map[string]bool, error) {
 	var conflicts []struct {
-		DeviceID string `json:"device_id" gorm:"column:deviceID"`
+		DeviceID string `json:"device_id" gorm:"column:deviceid"`
 	}
 
 	query := h.deviceRepo.GetDB().
 		Table("job_devices jd").
-		Select("jd.deviceID").
-		Joins("JOIN jobs j ON jd.jobID = j.jobID").
-		Where("NOT (COALESCE(j.endDate, j.startDate) < ? OR j.startDate > ?)", startDate, endDate)
+		Select("jd.deviceid").
+		Joins("JOIN jobs j ON jd.jobid = j.jobid").
+		Where("NOT (COALESCE(j.enddate, j.startdate) < ? OR j.startdate > ?)", startDate, endDate)
 
 	if excludeJobID != "" {
-		query = query.Where("j.jobID != ?", excludeJobID)
+		query = query.Where("j.jobid != ?", excludeJobID)
 	}
 
 	if err := query.Scan(&conflicts).Error; err != nil {
@@ -1337,15 +1337,15 @@ func (h *DeviceHandler) getConflictingDevices(startDate, endDate time.Time, excl
 
 func (h *DeviceHandler) buildProductAvailabilityMap(conflicts map[string]bool) (map[uint]productAvailability, error) {
 	type deviceRow struct {
-		DeviceID  string `gorm:"column:deviceID"`
-		ProductID uint   `gorm:"column:productID"`
+		DeviceID  string `gorm:"column:deviceid"`
+		ProductID uint   `gorm:"column:productid"`
 	}
 
 	var rows []deviceRow
 	if err := h.productRepo.GetDB().
 		Table("devices").
-		Select("deviceID, productID").
-		Where("productID IS NOT NULL").
+		Select("deviceid, productid").
+		Where("productid IS NOT NULL").
 		Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("failed to load devices for availability: %v", err)
 	}
