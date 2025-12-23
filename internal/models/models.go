@@ -68,6 +68,9 @@ type Job struct {
 	CreatedAt     *time.Time   `json:"created_at" gorm:"column:created_at;default:CURRENT_TIMESTAMP;index"`
 	UpdatedBy     *uint        `json:"updated_by" gorm:"column:updated_by;index"`
 	UpdatedAt     *time.Time   `json:"updated_at" gorm:"column:updated_at;default:CURRENT_TIMESTAMP;index"`
+
+	// Relations
+	Creator *User `json:"creator,omitempty" gorm:"foreignKey:CreatedBy"`
 	Description   *string      `json:"description" gorm:"column:description"`
 	Discount      float64      `json:"discount" gorm:"column:discount;default:0"`
 	DiscountType  string       `json:"discount_type" gorm:"column:discount_type;default:amount"`

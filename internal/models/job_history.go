@@ -11,7 +11,7 @@ type JobHistory struct {
 	JobID       uint           `json:"job_id" gorm:"column:job_id;not null;index"`
 	UserID      sql.NullInt64  `json:"user_id" gorm:"column:user_id;index"`
 	ChangedAt   time.Time      `json:"changed_at" gorm:"column:changed_at;default:CURRENT_TIMESTAMP;index"`
-	ChangeType  string         `json:"change_type" gorm:"column:change_type;type:enum('created','updated','status_changed','device_added','device_removed','deleted');not null"`
+	ChangeType  string         `json:"change_type" gorm:"column:change_type;type:enum('created','updated','status_changed','device_added','device_removed','deleted','file_added','file_removed');not null"`
 	FieldName   sql.NullString `json:"field_name" gorm:"column:field_name;size:100"`
 	OldValue    sql.NullString `json:"old_value" gorm:"column:old_value;type:text"`
 	NewValue    sql.NullString `json:"new_value" gorm:"column:new_value;type:text"`

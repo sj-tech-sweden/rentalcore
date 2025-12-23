@@ -169,9 +169,9 @@
                         <i class="bi bi-briefcase rc-empty-icon"></i>
                         <h3 class="rc-heading-3">No jobs found</h3>
                         <p class="rc-text">Create your first job to get started.</p>
-                        <a href="/jobs/new" class="rc-btn rc-btn-primary">
+                        <button type="button" class="rc-btn rc-btn-primary" onclick="openNewJobModal()">
                             <i class="bi bi-plus-lg"></i> Create Job
-                        </a>
+                        </button>
                     </div>
                     {{end}}
                 </div>
@@ -3219,7 +3219,7 @@ function showToast(message, type) {
             formData.append('jobID', jobID);
 
             try {
-                const response = await fetch('/api/jobs/attachments/upload', {
+                const response = await fetch('/api/v1/jobs/attachments/upload', {
                     method: 'POST',
                     body: formData
                 });
@@ -3314,14 +3314,14 @@ function showToast(message, type) {
     }
 
     function downloadEditJobAttachment(attachmentID) {
-        window.open(`/api/jobs/attachments/${attachmentID}/download`, '_blank');
+        window.open(`/api/v1/jobs/attachments/${attachmentID}/download`, '_blank');
     }
 
     async function deleteEditJobAttachment(attachmentID, filename) {
         if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
 
         try {
-            const response = await fetch(`/api/jobs/attachments/${attachmentID}`, {
+            const response = await fetch(`/api/v1/jobs/attachments/${attachmentID}`, {
                 method: 'DELETE'
             });
 
@@ -3459,7 +3459,7 @@ function showToast(message, type) {
     }
 
     function downloadJobDetailsAttachment(attachmentID) {
-        window.open(`/api/jobs/attachments/${attachmentID}/download`, '_blank');
+        window.open(`/api/v1/jobs/attachments/${attachmentID}/download`, '_blank');
     }
 
     async function deleteJobDetailsAttachment(attachmentID, filename) {
@@ -3471,7 +3471,7 @@ function showToast(message, type) {
         const jobID = modal ? modal.getAttribute('data-current-job-id') : null;
 
         try {
-            const response = await fetch(`/api/jobs/attachments/${attachmentID}`, {
+            const response = await fetch(`/api/v1/jobs/attachments/${attachmentID}`, {
                 method: 'DELETE'
             });
             const result = await response.json();
@@ -3617,7 +3617,7 @@ function showToast(message, type) {
                             </div>
                         </div>
                         <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden;">
-                            <img src="/api/jobs/attachments/${attachmentID}/view"
+                            <img src="/api/v1/jobs/attachments/${attachmentID}/view"
                                  alt="${filename}"
                                  id="previewImage"
                                  style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); cursor: zoom-in; transition: transform 0.3s ease;"
@@ -3629,12 +3629,12 @@ function showToast(message, type) {
             img.onerror = function() {
                 throw new Error('Failed to load image');
             };
-            img.src = `/api/jobs/attachments/${attachmentID}/view`;
+            img.src = `/api/v1/jobs/attachments/${attachmentID}/view`;
         } else if (mimeType === 'application/pdf') {
             // PDF preview with enhanced full-size viewer
             content.innerHTML = `
                 <div style="width: 100%; height: 100%; background: #525659; display: flex; align-items: center; justify-content: center;">
-                    <iframe src="/api/jobs/attachments/${attachmentID}/view"
+                    <iframe src="/api/v1/jobs/attachments/${attachmentID}/view"
                             style="width: 100%; height: 100%; border: none; background: white;"
                             title="${filename}"
                             allow="fullscreen"
@@ -3679,7 +3679,7 @@ function showToast(message, type) {
                    filename.endsWith('.ini') ||
                    filename.endsWith('.conf')) {
             // Text/code file preview with syntax highlighting
-            const response = await fetch(`/api/jobs/attachments/${attachmentID}/view`);
+            const response = await fetch(`/api/v1/jobs/attachments/${attachmentID}/view`);
             const text = await response.text();
             const language = getLanguageFromFilename(filename);
             content.innerHTML = `
@@ -3755,7 +3755,7 @@ function showToast(message, type) {
                         <h3 style="margin-bottom: 24px; font-size: 24px; font-weight: 600; color: var(--text-primary);">${filename}</h3>
                         <div style="background: var(--surface-0); padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
                             <audio controls style="width: 100%; max-width: 500px; height: 54px;">
-                                <source src="/api/jobs/attachments/${attachmentID}/view" type="${mimeType}">
+                                <source src="/api/v1/jobs/attachments/${attachmentID}/view" type="${mimeType}">
                                 Your browser does not support the audio element.
                             </audio>
                         </div>
@@ -3781,7 +3781,7 @@ function showToast(message, type) {
                         </div>
                     </div>
                     <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative;">
-                        <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/api/jobs/attachments/' + attachmentID + '/view')}"
+                        <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/api/v1/jobs/attachments/' + attachmentID + '/view')}"
                                 style="width: 100%; height: 100%; border: none; background: white;"
                                 title="${filename}"
                                 loading="lazy"
@@ -3816,7 +3816,7 @@ function showToast(message, type) {
                         </div>
                     </div>
                     <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative;">
-                        <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/api/jobs/attachments/' + attachmentID + '/view')}"
+                        <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/api/v1/jobs/attachments/' + attachmentID + '/view')}"
                                 style="width: 100%; height: 100%; border: none; background: white;"
                                 title="${filename}"
                                 loading="lazy"
@@ -4180,7 +4180,7 @@ function showToast(message, type) {
     // Download current file
     function downloadCurrentPreviewFile() {
         if (currentPreviewFileData) {
-            window.open(`/api/jobs/attachments/${currentPreviewFileData.attachmentID}/download`, '_blank');
+            window.open(`/api/v1/jobs/attachments/${currentPreviewFileData.attachmentID}/download`, '_blank');
         }
     }
 

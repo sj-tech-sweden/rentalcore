@@ -449,6 +449,12 @@ func (h *JobHandler) CreateJob(c *gin.Context) {
 		DiscountType: discountType,
 	}
 
+	// Set the creator to the current user
+	currentUser, _ := GetCurrentUser(c)
+	if currentUser != nil {
+		job.CreatedBy = &currentUser.UserID
+	}
+
 	if jobCategoryIDStr := c.PostForm("job_category_id"); jobCategoryIDStr != "" {
 		if jobCategoryID, err := strconv.ParseUint(jobCategoryIDStr, 10, 32); err == nil {
 			jobCatID := uint(jobCategoryID)
@@ -1143,6 +1149,12 @@ func (h *JobHandler) CreateJobAPI(c *gin.Context) {
 				job.EndDate = &parsed
 			}
 		}
+	}
+
+	// Set the creator to the current user
+	currentUser, _ := GetCurrentUser(c)
+	if currentUser != nil {
+		job.CreatedBy = &currentUser.UserID
 	}
 
 	if err := h.jobRepo.Create(&job); err != nil {

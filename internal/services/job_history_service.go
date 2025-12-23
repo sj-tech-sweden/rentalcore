@@ -151,6 +151,60 @@ func (s *JobHistoryService) logDeviceChange(jobID, deviceID uint, changeType, de
 	return s.db.Create(&history).Error
 }
 
+// LogFileAdded logs when a file is added to a job
+func (s *JobHistoryService) LogFileAdded(jobID uint, filename string, userID *uint, ipAddress, userAgent string) error {
+	history := models.JobHistory{
+		JobID:      jobID,
+		ChangeType: "file_added",
+		ChangedAt:  time.Now(),
+		FieldName:  sql.NullString{String: "attachment", Valid: true},
+		NewValue:   sql.NullString{String: filename, Valid: true},
+		Description: sql.NullString{
+			String: fmt.Sprintf("File added: %s", filename),
+			Valid:  true,
+		},
+	}
+
+	if userID != nil {
+		history.UserID = sql.NullInt64{Int64: int64(*userID), Valid: true}
+	}
+	if ipAddress != "" {
+		history.IPAddress = sql.NullString{String: ipAddress, Valid: true}
+	}
+	if userAgent != "" {
+		history.UserAgent = sql.NullString{String: userAgent, Valid: true}
+	}
+
+	return s.db.Create(&history).Error
+}
+
+// LogFileRemoved logs when a file is removed from a job
+func (s *JobHistoryService) LogFileRemoved(jobID uint, filename string, userID *uint, ipAddress, userAgent string) error {
+	history := models.JobHistory{
+		JobID:      jobID,
+		ChangeType: "file_removed",
+		ChangedAt:  time.Now(),
+		FieldName:  sql.NullString{String: "attachment", Valid: true},
+		OldValue:   sql.NullString{String: filename, Valid: true},
+		Description: sql.NullString{
+			String: fmt.Sprintf("File removed: %s", filename),
+			Valid:  true,
+		},
+	}
+
+	if userID != nil {
+		history.UserID = sql.NullInt64{Int64: int64(*userID), Valid: true}
+	}
+	if ipAddress != "" {
+		history.IPAddress = sql.NullString{String: ipAddress, Valid: true}
+	}
+	if userAgent != "" {
+		history.UserAgent = sql.NullString{String: userAgent, Valid: true}
+	}
+
+	return s.db.Create(&history).Error
+}
+
 // GetJobHistory retrieves the history for a specific job
 func (s *JobHistoryService) GetJobHistory(jobID uint) ([]models.JobHistoryEntry, error) {
 	var histories []models.JobHistory

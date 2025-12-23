@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-barcode-webapp/internal/models"
 	"go-barcode-webapp/internal/repository"
+	"go-barcode-webapp/internal/services"
 	"io"
 	"log"
 	"mime"
@@ -20,14 +21,15 @@ import (
 )
 
 type JobAttachmentHandler struct {
-	repo        *repository.JobAttachmentRepository
-	jobRepo     *repository.JobRepository
-	db          *gorm.DB
-	uploadPath  string
-	maxFileSize int64
+	repo           *repository.JobAttachmentRepository
+	jobRepo        *repository.JobRepository
+	historyService *services.JobHistoryService
+	db             *gorm.DB
+	uploadPath     string
+	maxFileSize    int64
 }
 
-func NewJobAttachmentHandler(repo *repository.JobAttachmentRepository, jobRepo *repository.JobRepository) *JobAttachmentHandler {
+func NewJobAttachmentHandler(repo *repository.JobAttachmentRepository, jobRepo *repository.JobRepository, historyService *services.JobHistoryService) *JobAttachmentHandler {
 	// Default upload path and max file size (50MB)
 	uploadPath := "./uploads/job_attachments"
 	maxFileSize := int64(50 << 20) // 50MB
@@ -44,11 +46,12 @@ func NewJobAttachmentHandler(repo *repository.JobAttachmentRepository, jobRepo *
 	}
 
 	return &JobAttachmentHandler{
-		repo:        repo,
-		jobRepo:     jobRepo,
-		db:          db,
-		uploadPath:  uploadPath,
-		maxFileSize: maxFileSize,
+		repo:           repo,
+		jobRepo:        jobRepo,
+		historyService: historyService,
+		db:             db,
+		uploadPath:     uploadPath,
+		maxFileSize:    maxFileSize,
 	}
 }
 
@@ -157,6 +160,16 @@ func (h *JobAttachmentHandler) UploadAttachment(c *gin.Context) {
 
 	log.Printf("✅ Successfully uploaded attachment %s for job %d", originalFilename, jobID)
 
+	// Log file upload to job history
+	if h.historyService != nil {
+		ipAddress := c.ClientIP()
+		userAgent := c.Request.UserAgent()
+		if err := h.historyService.LogFileAdded(uint(jobID), originalFilename, userID, ipAddress, userAgent); err != nil {
+			log.Printf("Warning: Failed to log file upload to history: %v", err)
+			// Don't fail the upload if history logging fails
+		}
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message":      "File uploaded successfully",
 		"attachmentID": attachment.AttachmentID,
@@ -174,7 +187,8 @@ func (h *JobAttachmentHandler) GetJobAttachments(c *gin.Context) {
 		return
 	}
 
-	var responses []models.JobAttachmentResponse
+	// Initialize as empty slice to ensure [] is returned instead of null in JSON
+	responses := make([]models.JobAttachmentResponse, 0)
 
 	// Query traditional job_attachments table
 	attachments, err := h.repo.GetByJobID(uint(jobID))
@@ -342,6 +356,16 @@ func (h *JobAttachmentHandler) DeleteAttachment(c *gin.Context) {
 	}
 
 	log.Printf("✅ Successfully deleted attachment %s (ID: %d)", attachment.OriginalFilename, attachmentID)
+
+	// Log file removal to job history
+	if h.historyService != nil {
+		userID := h.getCurrentUserID(c)
+		ipAddress := c.ClientIP()
+		userAgent := c.Request.UserAgent()
+		if err := h.historyService.LogFileRemoved(attachment.JobID, attachment.OriginalFilename, userID, ipAddress, userAgent); err != nil {
+			log.Printf("Warning: Failed to log file removal to history: %v", err)
+		}
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Attachment deleted successfully"})
 }

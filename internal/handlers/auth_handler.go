@@ -404,17 +404,22 @@ func (h *AuthHandler) Login2FAVerify(c *gin.Context) {
 // AuthMiddleware checks if user is authenticated
 func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Printf("DEBUG: AuthMiddleware: Request URL: %s", c.Request.URL.Path)
+		// Helper to check if request expects JSON or is API
+		isAPI := strings.HasPrefix(c.Request.URL.Path, "/api") ||
+			c.GetHeader("Accept") == "application/json" ||
+			c.ContentType() == "application/json"
 
 		sessionID, err := c.Cookie("session_id")
 		if err != nil || sessionID == "" {
-			log.Printf("DEBUG: AuthMiddleware: No session cookie found for %s, redirecting to /login", c.Request.URL.Path)
-			c.Redirect(http.StatusSeeOther, "/login")
-			c.Abort()
+			if isAPI {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized", "code": "NO_SESSION"})
+			} else {
+				log.Printf("DEBUG: AuthMiddleware: No session cookie found for %s, redirecting to /login", c.Request.URL.Path)
+				c.Redirect(http.StatusSeeOther, "/login")
+				c.Abort()
+			}
 			return
 		}
-
-		log.Printf("DEBUG: AuthMiddleware: Found session cookie: %s for %s", sessionID, c.Request.URL.Path)
 
 		// Validate session
 		var session models.Session
@@ -423,8 +428,13 @@ func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 			// Clean up invalid session cookie
 			cookieDomain := getCookieDomain(c)
 			c.SetCookie("session_id", "", -1, "/", cookieDomain, false, true)
-			c.Redirect(http.StatusSeeOther, "/login")
-			c.Abort()
+			
+			if isAPI {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired", "code": "SESSION_EXPIRED"})
+			} else {
+				c.Redirect(http.StatusSeeOther, "/login")
+				c.Abort()
+			}
 			return
 		}
 
@@ -436,18 +446,15 @@ func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 			cookieDomain := getCookieDomain(c)
 			h.db.Where("session_id = ?", sessionID).Delete(&models.Session{})
 			c.SetCookie("session_id", "", -1, "/", cookieDomain, false, true)
-			c.Redirect(http.StatusSeeOther, "/login")
-			c.Abort()
+			
+			if isAPI {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User inactive", "code": "USER_INACTIVE"})
+			} else {
+				c.Redirect(http.StatusSeeOther, "/login")
+				c.Abort()
+			}
 			return
 		}
-
-		log.Printf("DEBUG: AuthMiddleware: Session valid for user: %s (ID: %d) for URL: %s", user.Username, user.UserID, c.Request.URL.Path)
-
-		// Optional: Extend session on activity (sliding expiration)
-		// Uncomment if you want sessions to extend on each request
-		// sessionTimeout := time.Duration(h.config.Security.SessionTimeout) * time.Second
-		// session.ExpiresAt = time.Now().Add(sessionTimeout)
-		// h.db.Save(&session)
 
 		// Store user in context (as pointer for downstream middlewares)
 		c.Set("user", &user)

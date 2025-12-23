@@ -218,7 +218,11 @@
                                 {{if .job.CreatedAt}}
                                 <div class="rc-mb-xs">
                                     <span class="rc-text-secondary">Created:</span>
-                                    <span id="created-info">{{.job.CreatedAt.Format "02.01.2006 15:04"}}</span>
+                                    <span id="created-info">{{.job.CreatedAt.Format "02.01.2006 15:04"}}
+                                        {{if .job.Creator}}
+                                            by {{.job.Creator.GetDisplayName}}
+                                        {{end}}
+                                    </span>
                                 </div>
                                 {{end}}
                                 {{if .job.UpdatedAt}}

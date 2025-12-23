@@ -408,7 +408,7 @@ func main() {
 	companyProvider := services.NewCompanyProvider(db.DB)
 	companyHandler := handlers.NewCompanyHandler(db.DB, companyProvider)
 	monitoringHandler := handlers.NewMonitoringHandler(db.DB, monitoring.GlobalErrorTracker, perfMonitor, cacheManager)
-	jobAttachmentHandler := handlers.NewJobAttachmentHandler(jobAttachmentRepo, jobRepo)
+	jobAttachmentHandler := handlers.NewJobAttachmentHandler(jobAttachmentRepo, jobRepo, jobHistoryService)
 	var packageAliasCache *pdfsvc.PackageAliasCache
 	if aliasEndpoint := resolvePackageAliasEndpoint(); aliasEndpoint != "" {
 		packageAliasCache = pdfsvc.NewPackageAliasCache(aliasEndpoint)
@@ -1298,6 +1298,14 @@ func setupRoutes(r *gin.Engine,
 				// Job package routes
 				apiJobs.GET("/:id/packages", jobHandler.GetJobPackages)
 				apiJobs.POST("/:id/packages", jobHandler.AssignPackageToJob)
+
+				// Job Attachments routes (matching frontend expectations for /api/v1/jobs/...)
+				apiJobs.GET("/:jobid/attachments", jobAttachmentHandler.GetJobAttachments)
+				apiJobs.POST("/attachments/upload", jobAttachmentHandler.UploadAttachment)
+				apiJobs.GET("/attachments/:id/view", jobAttachmentHandler.ViewAttachment)
+				apiJobs.GET("/attachments/:id/download", jobAttachmentHandler.DownloadAttachment)
+				apiJobs.DELETE("/attachments/:id", jobAttachmentHandler.DeleteAttachment)
+				apiJobs.PUT("/attachments/:id/description", jobAttachmentHandler.UpdateAttachmentDescription)
 			}
 
 			// Job package management routes
