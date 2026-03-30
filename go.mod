@@ -12,7 +12,7 @@ require (
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/spf13/cobra v1.9.1
 	golang.org/x/crypto v0.45.0
-	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a
+	golang.org/x/image v0.18.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.30.0
 )
