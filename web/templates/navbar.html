@@ -16,6 +16,9 @@
                 <span class="brand-rental">Rental</span><span class="brand-core">Core</span>
             </h1>
         </div>
+        <div class="rc-header-right desktop-only">
+            <span class="rc-header-company">{{companyName}}</span>
+        </div>
     </div>
 </header>
 
@@ -36,9 +39,9 @@
 
     <nav class="rc-sidebar-nav">
         <!-- Cross-navigation to WarehouseCore -->
-        <a href="" id="storage-nav-link" class="rc-nav-item rc-nav-crosslink" title="Switch to WarehouseCore">
+        <a href="" id="storage-nav-link" class="rc-nav-item rc-nav-crosslink" data-i18n="nav.warehousecore" data-i18n-attr="title">
             <i class="bi bi-box-seam"></i>
-            <span class="rc-nav-label">WarehouseCore</span>
+            <span class="rc-nav-label" data-i18n="nav.warehousecore">WarehouseCore</span>
         </a>
         <script>
         (function() {
@@ -70,42 +73,48 @@
         </script>
 
         <!-- Main navigation items -->
-        <a href="/" class="rc-nav-item {{if eq .currentPage "home"}}active{{end}}" title="Dashboard">
+        <a href="/" class="rc-nav-item {{if eq .currentPage "home"}}active{{end}}" data-i18n="nav.dashboard" data-i18n-attr="title">
             <i class="bi bi-house-door"></i>
-            <span class="rc-nav-label">Dashboard</span>
+            <span class="rc-nav-label" data-i18n="nav.dashboard">Dashboard</span>
         </a>
 
-        <a href="/jobs" class="rc-nav-item {{if eq .currentPage "jobs"}}active{{end}}" title="Jobs">
+        <a href="/jobs" class="rc-nav-item {{if eq .currentPage "jobs"}}active{{end}}" data-i18n="nav.jobs" data-i18n-attr="title">
             <i class="bi bi-briefcase"></i>
-            <span class="rc-nav-label">Jobs</span>
+            <span class="rc-nav-label" data-i18n="nav.jobs">Jobs</span>
         </a>
 
-        <a href="/customers" class="rc-nav-item {{if eq .currentPage "customers"}}active{{end}}" title="Customers">
+        <a href="/customers" class="rc-nav-item {{if eq .currentPage "customers"}}active{{end}}" data-i18n="nav.customers" data-i18n-attr="title">
             <i class="bi bi-people"></i>
-            <span class="rc-nav-label">Customers</span>
+            <span class="rc-nav-label" data-i18n="nav.customers">Customers</span>
         </a>
 
 
         <!-- Tools Dropdown -->
         <div class="rc-nav-dropdown">
-            <button class="rc-nav-dropdown-toggle {{if or (eq .currentPage "analytics") (eq .currentPage "financial") (eq .currentPage "documents_pool")}}active{{end}}" data-dropdown="tools">
+            <button class="rc-nav-dropdown-toggle {{if or (eq .currentPage "analytics") (eq .currentPage "financial") (eq .currentPage "documents_pool") (eq .currentPage "security")}}active{{end}}" data-dropdown="tools" data-i18n-attr="title:navbar.tools">
                 <i class="bi bi-tools"></i>
-                <span class="rc-nav-label">Tools</span>
+                <span class="rc-nav-label" data-i18n="navbar.tools">Tools</span>
                 <i class="bi bi-chevron-down rc-dropdown-icon"></i>
             </button>
             <div class="rc-nav-dropdown-menu" id="dropdown-tools">
-                <a href="/analytics" class="rc-nav-dropdown-item {{if eq .currentPage "analytics"}}active{{end}}">
+                <a href="/analytics" class="rc-nav-dropdown-item {{if eq .currentPage "analytics"}}active{{end}}" data-i18n="nav.analytics" data-i18n-attr="title">
                     <i class="bi bi-graph-up"></i>
-                    <span class="rc-nav-label">Analytics</span>
+                    <span class="rc-nav-label" data-i18n="nav.analytics">Analytics</span>
                 </a>
-                <a href="/financial" class="rc-nav-dropdown-item {{if eq .currentPage "financial"}}active{{end}}">
+                <a href="/financial" class="rc-nav-dropdown-item {{if eq .currentPage "financial"}}active{{end}}" data-i18n-attr="title:navbar.financial">
                     <i class="bi bi-calculator"></i>
-                    <span class="rc-nav-label">Financial</span>
+                    <span class="rc-nav-label" data-i18n="navbar.financial">Financial</span>
                 </a>
-                <a href="/documents/pool" class="rc-nav-dropdown-item {{if eq .currentPage "documents_pool"}}active{{end}}">
+                <a href="/documents/pool" class="rc-nav-dropdown-item {{if eq .currentPage "documents_pool"}}active{{end}}" data-i18n-attr="title:navbar.file_pool">
                     <i class="bi bi-folder2-open"></i>
-                    <span class="rc-nav-label">File Pool</span>
+                    <span class="rc-nav-label" data-i18n="navbar.file_pool">File Pool</span>
                 </a>
+                {{if hasRole .user "admin"}}
+                <a href="/security/audit" class="rc-nav-dropdown-item {{if eq .currentPage "security"}}active{{end}}" data-i18n-attr="title:nav.securityAudit">
+                    <i class="bi bi-shield-check"></i>
+                    <span class="rc-nav-label" data-i18n="nav.securityAudit">Security &amp; Audit</span>
+                </a>
+                {{end}}
             </div>
         </div>
     </nav>
@@ -123,30 +132,30 @@
 
             <!-- User Dropdown Menu -->
             <div class="rc-user-dropdown-menu" id="userDropdownMenu">
-                <a href="/profile/settings" class="rc-user-dropdown-item {{if or (eq .currentPage "profile") (eq .currentPage "profile-settings")}}active{{end}}">
+                <a href="/profile/settings" class="rc-user-dropdown-item {{if or (eq .currentPage "profile") (eq .currentPage "profile-settings")}}active{{end}}" data-i18n="nav.profileSettings" data-i18n-attr="title">
                     <i class="bi bi-person-gear"></i>
-                    <span class="rc-nav-label">Profile Settings</span>
+                    <span class="rc-nav-label" data-i18n="nav.profileSettings">Profile Settings</span>
                 </a>
                 <a href="/settings/company" class="rc-user-dropdown-item {{if eq .currentPage "settings"}}active{{end}}">
                     <i class="bi bi-building-gear"></i>
-                    <span class="rc-nav-label">Company Settings</span>
+                    <span class="rc-nav-label" data-i18n="nav.companySettings">Company Settings</span>
                 </a>
                 {{if hasAnyRole .user "admin" "manager"}}
-                <a href="/users" class="rc-user-dropdown-item {{if eq .currentPage "users"}}active{{end}}">
+                <a href="/users" class="rc-user-dropdown-item {{if eq .currentPage "users"}}active{{end}}" data-i18n="nav.userManagement" data-i18n-attr="title">
                     <i class="bi bi-people-fill"></i>
-                    <span class="rc-nav-label">User Management</span>
+                    <span class="rc-nav-label" data-i18n="nav.userManagement">User Management</span>
                 </a>
                 {{end}}
                 {{if hasRole .user "admin"}}
-                <a href="/security/roles" class="rc-user-dropdown-item {{if eq .currentPage "security"}}active{{end}}">
+                <a href="/security/roles" class="rc-user-dropdown-item {{if eq .currentPage "security"}}active{{end}}" data-i18n="nav.securityRoles" data-i18n-attr="title">
                     <i class="bi bi-shield-check"></i>
-                    <span class="rc-nav-label">Security & Audit</span>
+                    <span class="rc-nav-label" data-i18n="nav.securityRoles">Security & Roles</span>
                 </a>
                 {{end}}
                 <div class="rc-user-dropdown-divider"></div>
-                <a href="/logout" class="rc-user-dropdown-item rc-logout-item">
+                <a href="/logout" class="rc-user-dropdown-item rc-logout-item" data-i18n="nav.logout" data-i18n-attr="title">
                     <i class="bi bi-box-arrow-right"></i>
-                    <span class="rc-nav-label">Logout</span>
+                    <span class="rc-nav-label" data-i18n="nav.logout">Logout</span>
                 </a>
             </div>
         </div>
@@ -156,9 +165,9 @@
             <i class="bi bi-person-circle"></i>
         </div>
         {{else}}
-        <a href="/login" class="rc-login-btn" title="Login">
+        <a href="/login" class="rc-login-btn" data-i18n="nav.login" data-i18n-attr="title">
             <i class="bi bi-box-arrow-in-right"></i>
-            <span class="rc-nav-label">Login</span>
+            <span class="rc-nav-label" data-i18n="nav.login">Login</span>
         </a>
         {{end}}
     </div>
@@ -372,3 +381,6 @@
     }
 })();
 </script>
+
+<!-- i18n Translation System -->
+<script src="/static/js/i18n.js"></script>

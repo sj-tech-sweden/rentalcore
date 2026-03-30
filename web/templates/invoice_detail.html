@@ -1,38 +1,38 @@
 {{template "base.html" .}}
 
-{{define "content"}}
+{{define "invoice_detail_content"}}
 <div class="container-fluid">
     <div class="row">
         <div class="col-lg-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title">Invoice {{.invoice.InvoiceNumber}}</h3>
+                    <h3 class="card-title"><span data-i18n="invoice_detail.title">Invoice</span> {{.invoice.InvoiceNumber}}</h3>
                     <div class="btn-group" role="group">
-                        <a href="/invoices" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Back
+                        <a href="/invoices" class="btn btn-secondary" data-i18n-attr="title" data-i18n="common.back">
+                            <i class="fas fa-arrow-left"></i> <span data-i18n="common.back">Back</span>
                         </a>
                         {{if eq .invoice.Status "draft"}}
-                        <a href="/invoices/{{.invoice.InvoiceID}}/edit" class="btn btn-primary">
-                            <i class="fas fa-edit"></i> Edit
+                        <a href="/invoices/{{.invoice.InvoiceID}}/edit" class="btn btn-primary" data-i18n-attr="title" data-i18n="common.edit">
+                            <i class="fas fa-edit"></i> <span data-i18n="common.edit">Edit</span>
                         </a>
                         {{end}}
-                        <button class="btn btn-info" onclick="window.print()">
-                            <i class="fas fa-print"></i> Print
+                        <button class="btn btn-info" onclick="window.print()" data-i18n-attr="title" data-i18n="common.print">
+                            <i class="fas fa-print"></i> <span data-i18n="common.print">Print</span>
                         </button>
-                        <button class="btn btn-success" onclick="downloadPDF()">
-                            <i class="fas fa-file-pdf"></i> PDF
+                        <button class="btn btn-success" onclick="downloadPDF()" data-i18n-attr="title" data-i18n="invoices.pdf">
+                            <i class="fas fa-file-pdf"></i> <span data-i18n="invoices.pdf">PDF</span>
                         </button>
-                        <button class="btn btn-warning" onclick="emailInvoice()">
-                            <i class="fas fa-envelope"></i> Email
+                        <button class="btn btn-warning" onclick="emailInvoice()" data-i18n-attr="title" data-i18n="invoices.email">
+                            <i class="fas fa-envelope"></i> <span data-i18n="invoices.email">Email</span>
                         </button>
                         {{if ne .invoice.Status "sent"}}
-                        <button class="btn btn-outline-info" onclick="updateStatus('sent')">
-                            <i class="fas fa-paper-plane"></i> Mark as Sent
+                        <button class="btn btn-outline-info" onclick="updateStatus('sent')" data-i18n-attr="title" data-i18n="invoices.markSent">
+                            <i class="fas fa-paper-plane"></i> <span data-i18n="invoices.markSent">Mark as Sent</span>
                         </button>
                         {{end}}
                         {{if ne .invoice.Status "paid"}}
-                        <button class="btn btn-outline-success" onclick="updateStatus('paid')">
-                            <i class="fas fa-check"></i> Mark as Paid
+                        <button class="btn btn-outline-success" onclick="updateStatus('paid')" data-i18n-attr="title" data-i18n="invoices.markPaid">
+                            <i class="fas fa-check"></i> <span data-i18n="invoices.markPaid">Mark as Paid</span>
                         </button>
                         {{end}}
                     </div>
@@ -60,7 +60,7 @@
                             {{if .company.Website}}<p class="mb-1"><strong>Website:</strong> {{.company.Website}}</p>{{end}}
                         </div>
                         <div class="col-md-6 text-right">
-                            <h2 class="text-primary">INVOICE</h2>
+                            <h2 class="text-primary" data-i18n="invoice_detail.header">INVOICE</h2>
                             <table class="table table-sm table-borderless ml-auto" style="width: auto;">
                                 <tr>
                                     <td><strong>Invoice #:</strong></td>
@@ -90,7 +90,7 @@
                                 {{if .invoice.IsOverdue}}
                                 <tr>
                                     <td colspan="2" class="text-danger">
-                                        <strong><i class="fas fa-exclamation-triangle"></i> OVERDUE</strong>
+                                        <strong><i class="fas fa-exclamation-triangle"></i> <span data-i18n="invoice_detail.overdue">OVERDUE</span></strong>
                                     </td>
                                 </tr>
                                 {{end}}
@@ -101,7 +101,7 @@
                     <!-- Bill To Section -->
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <h5>Bill To:</h5>
+                            <h5 data-i18n="invoice_detail.bill_to">Bill To:</h5>
                             {{if .invoice.Customer}}
                             <div class="border p-3">
                                 <strong>{{.invoice.Customer.GetDisplayName}}</strong><br>
@@ -112,13 +112,13 @@
                             </div>
                             {{else}}
                             <div class="border p-3 text-muted">
-                                Customer information not available
+                                <span data-i18n="invoice_detail.no_customer">Customer information not available</span>
                             </div>
                             {{end}}
                         </div>
                         <div class="col-md-6">
                             {{if .invoice.Job}}
-                            <h5>Job Reference:</h5>
+                            <h5 data-i18n="invoice_detail.job_reference">Job Reference:</h5>
                             <div class="border p-3">
                                 <strong>{{.invoice.Job.Description}}</strong><br>
                                 {{if .invoice.Job.StartDate}}<small>Start: {{.invoice.Job.StartDate.Format "02.01.2006"}}</small><br>{{end}}
@@ -127,7 +127,7 @@
                             {{end}}
                             
                             {{if .invoice.PaymentTerms}}
-                            <h5 class="mt-3">Payment Terms:</h5>
+                            <h5 class="mt-3" data-i18n="invoice_detail.payment_terms">Payment Terms:</h5>
                             <div class="border p-3">
                                 {{.invoice.PaymentTerms}}
                             </div>
@@ -138,16 +138,16 @@
                     <!-- Line Items -->
                     <div class="row mb-4">
                         <div class="col-12">
-                            <h5>Invoice Items</h5>
+                            <h5 data-i18n="invoice_detail.items">Invoice Items</h5>
                             <div class="table-responsive">
                                 <table class="table table-bordered">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Description</th>
-                                            <th width="10%">Quantity</th>
-                                            <th width="12%">Unit Price</th>
-                                            <th width="12%">Rental Period</th>
-                                            <th width="12%" class="text-right">Total</th>
+                                            <th data-i18n="invoice_detail.table.description">Description</th>
+                                            <th width="10%" data-i18n="invoice_detail.table.quantity">Quantity</th>
+                                            <th width="12%" data-i18n="invoice_detail.table.unit_price">Unit Price</th>
+                                            <th width="12%" data-i18n="invoice_detail.table.rental_period">Rental Period</th>
+                                            <th width="12%" class="text-right" data-i18n="invoice_detail.table.total">Total</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -190,7 +190,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             {{if .invoice.Notes}}
-                            <h5>Notes:</h5>
+                            <h5 data-i18n="invoice_detail.notes">Notes:</h5>
                             <div class="border p-3">
                                 {{.invoice.Notes}}
                             </div>
@@ -233,10 +233,10 @@
                     </div>
 
                     <!-- Terms and Conditions -->
-                    {{if .invoice.TermsConditions}}
+                            {{if .invoice.TermsConditions}}
                     <div class="row mt-4">
                         <div class="col-12">
-                            <h5>Terms & Conditions:</h5>
+                            <h5 data-i18n="invoice_detail.terms">Terms & Conditions:</h5>
                             <div class="border p-3 small">
                                 {{.invoice.TermsConditions}}
                             </div>
@@ -256,18 +256,18 @@
                 </div>
 
                 <!-- Payment History -->
-                {{if .invoice.Payments}}
+                    {{if .invoice.Payments}}
                 <div class="card-footer">
-                    <h5>Payment History</h5>
+                    <h5 data-i18n="invoice_detail.payment_history">Payment History</h5>
                     <div class="table-responsive">
                         <table class="table table-sm">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Amount</th>
-                                    <th>Method</th>
-                                    <th>Reference</th>
-                                    <th>Notes</th>
+                                    <th data-i18n="invoice_detail.payments.date">Date</th>
+                                    <th data-i18n="invoice_detail.payments.amount">Amount</th>
+                                    <th data-i18n="invoice_detail.payments.method">Method</th>
+                                    <th data-i18n="invoice_detail.payments.reference">Reference</th>
+                                    <th data-i18n="invoice_detail.payments.notes">Notes</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -295,17 +295,17 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Update Invoice Status</h5>
+                <h5 class="modal-title" data-i18n="invoice_detail.modals.update_status.title">Update Invoice Status</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to mark this invoice as <span id="statusText"></span>?</p>
+                <p><span data-i18n="invoice_detail.modals.update_status.confirm_prefix">Are you sure you want to mark this invoice as</span> <span id="statusText"></span>?</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmStatusUpdate">Update</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" data-i18n="common.cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmStatusUpdate" data-i18n="invoice_detail.modals.update_status.update">Update</button>
             </div>
         </div>
     </div>
@@ -316,7 +316,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add Payment</h5>
+                <h5 class="modal-title" data-i18n="invoice_detail.modals.add_payment.title">Add Payment</h5>
                 <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                 </button>
@@ -324,38 +324,38 @@
             <div class="modal-body">
                 <form id="paymentForm">
                     <div class="form-group">
-                        <label for="paymentAmount">Amount *</label>
+                        <label for="paymentAmount" data-i18n="invoice_detail.modals.add_payment.amount">Amount *</label>
                         <input type="number" id="paymentAmount" class="form-control" step="0.01" min="0.01" 
                                max="{{.invoice.BalanceDue}}" value="{{.invoice.BalanceDue}}" required>
                     </div>
                     <div class="form-group">
-                        <label for="paymentDate">Payment Date *</label>
+                        <label for="paymentDate" data-i18n="invoice_detail.modals.add_payment.date">Payment Date *</label>
                         <input type="date" id="paymentDate" class="form-control" value="{{.now.Format "2006-01-02"}}" required>
                     </div>
                     <div class="form-group">
-                        <label for="paymentMethod">Payment Method</label>
+                        <label for="paymentMethod" data-i18n="invoice_detail.modals.add_payment.method">Payment Method</label>
                         <select id="paymentMethod" class="form-control">
-                            <option value="">Select Method</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Credit Card">Credit Card</option>
-                            <option value="Check">Check</option>
-                            <option value="Other">Other</option>
+                            <option value="" data-i18n="invoice_detail.modals.add_payment.select_method">Select Method</option>
+                            <option value="Cash" data-i18n="invoice_detail.modals.add_payment.methods.cash">Cash</option>
+                            <option value="Bank Transfer" data-i18n="invoice_detail.modals.add_payment.methods.bank">Bank Transfer</option>
+                            <option value="Credit Card" data-i18n="invoice_detail.modals.add_payment.methods.card">Credit Card</option>
+                            <option value="Check" data-i18n="invoice_detail.modals.add_payment.methods.check">Check</option>
+                            <option value="Other" data-i18n="invoice_detail.modals.add_payment.methods.other">Other</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="referenceNumber">Reference Number</label>
+                        <label for="referenceNumber" data-i18n="invoice_detail.modals.add_payment.reference">Reference Number</label>
                         <input type="text" id="referenceNumber" class="form-control" placeholder="Transaction ID, Check number, etc.">
                     </div>
                     <div class="form-group">
-                        <label for="paymentNotes">Notes</label>
-                        <textarea id="paymentNotes" class="form-control" rows="2" placeholder="Additional payment notes"></textarea>
+                        <label for="paymentNotes" data-i18n="invoice_detail.modals.add_payment.notes">Notes</label>
+                        <textarea id="paymentNotes" class="form-control" rows="2" data-i18n="invoice_detail.modals.add_payment.notes_placeholder">Additional payment notes</textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitPayment()">Add Payment</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" data-i18n="common.cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitPayment()" data-i18n="invoice_detail.modals.add_payment.add">Add Payment</button>
             </div>
         </div>
     </div>

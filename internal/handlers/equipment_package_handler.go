@@ -33,7 +33,7 @@ func (h *EquipmentPackageHandler) ShowPackagesList(c *gin.Context) {
 	log.Printf("🎯 EQUIPMENT PACKAGE HANDLER: ShowPackagesList called")
 	// Parse filter parameters
 	params := parseFilterParams(c)
-	
+
 	packages, err := h.packageRepo.List(params)
 	if err != nil {
 		log.Printf("Error fetching equipment packages: %v", err)
@@ -45,10 +45,10 @@ func (h *EquipmentPackageHandler) ShowPackagesList(c *gin.Context) {
 
 	// Calculate total values and device counts for display
 	for i := range packages {
-		log.Printf("🎯 BEFORE ENRICH: Package %d ('%s') has %d PackageDevices", 
+		log.Printf("🎯 BEFORE ENRICH: Package %d ('%s') has %d PackageDevices",
 			packages[i].PackageID, packages[i].Name, len(packages[i].PackageDevices))
 		h.enrichPackageData(&packages[i])
-		log.Printf("🎯 AFTER ENRICH: Package %d ('%s') has %d PackageDevices and DeviceCount=%d", 
+		log.Printf("🎯 AFTER ENRICH: Package %d ('%s') has %d PackageDevices and DeviceCount=%d",
 			packages[i].PackageID, packages[i].Name, len(packages[i].PackageDevices), packages[i].DeviceCount)
 	}
 
@@ -61,12 +61,12 @@ func (h *EquipmentPackageHandler) ShowPackagesList(c *gin.Context) {
 	// Debug template data before rendering
 	log.Printf("🎯 TEMPLATE DEBUG: Rendering with %d packages", len(packages))
 	for i, pkg := range packages {
-		log.Printf("🎯 TEMPLATE DEBUG: Package %d: ID=%d, Name='%s', PackageDevices=%d, DeviceCount=%d", 
+		log.Printf("🎯 TEMPLATE DEBUG: Package %d: ID=%d, Name='%s', PackageDevices=%d, DeviceCount=%d",
 			i, pkg.PackageID, pkg.Name, len(pkg.PackageDevices), pkg.DeviceCount)
 	}
-	
+
 	user, _ := GetCurrentUser(c)
-	
+
 	c.HTML(http.StatusOK, "equipment_packages_standalone.html", gin.H{
 		"packages":        packages,
 		"popularPackages": popularPackages,
@@ -81,13 +81,13 @@ func (h *EquipmentPackageHandler) ShowPackageForm(c *gin.Context) {
 	// Only allow fetch requests from modals, block direct browser access
 	acceptHeader := c.GetHeader("Accept")
 	xRequestedWith := c.GetHeader("X-Requested-With")
-	
+
 	// Block direct browser access - only allow modal/fetch requests
 	if xRequestedWith != "XMLHttpRequest" && !strings.Contains(acceptHeader, "application/json") && !strings.Contains(acceptHeader, "text/html") {
 		c.Redirect(http.StatusFound, "/workflow/packages")
 		return
 	}
-	
+
 	// If it's a direct browser request (Accept: text/html without XMLHttpRequest), redirect
 	if strings.Contains(acceptHeader, "text/html") && xRequestedWith != "XMLHttpRequest" {
 		c.Redirect(http.StatusFound, "/workflow/packages")
@@ -95,7 +95,7 @@ func (h *EquipmentPackageHandler) ShowPackageForm(c *gin.Context) {
 	}
 
 	packageID := c.Param("id")
-	
+
 	// Get available devices
 	availableDevices, err := h.packageRepo.GetAvailableDevices()
 	if err != nil {
@@ -121,6 +121,7 @@ func (h *EquipmentPackageHandler) ShowPackageForm(c *gin.Context) {
 		"package":          pkg,
 		"availableDevices": availableDevices,
 		"categories":       categories,
+		"PageTemplateKey":  "equipment_package_form",
 	})
 }
 
@@ -152,10 +153,11 @@ func (h *EquipmentPackageHandler) ShowPackageDetail(c *gin.Context) {
 	isValid, invalidDevices, _ := h.packageRepo.ValidatePackageDevices(uint(id))
 
 	c.HTML(http.StatusOK, "equipment_package_detail.html", gin.H{
-		"package":        pkg,
-		"stats":          stats,
-		"isValid":        isValid,
-		"invalidDevices": invalidDevices,
+		"package":         pkg,
+		"stats":           stats,
+		"isValid":         isValid,
+		"invalidDevices":  invalidDevices,
+		"PageTemplateKey": "equipment_package_detail",
 	})
 }
 
@@ -163,7 +165,7 @@ func (h *EquipmentPackageHandler) ShowPackageDetail(c *gin.Context) {
 func (h *EquipmentPackageHandler) GetPackages(c *gin.Context) {
 	log.Printf("GetPackages called")
 	params := parseFilterParams(c)
-	
+
 	packages, err := h.packageRepo.List(params)
 	if err != nil {
 		log.Printf("Error fetching packages: %v", err)
@@ -190,7 +192,7 @@ func (h *EquipmentPackageHandler) GetPackages(c *gin.Context) {
 func (h *EquipmentPackageHandler) GetPackage(c *gin.Context) {
 	packageID := c.Param("id")
 	log.Printf("GetPackage called with packageID: %s", packageID)
-	
+
 	id, err := strconv.ParseUint(packageID, 10, 32)
 	if err != nil {
 		log.Printf("Invalid package ID: %v", err)
@@ -277,7 +279,7 @@ func (h *EquipmentPackageHandler) CreatePackage(c *gin.Context) {
 func (h *EquipmentPackageHandler) UpdatePackage(c *gin.Context) {
 	packageID := c.Param("id")
 	log.Printf("🔄 UpdatePackage called with packageID: %s", packageID)
-	
+
 	id, err := strconv.ParseUint(packageID, 10, 32)
 	if err != nil {
 		log.Printf("Invalid package ID: %v", err)
@@ -288,10 +290,10 @@ func (h *EquipmentPackageHandler) UpdatePackage(c *gin.Context) {
 	// Log the raw request body
 	bodyBytes, _ := c.GetRawData()
 	log.Printf("Raw request body: %s", string(bodyBytes))
-	
+
 	// Reset the request body for binding
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	
+
 	var req models.UpdateEquipmentPackageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Printf("Failed to bind JSON: %v", err)
@@ -299,7 +301,7 @@ func (h *EquipmentPackageHandler) UpdatePackage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	log.Printf("Update request data: %+v", req)
 
 	// Get existing package
@@ -340,14 +342,14 @@ func (h *EquipmentPackageHandler) UpdatePackage(c *gin.Context) {
 	log.Printf("🔄 Building device mappings for %d devices", len(req.Devices))
 	for _, deviceReq := range req.Devices {
 		log.Printf("🔄 Adding device mapping: %s (quantity: %d)", deviceReq.DeviceID, deviceReq.Quantity)
-		
+
 		// Validate device exists before adding to mappings
 		_, err := h.deviceRepo.GetByID(deviceReq.DeviceID)
 		if err != nil {
 			log.Printf("❌ Device %s does not exist or is not accessible - skipping", deviceReq.DeviceID)
 			continue
 		}
-		
+
 		deviceMappings = append(deviceMappings, models.PackageDevice{
 			DeviceID:    deviceReq.DeviceID,
 			Quantity:    deviceReq.Quantity,
@@ -374,7 +376,7 @@ func (h *EquipmentPackageHandler) UpdatePackage(c *gin.Context) {
 func (h *EquipmentPackageHandler) DeletePackage(c *gin.Context) {
 	packageID := c.Param("id")
 	log.Printf("DeletePackage called with packageID: %s", packageID)
-	
+
 	id, err := strconv.ParseUint(packageID, 10, 32)
 	if err != nil {
 		log.Printf("Invalid package ID: %v", err)
@@ -608,7 +610,7 @@ func (h *EquipmentPackageHandler) enrichPackageData(pkg *models.EquipmentPackage
 			} else if device.Device.Product.ItemCostPerDay != nil {
 				devicePrice = *device.Device.Product.ItemCostPerDay
 			}
-			
+
 			totalValue += devicePrice * float64(device.Quantity)
 			calculatedPrice += devicePrice * float64(device.Quantity)
 		}
@@ -626,7 +628,7 @@ func (h *EquipmentPackageHandler) enrichPackageData(pkg *models.EquipmentPackage
 
 	pkg.TotalValue = totalValue
 	pkg.CalculatedPrice = calculatedPrice
-	
+
 	// Only update DeviceCount if PackageDevices is populated
 	// For list views, DeviceCount is set by repository and PackageDevices is empty for performance
 	if len(pkg.PackageDevices) > 0 {
@@ -658,7 +660,7 @@ func (h *EquipmentPackageHandler) validatePackageDevices(devices []models.Create
 func (h *EquipmentPackageHandler) getPackageCategories() []string {
 	return []string{
 		"Audio/Video Equipment",
-		"Lighting Equipment", 
+		"Lighting Equipment",
 		"Sound Systems",
 		"Stage Equipment",
 		"DJ Equipment",

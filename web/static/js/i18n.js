@@ -7,9 +7,15 @@
     // Initialize i18next
     let i18nextInstance;
 
-    // Get stored language or default to German
+    // Get stored language or detect browser language (default to English)
     const getStoredLanguage = () => {
-        return localStorage.getItem('rentalcore_language') || 'de';
+        const stored = localStorage.getItem('rentalcore_language');
+        if (stored) return stored;
+
+        // Try navigator.languages then navigator.language
+        const navLang = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+        const langPrefix = navLang.split('-')[0];
+        return langPrefix === 'de' ? 'de' : 'en';
     };
 
     // Save language preference
@@ -49,9 +55,9 @@
         }
 
         i18nextInstance = i18next.createInstance();
-        await i18nextInstance.init({
+            await i18nextInstance.init({
             lng: getStoredLanguage(),
-            fallbackLng: 'de',
+            fallbackLng: 'en',
             resources: {
                 de: { translation: translations.de },
                 en: { translation: translations.en }
@@ -133,6 +139,10 @@
 
     // Create and inject language switcher
     const createLanguageSwitcher = () => {
+        if (document.getElementById('languageSwitcher')) {
+            return;
+        }
+
         const currentLang = getStoredLanguage();
         const currentFlag = currentLang === 'de' ? '🇩🇪' : '🇺🇸';
 
@@ -157,10 +167,25 @@
             </div>
         `;
 
-        // Inject into header
-        const headerRight = document.querySelector('.rc-header-right');
-        if (headerRight) {
-            headerRight.insertAdjacentHTML('afterbegin', switcherHTML);
+        // Prefer a dedicated right-side toolbar slot to match WarehouseCore.
+        let toolbarTarget = document.querySelector('.rc-header-right');
+        if (!toolbarTarget) {
+            const headerContent = document.querySelector('.rc-header-content');
+            if (headerContent) {
+                const holder = document.createElement('div');
+                holder.className = 'rc-header-right';
+                headerContent.appendChild(holder);
+                toolbarTarget = holder;
+            }
+        }
+
+        if (!toolbarTarget) {
+            toolbarTarget = document.querySelector('.rc-navbar-content')
+                || document.querySelector('.rc-navbar .rc-container');
+        }
+
+        if (toolbarTarget) {
+            toolbarTarget.insertAdjacentHTML('beforeend', switcherHTML);
         }
     };
 
@@ -171,6 +196,20 @@
             .rc-language-switcher {
                 position: relative;
                 margin-right: 1rem;
+            }
+
+            .rc-header-right {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                margin-left: auto;
+            }
+
+            .rc-header-content > .rc-language-switcher,
+            .rc-navbar-content > .rc-language-switcher,
+            .rc-navbar .rc-container > .rc-language-switcher {
+                margin-left: auto;
+                margin-right: 0;
             }
 
             .rc-lang-toggle {
@@ -276,10 +315,34 @@
         document.head.appendChild(style);
     };
 
-    // Expose t function globally for use in templates
-    window.t = (key, options) => {
-        return i18nextInstance ? i18nextInstance.t(key, options) : key;
-    };
+    // Expose `t` globally as a safe accessor so it's always callable
+    // Use a getter that returns a function which delegates to i18next when ready
+    Object.defineProperty(window, 't', {
+        configurable: true,
+        enumerable: false,
+        get: function() {
+            return function(key, optionsOrFallback) {
+                let options = optionsOrFallback;
+                let fallback = null;
+
+                if (typeof optionsOrFallback === 'string') {
+                    fallback = optionsOrFallback;
+                    options = { defaultValue: optionsOrFallback };
+                }
+
+                if (!i18nextInstance) {
+                    return fallback || key;
+                }
+
+                const translated = i18nextInstance.t(key, options);
+                if (translated === key || translated == null || typeof translated === 'object') {
+                    return fallback || key;
+                }
+
+                return translated;
+            };
+        }
+    });
 
     // Initialize on DOM ready
     const init = async () => {

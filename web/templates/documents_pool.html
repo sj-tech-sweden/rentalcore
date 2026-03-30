@@ -458,8 +458,8 @@
 
     <main class="pool-page">
         <div class="pool-header">
-            <h1>File Pool</h1>
-            <p>Manage documents across your storage</p>
+            <h1 data-i18n="documents.pool.title">File Pool</h1>
+            <p data-i18n="documents.pool.description">Manage documents across your storage</p>
         </div>
 
         <div class="pool-stats">
@@ -483,9 +483,9 @@
             <div class="pool-section-header">
                 <div class="pool-section-title">
                     <i class="bi bi-upload"></i>
-                    Upload
+                    <span data-i18n="documents.pool.upload">Upload</span>
                 </div>
-                <span style="font-size: 0.6875rem; color: var(--pool-muted);">Max 10 MB</span>
+                <span style="font-size: 0.6875rem; color: var(--pool-muted);" data-i18n="documents.pool.max_size">Max 10 MB</span>
             </div>
             <form class="pool-upload-form" action="/documents/upload" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="entityType" value="system">
@@ -494,33 +494,33 @@
 
                 <div class="pool-form-grid">
                     <div class="pool-form-field">
-                        <span class="pool-form-label">File</span>
+                        <span class="pool-form-label" data-i18n="documents.pool.field.file">File</span>
                         <input class="pool-input" type="file" name="file" required>
                     </div>
 
                     <div class="pool-form-field">
-                        <span class="pool-form-label">Type</span>
+                        <span class="pool-form-label" data-i18n="documents.pool.field.type">Type</span>
                         <select class="pool-input" name="documentType" required>
-                            <option value="other" selected>Other</option>
-                            <option value="contract">Contract</option>
-                            <option value="manual">Manual</option>
-                            <option value="photo">Photo</option>
-                            <option value="invoice">Invoice</option>
-                            <option value="receipt">Receipt</option>
-                            <option value="signature">Signature</option>
+                            <option value="other" selected data-i18n="documents.pool.type.other">Other</option>
+                            <option value="contract" data-i18n="documents.pool.type.contract">Contract</option>
+                            <option value="manual" data-i18n="documents.pool.type.manual">Manual</option>
+                            <option value="photo" data-i18n="documents.pool.type.photo">Photo</option>
+                            <option value="invoice" data-i18n="documents.pool.type.invoice">Invoice</option>
+                            <option value="receipt" data-i18n="documents.pool.type.receipt">Receipt</option>
+                            <option value="signature" data-i18n="documents.pool.type.signature">Signature</option>
                         </select>
                     </div>
 
                     <div class="pool-form-field full">
-                        <span class="pool-form-label">Description</span>
-                        <textarea class="pool-input" name="description" rows="2" placeholder="Optional note"></textarea>
+                        <span class="pool-form-label" data-i18n="documents.pool.field.description">Description</span>
+                        <textarea class="pool-input" name="description" rows="2" data-i18n-attr="placeholder" placeholder="Optional note"> </textarea>
                     </div>
                 </div>
 
                 <div class="pool-form-footer">
                     <button type="submit" class="pool-btn">
                         <i class="bi bi-upload"></i>
-                        Upload
+                        <span data-i18n="documents.pool.upload_button">Upload</span>
                     </button>
                 </div>
             </form>
@@ -539,10 +539,10 @@
                     </button>
                 </div>
 
-                <input class="pool-filter-input" type="text" id="pool-search" placeholder="Search...">
+                <input class="pool-filter-input" type="text" id="pool-search" data-i18n-attr="placeholder" placeholder="Search...">
 
                 <select class="pool-filter-select" id="pool-type-filter">
-                    <option value="">All types</option>
+                    <option value="" data-i18n="documents.pool.filter.all_types">All types</option>
                     <option value="contract">Contract</option>
                     <option value="manual">Manual</option>
                     <option value="photo">Photo</option>
@@ -553,15 +553,15 @@
                 </select>
 
                 <select class="pool-filter-select" id="pool-sort">
-                    <option value="newest">Newest</option>
-                    <option value="oldest">Oldest</option>
-                    <option value="name">Name</option>
-                    <option value="size">Size</option>
+                    <option value="newest" data-i18n="documents.pool.sort.newest">Newest</option>
+                    <option value="oldest" data-i18n="documents.pool.sort.oldest">Oldest</option>
+                    <option value="name" data-i18n="documents.pool.sort.name">Name</option>
+                    <option value="size" data-i18n="documents.pool.sort.size">Size</option>
                 </select>
 
                 <div class="pool-toolbar-spacer"></div>
 
-                <button type="button" class="pool-btn pool-btn-ghost pool-btn-icon" id="sync-btn" title="Sync from Nextcloud">
+                <button type="button" class="pool-btn pool-btn-ghost pool-btn-icon" id="sync-btn" data-i18n-attr="title" title="Sync from Nextcloud">
                     <i class="bi bi-arrow-counterclockwise"></i>
                 </button>
             </div>
@@ -586,13 +586,13 @@
                                 <i class="bi bi-chat-text"></i>
                             </span>
                             {{end}}
-                            <a class="pool-file-action" href="/documents/{{.DocumentID}}/view" target="_blank" title="View">
+                            <a class="pool-file-action" href="/documents/{{.DocumentID}}/view" target="_blank" data-i18n-attr="title" title="View">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            <a class="pool-file-action" href="/documents/{{.DocumentID}}/download" title="Download">
+                            <a class="pool-file-action" href="/documents/{{.DocumentID}}/download" data-i18n-attr="title" title="Download">
                                 <i class="bi bi-download"></i>
                             </a>
-                            <button type="button" class="pool-file-action danger" onclick="deleteDoc({{.DocumentID}}, '{{.OriginalFilename}}')" title="Delete">
+                            <button type="button" class="pool-file-action danger" onclick="deleteDoc({{.DocumentID}}, '{{.OriginalFilename}}')" data-i18n-attr="title" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -601,11 +601,11 @@
                 </div>
                 <div id="assigned-empty-default" class="pool-empty {{if .assigned}}pool-hidden{{end}}">
                     <i class="bi bi-folder-check"></i>
-                    <p>No assigned files yet</p>
+                    <p data-i18n="documents.pool.no_assigned">No assigned files yet</p>
                 </div>
                 <div id="assigned-empty-filter" class="pool-empty pool-hidden">
                     <i class="bi bi-search"></i>
-                    <p>No files match your filters</p>
+                    <p data-i18n="documents.pool.no_match">No files match your filters</p>
                 </div>
             </div>
 
@@ -643,11 +643,11 @@
                 </div>
                 <div id="unassigned-empty-default" class="pool-empty {{if .unused}}pool-hidden{{end}}">
                     <i class="bi bi-inbox"></i>
-                    <p>No unassigned files</p>
+                    <p data-i18n="documents.pool.no_unassigned">No unassigned files</p>
                 </div>
                 <div id="unassigned-empty-filter" class="pool-empty pool-hidden">
                     <i class="bi bi-search"></i>
-                    <p>No files match your filters</p>
+                    <p data-i18n="documents.pool.no_match">No files match your filters</p>
                 </div>
             </div>
         </div>
@@ -655,12 +655,14 @@
 
     <script>
         async function deleteDoc(id, name) {
-            if (!confirm(`Delete "${name}"?`)) return;
+            const confirmText = window.t ? window.t('documents.pool.confirm_delete', { name }) : `Delete "${name}"?`;
+            if (!confirm(confirmText)) return;
             const res = await fetch(`/documents/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 window.location.reload();
             } else {
-                alert('Delete failed');
+                const msg = window.t ? window.t('documents.pool.delete_failed') : 'Delete failed';
+                alert(msg);
             }
         }
 
@@ -752,13 +754,15 @@
                     // Reload page to show synced files
                     window.location.reload();
                 } else {
-                    alert('Sync failed: ' + (data.error || 'Unknown error'));
+                    const msg = window.t ? window.t('documents.pool.sync_failed', { error: data.error || 'Unknown error' }) : ('Sync failed: ' + (data.error || 'Unknown error'));
+                    alert(msg);
                     syncBtn.disabled = false;
                     syncBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
                 }
             } catch (error) {
                 console.error('Sync error:', error);
-                alert('Sync failed. Please try again.');
+                const msg = window.t ? window.t('documents.pool.sync_failed_try') : 'Sync failed. Please try again.';
+                alert(msg);
                 syncBtn.disabled = false;
                 syncBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
             }

@@ -3385,6 +3385,7 @@ body.rc-modal-open {
 .rc-header {
     position: fixed;
     top: 0;
+    left: 0;
     right: 0;
     z-index: 50;
     background: var(--gradient-surface);
@@ -3400,6 +3401,15 @@ body:has(.rc-sidebar.open:not(.collapsed)) .rc-header {
 
 body:has(.rc-sidebar.collapsed) .rc-header {
     left: 5rem; /* 80px = w-20 */
+}
+
+/* Fallback for browsers that don't reliably support :has() in dynamic layout updates */
+body.sidebar-open .rc-header {
+    left: 16rem;
+}
+
+body.sidebar-collapsed .rc-header {
+    left: 5rem;
 }
 
 @media (max-width: 768px) {
@@ -4174,4 +4184,45 @@ body {
     .rc-sidebar.collapsed .rc-sidebar-footer .rc-nav-dropdown {
         display: none !important;
     }
+}
+
+/* ===== Header right slot: language switcher + company name ===== */
+/* Use !important to override .desktop-only { display: block !important } from the responsive rules */
+.rc-header-content .rc-header-right {
+    display: flex !important;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto !important;
+    justify-content: flex-end;
+}
+
+/* Ensure header controls can reach the far right edge */
+.rc-header .rc-header-content {
+    width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Neutralise the margin-right injected by i18n.js on the switcher when inside the header */
+.rc-header-right .rc-language-switcher {
+    margin-right: 0;
+}
+
+@media (max-width: 768px) {
+    .rc-header-content .rc-header-right {
+        display: none;
+    }
+}
+
+/* ===== Fullscreen mode: hide app chrome ===== */
+/* Needs !important to override the .rc-header,.rc-sidebar { display:flex!important } rule above */
+body.fin-fullscreen .rc-header,
+body.fin-fullscreen .rc-sidebar,
+body.fin-fullscreen .rc-sidebar-backdrop {
+    display: none !important;
+}
+
+body.fin-fullscreen {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
 }

@@ -41,21 +41,21 @@
     <main class="rc-container rc-mt-lg">
             <!-- Page Header -->
             <div class="rc-page-header">
-                <h1 class="rc-heading-1">Jobs</h1>
-                <p class="rc-text">Manage your orders and projects</p>
+                <h1 class="rc-heading-1" data-i18n="jobs.title">Jobs</h1>
+                <p class="rc-text" data-i18n="jobs.subtitle">Manage your rental jobs</p>
             </div>
 
             <!-- Search Card -->
             <div class="rc-card rc-mb-lg">
                 <div class="rc-card-header">
                     <h3 class="rc-card-title">
-                        <i class="bi bi-search"></i> Search Jobs
+                        <i class="bi bi-search"></i> <span data-i18n="jobs.searchTitle">Search Jobs</span>
                     </h3>
                 </div>
                 <div class="rc-card-body">
                     <form method="GET" action="/jobs">
                         <div class="rc-flex rc-flex-gap-sm" style="align-items: stretch;">
-                            <input type="text" class="rc-input" name="search" placeholder="Search jobs..." value="{{.params.SearchTerm}}" style="max-width: 300px;">
+                            <input type="text" class="rc-input" name="search" data-i18n-attr="placeholder" data-i18n="jobs.searchPlaceholder" placeholder="Search jobs..." value="{{.params.SearchTerm}}" style="max-width: 300px;">
                             <button type="submit" class="rc-btn rc-btn-primary" style="padding: 0 var(--space-md); min-width: 50px;">
                                 <i class="bi bi-search"></i>
                             </button>
@@ -73,7 +73,7 @@
             <div class="rc-flex rc-flex-between rc-mb-lg">
                 <div></div>
                 <button class="rc-btn rc-btn-primary" onclick="openNewJobModal()">
-                    <i class="bi bi-plus-lg"></i> New Job
+                    <i class="bi bi-plus-lg"></i> <span data-i18n="jobs.createJob">New Job</span>
                 </button>
             </div>
 
@@ -84,22 +84,22 @@
 
                     <!-- Filter Bar -->
                     <div class="rc-mb-lg" style="display: flex; gap: var(--space-md); flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="filterCustomer" placeholder="Filter by customer..." class="rc-input" style="max-width: 200px;">
-                        <select id="filterStatus" class="rc-select" style="max-width: 150px;">
-                            <option value="">All Statuses</option>
+                        <input type="text" id="filterCustomer" class="rc-input" data-i18n-attr="placeholder:jobs.filterCustomerPlaceholder" placeholder="Filter by customer..." style="max-width: 200px;">
+                        <select id="filterStatus" class="rc-select" style="max-width: 150px;" data-i18n-attr="title:jobs.filterStatusTitle">
+                            <option value="" data-i18n="jobs.filterAllStatuses">All Statuses</option>
                             {{range .statuses}}
                             <option value="{{.StatusID}}">{{.Status}}</option>
                             {{end}}
                         </select>
-                        <select id="filterCategory" class="rc-select" style="max-width: 150px;">
-                            <option value="">All Categories</option>
+                        <select id="filterCategory" class="rc-select" style="max-width: 150px;" data-i18n-attr="title:jobs.filterCategoryTitle">
+                            <option value="" data-i18n="jobs.filterAllCategories">All Categories</option>
                             {{range .jobcategories}}
                             <option value="{{.JobCategoryID}}">{{.Name}}</option>
                             {{end}}
                         </select>
-                        <input type="number" id="filterMinDevices" placeholder="Min devices" class="rc-input" style="max-width: 120px;" min="0">
+                        <input type="number" id="filterMinDevices" class="rc-input" data-i18n-attr="placeholder:jobs.filterMinDevicesPlaceholder" placeholder="Min devices" style="max-width: 120px;" min="0">
                         <button type="button" class="rc-btn rc-btn-outline rc-btn-sm" onclick="clearFilters()">
-                            <i class="bi bi-x-circle"></i> Clear Filters
+                            <i class="bi bi-x-circle"></i> <span data-i18n="jobs.clearFilters">Clear Filters</span>
                         </button>
                     </div>
 
@@ -108,14 +108,14 @@
                             <table class="rc-table-wc" id="jobsTable">
                                 <thead>
                                     <tr>
-                                        <th class="sortable" onclick="sortTable('id')" style="cursor: pointer;">Job <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                        <th class="sortable" onclick="sortTable('customer')" style="cursor: pointer;">Customer <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                        <th class="sortable" onclick="sortTable('startDate')" style="cursor: pointer;">Start <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                        <th class="sortable" onclick="sortTable('endDate')" style="cursor: pointer;">End <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                        <th class="sortable" onclick="sortTable('status')" style="cursor: pointer;">Status <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                        <th class="sortable" onclick="sortTable('devices')" style="cursor: pointer;">Devices <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                        <th class="sortable" onclick="sortTable('revenue')" style="cursor: pointer; text-align: right;">Revenue <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
-                                        <th style="text-align: right;">Actions</th>
+                                        <th class="sortable" onclick="sortTable('id')" style="cursor: pointer;" data-i18n="jobs.table.job">Job <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('customer')" style="cursor: pointer;" data-i18n="jobs.table.customer">Customer <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('startDate')" style="cursor: pointer;" data-i18n="jobs.table.start">Start <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('endDate')" style="cursor: pointer;" data-i18n="jobs.table.end">End <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('status')" style="cursor: pointer;" data-i18n="jobs.table.status">Status <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('devices')" style="cursor: pointer;" data-i18n="jobs.table.devices">Devices <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th class="sortable" onclick="sortTable('revenue')" style="cursor: pointer; text-align: right;" data-i18n="jobs.table.revenue">Revenue <i class="bi bi-arrow-down-up" style="font-size: 0.8em; opacity: 0.5;"></i></th>
+                                        <th style="text-align: right;" data-i18n="jobs.table.actions">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -138,22 +138,22 @@
                                         </td>
                                         <td>
                                             <div class="rc-table-wc-title">{{.CustomerName}}</div>
-                                            <div class="rc-table-wc-sub">{{if .CategoryName}}{{.CategoryName}}{{else}}No category{{end}}</div>
+                                            <div class="rc-table-wc-sub">{{if .CategoryName}}{{.CategoryName}}{{else}}<span data-i18n="jobs.noCategory">No category</span>{{end}}</div>
                                         </td>
                                         <td><span class="rc-table-wc-sub">{{if .StartDate}}{{.StartDate.Format "02.01.2006"}}{{else}}-{{end}}</span></td>
                                         <td><span class="rc-table-wc-sub">{{if .EndDate}}{{.EndDate.Format "02.01.2006"}}{{else}}-{{end}}</span></td>
                                         <td><span class="rc-badge rc-badge-secondary">{{.StatusName}}</span></td>
-                                        <td><span class="rc-table-wc-sub">{{.DeviceCount}} devices</span></td>
+                                        <td><span class="rc-table-wc-sub">{{.DeviceCount}} <span data-i18n="jobs.devicesLabel">devices</span></span></td>
                                         <td style="text-align: right;"><span class="rc-table-wc-title">€{{printf "%.2f" .TotalRevenue}}</span></td>
                                         <td style="text-align: right;" onclick="event.stopPropagation()">
                                             <div class="rc-flex rc-flex-gap-xs" style="justify-content: flex-end;">
-                                                <button type="button" class="rc-icon-btn" title="View Details" onclick="showJobDetails({{.JobID}})">
+                                                <button type="button" class="rc-icon-btn" data-i18n-attr="title:jobs.view" onclick="showJobDetails({{.JobID}})">
                                                     <i class="bi bi-eye"></i>
                                                 </button>
-                                                <button type="button" class="rc-icon-btn" title="Edit Job" onclick="showEditJob({{.JobID}})">
+                                                <button type="button" class="rc-icon-btn" data-i18n-attr="title:jobs.editJob" onclick="showEditJob({{.JobID}})">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
-                                                <button type="button" class="rc-icon-btn rc-icon-btn-danger" title="Delete" onclick="deleteJob({{.JobID}})">
+                                                <button type="button" class="rc-icon-btn rc-icon-btn-danger" data-i18n-attr="title:jobs.deleteJob" onclick="deleteJob({{.JobID}})">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </div>
@@ -167,10 +167,10 @@
                     {{else}}
                     <div class="rc-empty-state">
                         <i class="bi bi-briefcase rc-empty-icon"></i>
-                        <h3 class="rc-heading-3">No jobs found</h3>
-                        <p class="rc-text">Create your first job to get started.</p>
+                        <h3 class="rc-heading-3" data-i18n="jobs.noJobs">No jobs found</h3>
+                        <p class="rc-text" data-i18n="jobs.emptyHelp">Create your first job to get started.</p>
                         <button type="button" class="rc-btn rc-btn-primary" onclick="openNewJobModal()">
-                            <i class="bi bi-plus-lg"></i> Create Job
+                            <i class="bi bi-plus-lg"></i> <span data-i18n="jobs.createJob">Create Job</span>
                         </button>
                     </div>
                     {{end}}
@@ -324,10 +324,11 @@
         
         // Show modal with loading state
         modal.style.display = 'flex';
+        const _loadingJobDetails = window.t ? window.t('jobs.loading_details') : 'Loading job details...';
         content.innerHTML = `
             <div class="rc-text-center rc-py-xl">
                 <div class="rc-spinner"></div>
-                <p class="rc-text-muted rc-mt-md">Loading job details...</p>
+                <p class="rc-text-muted rc-mt-md">${_loadingJobDetails}</p>
             </div>
         `;
         
@@ -336,50 +337,51 @@
             .then(job => {
                 console.log('Job data received:', job);
                 const jobData = job.job || job;
+                const _t = window.t || null;
                 content.innerHTML = `
                     <div class="rc-grid rc-grid-cols-1 rc-grid-cols-md-2 rc-grid-gap-lg">
                         <div class="rc-form-group">
-                            <label class="rc-label">Job ID</label>
+                            <label class="rc-label">${_t ? _t('jobs.jobId') : 'Job ID'}</label>
                             <div class="rc-badge rc-badge-primary">${jobData.jobID}</div>
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label">Status</label>
-                            <div class="rc-badge rc-badge-outline">${jobData.status && jobData.status.status ? jobData.status.status : 'Unknown'}</div>
+                            <label class="rc-label">${_t ? _t('jobs.status') : 'Status'}</label>
+                            <div class="rc-badge rc-badge-outline">${jobData.status && jobData.status.status ? jobData.status.status : (_t ? _t('common.info') : 'Unknown')}</div>
                         </div>
                         <div class="rc-form-group rc-grid-span-2">
-                            <label class="rc-label">Description</label>
-                            <div>${jobData.description || 'No description'}</div>
+                            <label class="rc-label">${_t ? _t('jobs.description') : 'Description'}</label>
+                            <div>${jobData.description || (_t ? _t('jobs.no_description') : 'No description')}</div>
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label">Customer</label>
-                            <div>${jobData.customer ? (jobData.customer.companyname || (jobData.customer.firstname && jobData.customer.lastname ? jobData.customer.firstname + ' ' + jobData.customer.lastname : 'No Name')) : 'Unknown Customer'}</div>
+                            <label class="rc-label">${_t ? _t('jobs.customer') : 'Customer'}</label>
+                            <div>${jobData.customer ? (jobData.customer.companyname || (jobData.customer.firstname && jobData.customer.lastname ? jobData.customer.firstname + ' ' + jobData.customer.lastname : (_t ? _t('jobs.no_name') : 'No Name'))) : (_t ? _t('jobs.unknown_customer') : 'Unknown Customer')}</div>
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label">Revenue</label>
+                            <label class="rc-label">${_t ? _t('jobs.revenue') : 'Revenue'}</label>
                             <div class="rc-text-lg">€${(jobData.revenue || 0).toFixed(2)}</div>
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label">Devices</label>
+                            <label class="rc-label">${_t ? _t('jobs.devices_label') : 'Devices'}</label>
                             <div>
-                                <button type="button" class="job-device-count-button" onclick="expandToDeviceView(${jobData.jobID})" title="Click to view devices">
+                                <button type="button" class="job-device-count-button" onclick="expandToDeviceView(${jobData.jobID})" data-i18n-attr="title:jobs.click_to_view_devices">
                                     ${jobData.device_count || 0}
                                 </button>
                             </div>
                         </div>
-                        ${jobData.startDate ? '<div class="rc-form-group"><label class="rc-label">Start Date</label><div><i class="bi bi-calendar"></i> ' + new Date(jobData.startDate).toLocaleDateString() + '</div></div>' : ''}
-                        ${jobData.endDate ? '<div class="rc-form-group"><label class="rc-label">End Date</label><div><i class="bi bi-calendar"></i> ' + new Date(jobData.endDate).toLocaleDateString() + '</div></div>' : ''}
-                        ${jobData.discount > 0 ? '<div class="rc-form-group"><label class="rc-label">Discount</label><div>' + jobData.discount + ' ' + (jobData.discount_type === 'percent' ? '%' : '€') + '</div></div>' : ''}
-                        ${jobData.finalRevenue ? '<div class="rc-form-group"><label class="rc-label">Final Revenue</label><div class="rc-text-lg">€' + jobData.finalRevenue.toFixed(2) + '</div></div>' : ''}
+                        ${jobData.startDate ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.startDate') : 'Start Date') + '</label><div><i class="bi bi-calendar"></i> ' + new Date(jobData.startDate).toLocaleDateString() + '</div></div>' : ''}
+                        ${jobData.endDate ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.endDate') : 'End Date') + '</label><div><i class="bi bi-calendar"></i> ' + new Date(jobData.endDate).toLocaleDateString() + '</div></div>' : ''}
+                        ${jobData.discount > 0 ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.discount') : 'Discount') + '</label><div>' + jobData.discount + ' ' + (jobData.discount_type === 'percent' ? '%' : '€') + '</div></div>' : ''}
+                        ${jobData.finalRevenue ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.finalRevenue') : 'Final Revenue') + '</label><div class="rc-text-lg">€' + jobData.finalRevenue.toFixed(2) + '</div></div>' : ''}
                     </div>
 
                     <!-- Job History Section -->
                     <div class="rc-mt-lg">
                         <div class="rc-flex rc-flex-between rc-flex-align-center rc-mb-md">
                             <h4 class="rc-text-lg rc-font-semibold">
-                                <i class="bi bi-clock-history"></i> History
+                                <i class="bi bi-clock-history"></i> ${_t ? _t('jobs.history_title') : 'History'}
                             </h4>
-                            <button type="button" class="rc-btn rc-btn-outline rc-btn-sm" onclick="showJobHistoryInModal(${jobData.jobID})">
-                                <i class="bi bi-list-ul"></i> View Full History
+                            <button type="button" class="rc-btn rc-btn-outline rc-btn-sm" onclick="showJobHistoryInModal(${jobData.jobID})" data-i18n-attr="title:jobs.view_full_history">
+                                <i class="bi bi-list-ul"></i> ${_t ? _t('jobs.view_full_history') : 'View Full History'}
                             </button>
                         </div>
                         <div class="rc-card" style="background: var(--surface-1); border: 1px solid var(--surface-3);">
@@ -398,13 +400,13 @@
                             <h4 class="rc-text-lg rc-font-semibold">
                                 <i class="bi bi-paperclip"></i> File Attachments
                             </h4>
-                            <span class="rc-badge rc-badge-outline" id="attachmentCount">Loading...</span>
+                            <span class="rc-badge rc-badge-outline" id="attachmentCount">${window.t ? window.t('common.loading') : 'Loading...'}</span>
                         </div>
                         <div id="jobDetailsAttachmentsList" class="rc-card" style="background: var(--surface-1); border: 1px solid var(--surface-3);">
                             <div class="rc-card-body">
                                 <div class="rc-text-center rc-py-md">
                                     <div class="rc-spinner rc-spinner-sm"></div>
-                                    <p class="rc-text-muted rc-text-sm rc-mt-sm">Loading attachments...</p>
+                                    <p class="rc-text-muted rc-text-sm rc-mt-sm">${window.t ? window.t('jobs.loading_attachments') : 'Loading attachments...'}</p>
                                 </div>
                             </div>
                         </div>
@@ -573,7 +575,7 @@
         document.getElementById('jobDevicesContent').style.display = 'block';
         
         // Update modal title
-        document.getElementById('jobDetailsModalTitle').innerHTML = '<i class="bi bi-cpu"></i> Device Overview - Job #' + jobID;
+        document.getElementById('jobDetailsModalTitle').innerHTML = '<i class="bi bi-cpu"></i> ' + (window.t ? window.t('jobs.deviceOverview') : ('Device Overview - Job #' + jobID));
         
         // Make modal larger for device overview
         document.getElementById('jobDetailsModalContent').style.maxWidth = '1400px';
@@ -588,7 +590,7 @@
         document.getElementById('jobDevicesContent').style.display = 'none';
         
         // Reset modal title
-        document.getElementById('jobDetailsModalTitle').innerHTML = '<i class="bi bi-briefcase"></i> Job Details';
+        document.getElementById('jobDetailsModalTitle').innerHTML = '<i class="bi bi-briefcase"></i> ' + (window.t ? window.t('jobs.details_title') : 'Job Details');
         
         // Reset modal size
         document.getElementById('jobDetailsModalContent').style.maxWidth = '';
@@ -598,10 +600,11 @@
         const content = document.getElementById('jobDevicesOverview');
         
         // Show loading state
+        const _loadingDevices = window.t ? window.t('jobs.loading_devices') : 'Loading devices...';
         content.innerHTML = `
             <div class="rc-text-center rc-py-xl">
                 <div class="rc-spinner"></div>
-                <p class="rc-text-muted rc-mt-md">Loading devices...</p>
+                <p class="rc-text-muted rc-mt-md">${_loadingDevices}</p>
             </div>
         `;
         
@@ -613,10 +616,11 @@
                 displayJobDevicesInModal(devices, jobID);
             })
             .catch(error => {
+                const _errMsg = window.t ? (window.t('jobs.error_loading_devices') + error.message) : ('Error loading devices: ' + error.message);
                 content.innerHTML = `
                     <div class="rc-alert rc-alert-error">
                         <i class="bi bi-exclamation-triangle"></i>
-                        Error loading devices: ${error.message}
+                        ${_errMsg}
                     </div>
                 `;
             });
@@ -646,11 +650,13 @@
         });
 
         if (sortedGroups.length === 0) {
+            const _noDevicesTitle = window.t ? window.t('jobs.no_devices_assigned') : 'No devices assigned';
+            const _noDevicesBody = window.t ? window.t('jobs.no_devices_assigned_desc') : 'This job has no devices assigned yet.';
             document.getElementById('jobDevicesOverview').innerHTML = `
                 <div class="rc-empty-state">
                     <i class="bi bi-cpu rc-empty-icon"></i>
-                    <h3 class="rc-heading-3">No devices assigned</h3>
-                    <p class="rc-text">This job has no devices assigned yet.</p>
+                    <h3 class="rc-heading-3">${_noDevicesTitle}</h3>
+                    <p class="rc-text">${_noDevicesBody}</p>
                 </div>
             `;
             return;
@@ -944,17 +950,15 @@
                             <div id="editProductSelectionErrors" class="rc-alert rc-alert-error rc-mt-lg" style="display: none;"></div>
                             <div class="rc-divider rc-mt-lg rc-mb-lg"></div>
                             <div>
-                                <h5>Selected Products</h5>
-                                <div id="editSelectedProductsEmpty" class="rc-text-sm rc-text-secondary rc-mb-md">
-                                    No products selected yet.
-                                </div>
+                                <h5 data-i18n="jobs.selectedProducts">Selected Products</h5>
+                                <div id="editSelectedProductsEmpty" class="rc-text-sm rc-text-secondary rc-mb-md" data-i18n="jobs.noProductsSelected">No products selected yet.</div>
                                 <div class="rc-table-scroll">
                                     <table class="rc-table rc-table-compact" id="editSelectedProductsTable" style="display: none;">
                                         <thead>
                                             <tr>
-                                                <th>Product</th>
-                                                <th style="width: 120px;">Quantity</th>
-                                                <th style="width: 140px;">Available</th>
+                                                <th data-i18n="jobs.table.product">Product</th>
+                                                <th style="width: 120px;" data-i18n="jobs.table.quantity">Quantity</th>
+                                                <th style="width: 140px;" data-i18n="jobs.table.available">Available</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -969,10 +973,10 @@
                         </div>
                     </div>
                     <div class="rc-flex rc-flex-between">
-                        <button type="button" onclick="closeEditJobModal()" class="rc-btn rc-btn-secondary">
+                        <button type="button" onclick="closeEditJobModal()" class="rc-btn rc-btn-secondary" data-i18n="common.cancel">
                             <i class="bi bi-x-lg"></i> Cancel
                         </button>
-                        <button type="submit" class="rc-btn rc-btn-primary">
+                        <button type="submit" class="rc-btn rc-btn-primary" data-i18n="jobs.saveChanges">
                             <i class="bi bi-check-lg"></i> Save Changes
                         </button>
                     </div>
@@ -1851,8 +1855,8 @@
         const chips = document.createElement('div');
         chips.className = 'rc-node-metrics';
         chips.innerHTML = `
-            <span class="wc-chip">${stats.products} Produkte</span>
-            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+            <span class="wc-chip">${stats.products} products</span>
+            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} available</span>
         `;
 
         header.appendChild(title);
@@ -1864,7 +1868,7 @@
         // Only render children if this node is expanded
         if (isExpanded) {
             (category.subcategories || []).forEach(sub => body.appendChild(renderEditSubcategoryNode(sub, `edit-sub-${sub.id}`)));
-            const catProductsGroup = renderEditProductGroup(category.products, `edit-cat-${category.id}-products`, 'Produkte');
+            const catProductsGroup = renderEditProductGroup(category.products, `edit-cat-${category.id}-products`, 'Products');
             if (catProductsGroup) {
                 body.appendChild(catProductsGroup);
             }
@@ -1901,8 +1905,8 @@
         const chips = document.createElement('div');
         chips.className = 'rc-node-metrics';
         chips.innerHTML = `
-            <span class="wc-chip">${stats.products} Produkte</span>
-            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+            <span class="wc-chip">${stats.products} products</span>
+            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} available</span>
         `;
 
         header.appendChild(title);
@@ -1914,7 +1918,7 @@
         // Only render children if this node is expanded
         if (isExpanded) {
             (subcategory.subbiercategories || []).forEach(sb => body.appendChild(renderEditSubbiercategoryNode(sb, `edit-subbier-${sb.id}`)));
-            const subProductsGroup = renderEditProductGroup(subcategory.products, `edit-sub-${subcategory.id}-products`, 'Produkte');
+            const subProductsGroup = renderEditProductGroup(subcategory.products, `edit-sub-${subcategory.id}-products`, 'Products');
             if (subProductsGroup) {
                 body.appendChild(subProductsGroup);
             }
@@ -1948,8 +1952,8 @@
         const chips = document.createElement('div');
         chips.className = 'rc-node-metrics';
         chips.innerHTML = `
-            <span class="wc-chip">${stats.products} Produkte</span>
-            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+            <span class="wc-chip">${stats.products} products</span>
+            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} available</span>
         `;
 
         header.appendChild(title);
@@ -1989,13 +1993,13 @@
 
         const title = document.createElement('div');
         title.className = 'wc-node-title';
-        title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(label || 'Produkte')}</span>`;
+        title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(label || 'Products')}</span>`;
 
         const chips = document.createElement('div');
         chips.className = 'rc-node-metrics';
         chips.innerHTML = `
-            <span class="wc-chip">${stats.products} Produkte</span>
-            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+            <span class="wc-chip">${stats.products} products</span>
+            <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} available</span>
         `;
 
         header.appendChild(title);
@@ -2044,7 +2048,7 @@
         if (brand) meta.innerHTML += `<span>${escapeHtml(brand)}</span>`;
         if (manufacturer) meta.innerHTML += `<span>${escapeHtml(manufacturer)}</span>`;
         if (barcode) meta.innerHTML += `<span class="wc-chip muted">${escapeHtml(barcode)}</span>`;
-        if (meta.innerHTML === '') meta.innerHTML = '<span style="color: var(--text-secondary);">Keine Zusatzinfos</span>';
+        if (meta.innerHTML === '') meta.innerHTML = '<span style="color: var(--text-secondary);">No additional info</span>';
         info.appendChild(meta);
 
     const inputs = document.createElement('div');
@@ -2053,7 +2057,7 @@
     const availChip = document.createElement('span');
     const availClass = total === 0 ? 'muted' : available > 0 ? 'success' : 'danger';
     availChip.className = `wc-chip ${availClass}`;
-    availChip.innerHTML = `<i class="bi bi-lightning-charge"></i> ${available} / ${total || 0} frei`;
+    availChip.innerHTML = `<i class="bi bi-lightning-charge"></i> ${available} / ${total || 0} available`;
 
         const input = document.createElement('input');
         input.type = 'number';
@@ -2077,7 +2081,7 @@
         const stockText = stock !== null ? `${stock}${unit ? ' ' + unit : ''}` : `0${unit ? ' ' + unit : ''}`;
         const stockChip = document.createElement('span');
         stockChip.className = 'wc-chip muted';
-        stockChip.innerHTML = `<i class="bi bi-archive"></i> Lager: ${stockText}`;
+        stockChip.innerHTML = `<i class="bi bi-archive"></i> Stock: ${stockText}`;
         inputs.appendChild(stockChip);
     }
 
@@ -2114,12 +2118,12 @@
                     if (nodeElement._categoryData) {
                         const category = nodeElement._categoryData;
                         (category.subcategories || []).forEach(sub => body.appendChild(renderEditSubcategoryNode(sub, `edit-sub-${sub.id}`)));
-                        const catProductsGroup = renderEditProductGroup(category.products, `edit-cat-${category.id}-products`, 'Produkte');
+                        const catProductsGroup = renderEditProductGroup(category.products, `edit-cat-${category.id}-products`, 'Products');
                         if (catProductsGroup) body.appendChild(catProductsGroup);
                     } else if (nodeElement._subcategoryData) {
                         const subcategory = nodeElement._subcategoryData;
                         (subcategory.subbiercategories || []).forEach(sb => body.appendChild(renderEditSubbiercategoryNode(sb, `edit-subbier-${sb.id}`)));
-                        const subProductsGroup = renderEditProductGroup(subcategory.products, `edit-sub-${subcategory.id}-products`, 'Produkte');
+                        const subProductsGroup = renderEditProductGroup(subcategory.products, `edit-sub-${subcategory.id}-products`, 'Products');
                         if (subProductsGroup) body.appendChild(subProductsGroup);
                     } else if (nodeElement._subbiercategoryData) {
                         const subbiercategory = nodeElement._subbiercategoryData;

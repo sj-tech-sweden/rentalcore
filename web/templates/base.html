@@ -8,6 +8,17 @@
             document.documentElement.setAttribute("data-theme",t);
         })();
     </script>
+    <script>
+        // Safe i18n shim: ensure `window.t` is callable early to avoid Alpine errors
+        if (typeof window.t !== 'function') {
+            window.t = function(key, optionsOrFallback) {
+                if (typeof optionsOrFallback === 'string') {
+                    return optionsOrFallback;
+                }
+                return key;
+            };
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.title}} - RentalCore</title>
@@ -21,6 +32,7 @@
 
     <!-- iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RentalCore">
     <link rel="apple-touch-icon" href="/static/images/icon-180.png">
@@ -35,157 +47,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
     <!-- Page-specific CSS -->
+    {{if eq .PageTemplateKey "financial_dashboard"}}
+    {{template "financial_dashboard_css" .}}
+    {{else if eq .PageTemplateKey "financial_reports"}}
+    {{template "financial_reports_css" .}}
+    {{else}}
     {{block "css" .}}{{end}}
+    {{end}}
 </head>
 <body>
-    <!-- Header -->
-    <header class="rc-header" id="rc-header">
-        <div class="rc-header-content">
-            <div class="rc-header-left">
-                <!-- Desktop: Collapse/Expand toggle -->
-                <button class="rc-sidebar-toggle desktop-only" id="sidebarToggle" aria-label="Toggle sidebar">
-                    <i class="bi bi-chevron-left" id="sidebarToggleIcon"></i>
-                </button>
-
-                <!-- Mobile: Hamburger menu -->
-                <button class="rc-sidebar-toggle mobile-only" id="mobileSidebarToggle" aria-label="Toggle menu">
-                    <i class="bi bi-list"></i>
-                </button>
-
-                <h1 class="rc-header-brand">
-                    <span class="brand-rental">Rental</span><span class="brand-core">Core</span>
-                </h1>
-            </div>
-            <div class="rc-header-right desktop-only">
-                <span class="rc-header-company">{{companyName}}</span>
-            </div>
-        </div>
-    </header>
-
-    <!-- Mobile Backdrop -->
-    <div class="rc-sidebar-backdrop" id="sidebarBackdrop"></div>
-
-    <!-- Sidebar -->
-    <aside class="rc-sidebar" id="rcSidebar">
-        <!-- Sidebar Header (Mobile only) -->
-        <div class="rc-sidebar-header mobile-only">
-            <h2 class="rc-sidebar-brand">
-                <span class="brand-rental">Rental</span><span class="brand-core">Core</span>
-            </h2>
-            <button class="rc-sidebar-close" id="mobileSidebarClose" aria-label="Close menu">
-                <i class="bi bi-x"></i>
-            </button>
-        </div>
-
-        <nav class="rc-sidebar-nav">
-            <!-- Cross-navigation to WarehouseCore -->
-            <a href="http://localhost:8082" class="rc-nav-item rc-nav-crosslink" title="Switch to WarehouseCore">
-                <i class="bi bi-box-seam"></i>
-                <span class="rc-nav-label" data-i18n="nav.warehousecore">WarehouseCore</span>
-            </a>
-
-            <!-- Main navigation items -->
-            <a href="/" class="rc-nav-item {{if eq .currentPage "home"}}active{{end}}">
-                <i class="bi bi-house-door"></i>
-                <span class="rc-nav-label" data-i18n="nav.dashboard">Dashboard</span>
-            </a>
-
-            <a href="/scan" class="rc-nav-item {{if eq .currentPage "scan"}}active{{end}}">
-                <i class="bi bi-upc-scan"></i>
-                <span class="rc-nav-label" data-i18n="nav.scan">Scanner</span>
-            </a>
-
-            <a href="/jobs" class="rc-nav-item {{if eq .currentPage "jobs"}}active{{end}}">
-                <i class="bi bi-briefcase"></i>
-                <span class="rc-nav-label" data-i18n="nav.jobs">Jobs</span>
-            </a>
-
-            <a href="/devices" class="rc-nav-item {{if eq .currentPage "devices"}}active{{end}}">
-                <i class="bi bi-cpu"></i>
-                <span class="rc-nav-label" data-i18n="nav.devices">Devices</span>
-            </a>
-
-            <a href="/customers" class="rc-nav-item {{if eq .currentPage "customers"}}active{{end}}">
-                <i class="bi bi-people"></i>
-                <span class="rc-nav-label" data-i18n="nav.customers">Customers</span>
-            </a>
-
-            <a href="/invoices" class="rc-nav-item {{if eq .currentPage "invoices"}}active{{end}}">
-                <i class="bi bi-file-text"></i>
-                <span class="rc-nav-label" data-i18n="nav.invoices">Invoices</span>
-            </a>
-
-            <a href="/analytics" class="rc-nav-item {{if eq .currentPage "analytics"}}active{{end}}">
-                <i class="bi bi-graph-up"></i>
-                <span class="rc-nav-label" data-i18n="nav.analytics">Analytics</span>
-            </a>
-
-            <a href="/financial" class="rc-nav-item {{if eq .currentPage "financial"}}active{{end}}">
-                <i class="bi bi-calculator"></i>
-                <span class="rc-nav-label">Financial</span>
-            </a>
-
-            <a href="/workflow/packages" class="rc-nav-item {{if eq .currentPage "packages"}}active{{end}}">
-                <i class="bi bi-box-seam"></i>
-                <span class="rc-nav-label">Packages</span>
-            </a>
-
-        </nav>
-
-        <!-- User Profile & Logout -->
-        <div class="rc-sidebar-footer">
-            {{if .user}}
-            <div class="rc-user-profile">
-                <div class="rc-user-info">
-                    <i class="bi bi-person-circle"></i>
-                    <div class="rc-user-details">
-                        <span class="rc-user-name">{{.user.Username}}</span>
-                        {{if .user.Email}}
-                        <span class="rc-user-email">{{.user.Email}}</span>
-                        {{end}}
-                    </div>
-                </div>
-            </div>
-            <div class="rc-user-icon-only">
-                <i class="bi bi-person-circle"></i>
-            </div>
-
-            <!-- User Settings Dropdown -->
-            <div class="rc-user-menu">
-                <a href="/profile/settings" class="rc-user-menu-item" title="Profile Settings">
-                    <i class="bi bi-person-gear"></i>
-                    <span class="rc-nav-label" data-i18n="settings.profile">Profile</span>
-                </a>
-                <a href="/settings/company" class="rc-user-menu-item" title="Company Settings">
-                    <i class="bi bi-building-gear"></i>
-                    <span class="rc-nav-label" data-i18n="settings.company">Company</span>
-                </a>
-                <a href="/users" class="rc-user-menu-item" title="Users">
-                    <i class="bi bi-people-fill"></i>
-                    <span class="rc-nav-label" data-i18n="settings.users">Users</span>
-                </a>
-                <a href="/security/roles" class="rc-user-menu-item" title="Security">
-                    <i class="bi bi-shield-check"></i>
-                    <span class="rc-nav-label" data-i18n="settings.security">Security</span>
-                </a>
-            </div>
-
-            <a href="/logout" class="rc-logout-btn" title="Logout">
-                <i class="bi bi-box-arrow-right"></i>
-                <span class="rc-nav-label" data-i18n="auth.logout">Logout</span>
-            </a>
-            {{else}}
-            <a href="/login" class="rc-login-btn" title="Login">
-                <i class="bi bi-box-arrow-in-right"></i>
-                <span class="rc-nav-label" data-i18n="auth.login">Login</span>
-            </a>
-            {{end}}
-        </div>
-    </aside>
+    {{template "navbar.html" .}}
 
     <!-- Main Content -->
     <main class="rc-main-content" id="rcMainContent">
         <div class="rc-content-inner">
+            {{if eq .PageTemplateKey "financial_dashboard"}}
+            {{template "financial_dashboard_content" .}}
+            {{else if eq .PageTemplateKey "financial_reports"}}
+            {{template "financial_reports_content" .}}
+            {{else if eq .PageTemplateKey "security_audit"}}
+            {{template "security_audit_content" .}}
+            {{else if eq .PageTemplateKey "product_form"}}
+            {{template "product_form_content" .}}
+            {{else if eq .PageTemplateKey "equipment_package_detail"}}
+            {{template "equipment_package_detail_content" .}}
+            {{else if eq .PageTemplateKey "equipment_package_form"}}
+            {{template "equipment_package_form_content" .}}
+            {{else if eq .PageTemplateKey "invoice_detail"}}
+            {{template "invoice_detail_content" .}}
+            {{else if eq .PageTemplateKey "invoice_settings_form"}}
+            {{template "invoice_settings_form_content" .}}
+            {{else}}
             {{block "content" .}}
             <!-- Default content if no specific content is provided -->
             <div class="rc-text-center" style="padding: var(--space-3xl);">
@@ -193,118 +85,23 @@
                 <p class="rc-text">Advanced Equipment Management System</p>
             </div>
             {{end}}
+            {{end}}
         </div>
     </main>
 
     <!-- JavaScript -->
     <script src="/static/js/rental-core-design.js"></script>
 
-    <!-- i18n Translation System -->
-    <script src="/static/js/i18n.js"></script>
-
     <!-- Page-specific JavaScript -->
+    {{if eq .PageTemplateKey "financial_dashboard"}}
+    {{template "financial_dashboard_js" .}}
+    {{else if eq .PageTemplateKey "financial_reports"}}
+    {{template "financial_reports_js" .}}
+    {{else}}
     {{block "js" .}}{{end}}
+    {{end}}
 
-    <!-- Sidebar Toggle Script -->
     <script>
-        (function() {
-            // Elements
-            const sidebar = document.getElementById('rcSidebar');
-            const header = document.getElementById('rc-header');
-            const mainContent = document.getElementById('rcMainContent');
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-            const mobileSidebarClose = document.getElementById('mobileSidebarClose');
-            const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-            const sidebarToggleIcon = document.getElementById('sidebarToggleIcon');
-
-            // Check if mobile
-            function isMobile() {
-                return window.innerWidth < 768;
-            }
-
-            // Load sidebar state from localStorage
-            let sidebarOpen = localStorage.getItem('rc-sidebar-open');
-            if (sidebarOpen === null) {
-                sidebarOpen = !isMobile(); // Default: open on desktop, closed on mobile
-            } else {
-                sidebarOpen = sidebarOpen === 'true';
-            }
-
-            // Apply initial state
-            function applySidebarState() {
-                if (isMobile()) {
-                    // Mobile: always start closed, use overlay mode
-                    sidebar.classList.remove('open', 'collapsed');
-                    sidebarBackdrop.classList.remove('show');
-                } else {
-                    // Desktop: use saved state
-                    if (sidebarOpen) {
-                        sidebar.classList.add('open');
-                        sidebar.classList.remove('collapsed');
-                        sidebarToggleIcon.classList.remove('bi-chevron-right');
-                        sidebarToggleIcon.classList.add('bi-chevron-left');
-                    } else {
-                        sidebar.classList.add('collapsed');
-                        sidebar.classList.remove('open');
-                        sidebarToggleIcon.classList.remove('bi-chevron-left');
-                        sidebarToggleIcon.classList.add('bi-chevron-right');
-                    }
-                }
-            }
-
-            applySidebarState();
-
-            // Desktop toggle
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebarOpen = !sidebarOpen;
-                    localStorage.setItem('rc-sidebar-open', sidebarOpen);
-                    applySidebarState();
-                });
-            }
-
-            // Mobile toggle (open)
-            if (mobileSidebarToggle) {
-                mobileSidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.add('open');
-                    sidebarBackdrop.classList.add('show');
-                });
-            }
-
-            // Mobile close button
-            if (mobileSidebarClose) {
-                mobileSidebarClose.addEventListener('click', function() {
-                    sidebar.classList.remove('open');
-                    sidebarBackdrop.classList.remove('show');
-                });
-            }
-
-            // Mobile backdrop click
-            if (sidebarBackdrop) {
-                sidebarBackdrop.addEventListener('click', function() {
-                    sidebar.classList.remove('open');
-                    sidebarBackdrop.classList.remove('show');
-                });
-            }
-
-            // Close mobile sidebar on navigation
-            const navItems = sidebar.querySelectorAll('.rc-nav-item, .rc-user-menu-item');
-            navItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    if (isMobile()) {
-                        sidebar.classList.remove('open');
-                        sidebarBackdrop.classList.remove('show');
-                    }
-                });
-            });
-
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                applySidebarState();
-            });
-        })();
-
         // Global error handler
         window.addEventListener('error', function(e) {
             console.error('Global error:', e.error);
@@ -316,52 +113,13 @@
             const submitBtn = form.querySelector('[type="submit"]');
 
             if (submitBtn && !submitBtn.classList.contains('rc-loading')) {
-                // Show loading state
                 if (!submitBtn.dataset.originalContent) {
                     submitBtn.dataset.originalContent = submitBtn.innerHTML;
                 }
                 submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
                 submitBtn.disabled = true;
-                submitBtn.classList.add('rc-loading');
             }
         });
-
-        // Auto-restore form buttons if submission fails
-        window.addEventListener('pageshow', function() {
-            const loadingButtons = document.querySelectorAll('.rc-btn.rc-loading');
-            loadingButtons.forEach(btn => {
-                if (btn.dataset.originalContent) {
-                    btn.innerHTML = btn.dataset.originalContent;
-                    btn.disabled = false;
-                    btn.classList.remove('rc-loading');
-                }
-            });
-        });
-
-        // AJAX helper
-        window.rcFetch = function(url, options = {}) {
-            const defaultOptions = {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            };
-
-            return fetch(url, { ...defaultOptions, ...options })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error);
-                    if (window.RentalCore) {
-                        RentalCore.showNotification('Request failed: ' + error.message, 'error');
-                    }
-                    throw error;
-                });
-        };
     </script>
 </body>
 </html>

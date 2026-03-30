@@ -296,12 +296,12 @@ func (r *DeviceRepository) GetDeviceStats(deviceID string) (map[string]interface
 	// Get total earnings from jobs (simplified calculation)
 	var totalEarnings float64
 	err = r.db.Raw(`
-		SELECT COALESCE(SUM(DATEDIFF(COALESCE(j.enddate, NOW()), j.startdate) * COALESCE(p.itemcostperday, 0)), 0) as total_earnings
-		FROM job_devices jd
-		JOIN jobs j ON jd.jobid = j.jobid
-		JOIN devices d ON jd.deviceid = d.deviceid
-		LEFT JOIN products p ON d.productid = p.productid
-		WHERE jd.deviceid = ?
+			SELECT COALESCE(SUM(DATE_PART('day', (COALESCE(j.enddate, NOW())::timestamp - j.startdate::timestamp)) * COALESCE(p.itemcostperday, 0)), 0) as total_earnings
+			FROM job_devices jd
+			JOIN jobs j ON jd.jobid = j.jobid
+			JOIN devices d ON jd.deviceid = d.deviceid
+			LEFT JOIN products p ON d.productid = p.productid
+			WHERE jd.deviceid = ?
 	`, deviceID).Scan(&totalEarnings).Error
 	if err != nil {
 		log.Printf("Error calculating earnings for device %s: %v", deviceID, err)
@@ -311,7 +311,7 @@ func (r *DeviceRepository) GetDeviceStats(deviceID string) (map[string]interface
 	// Get total days rented
 	var totalDaysRented int64
 	err = r.db.Raw(`
-		SELECT COALESCE(SUM(DATEDIFF(COALESCE(j.enddate, NOW()), j.startdate)), 0) as total_days
+		SELECT COALESCE(SUM(DATE_PART('day', (COALESCE(j.enddate, NOW())::timestamp - j.startdate::timestamp))), 0) as total_days
 		FROM job_devices jd
 		JOIN jobs j ON jd.jobid = j.jobid
 		WHERE jd.deviceid = ?
@@ -372,7 +372,7 @@ func (r *DeviceRepository) generateDeviceID(device *models.Device) (string, erro
 	// Find the next available number for this prefix
 	var maxNum int
 	err := r.db.Raw(`
-		SELECT COALESCE(MAX(CAST(SUBSTRING(deviceID, ?) AS UNSIGNED)), 0) as max_num 
+		SELECT COALESCE(MAX(CAST(SUBSTRING(deviceID FROM ?) AS INTEGER)), 0) as max_num 
 		FROM devices 
 		WHERE deviceID LIKE ?
 	`, len(prefix)+1, prefix+"%").Scan(&maxNum).Error

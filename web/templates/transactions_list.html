@@ -78,13 +78,13 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h1 class="h3 mb-1">
-                            <i class="fas fa-receipt text-primary me-2"></i>Financial Transactions
+                            <i class="fas fa-receipt text-primary me-2"></i><span data-i18n="transactions.title">Financial Transactions</span>
                         </h1>
-                        <p class="text-muted mb-0">Manage payments, invoices, and financial records</p>
+                        <p class="text-muted mb-0" data-i18n="transactions.subtitle">Manage payments, invoices, and financial records</p>
                     </div>
                     <div>
                         <a href="/financial/transactions/new" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>New Transaction
+                            <i class="fas fa-plus me-2"></i><span data-i18n="transactions.new">New Transaction</span>
                         </a>
                     </div>
                 </div>
@@ -93,16 +93,16 @@
 
         <!-- Filters -->
         <div class="card mb-4">
-            <div class="card-header">
+                <div class="card-header">
                 <h6 class="card-title mb-0">
-                    <i class="fas fa-filter me-2"></i>Filter Transactions
+                    <i class="fas fa-filter me-2"></i><span data-i18n="transactions.filterTitle">Filter Transactions</span>
                 </h6>
             </div>
             <div class="card-body">
                 <form method="GET" action="/financial/transactions">
                     <div class="row">
                         <div class="col-md-3 mb-3">
-                            <label for="type" class="form-label">Transaction Type</label>
+                                <label for="type" class="form-label" data-i18n="transactions.typeLabel">Transaction Type</label>
                             <select class="form-select" id="type" name="type">
                                 <option value="">All Types</option>
                                 <option value="rental">Rental</option>
@@ -113,7 +113,7 @@
                             </select>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <label for="status" class="form-label">Status</label>
+                                <label for="status" class="form-label" data-i18n="common.status">Status</label>
                             <select class="form-select" id="status" name="status">
                                 <option value="">All Statuses</option>
                                 <option value="pending">Pending</option>
@@ -134,10 +134,10 @@
                         <div class="col-md-3 mb-3">
                             <label class="form-label">&nbsp;</label>
                             <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-outline-primary">
+                                <button type="submit" class="btn btn-outline-primary" data-i18n="common.filter">
                                     <i class="fas fa-search me-2"></i>Filter
                                 </button>
-                                <a href="/financial/transactions" class="btn btn-outline-secondary">
+                                <a href="/financial/transactions" class="btn btn-outline-secondary" data-i18n="common.clear">
                                     <i class="fas fa-times me-2"></i>Clear
                                 </a>
                             </div>
@@ -155,10 +155,10 @@
                         <i class="fas fa-list me-2"></i>Transactions ({{len .transactions}})
                     </h6>
                     <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary" onclick="exportTransactions()">
+                        <button class="btn btn-outline-primary" onclick="exportTransactions()" data-i18n="common.export">
                             <i class="fas fa-download me-2"></i>Export
                         </button>
-                        <button class="btn btn-outline-success" onclick="bulkOperations()">
+                        <button class="btn btn-outline-success" onclick="bulkOperations()" data-i18n="transactions.bulkOperations">
                             <i class="fas fa-tasks me-2"></i>Bulk Operations
                         </button>
                     </div>
@@ -172,15 +172,15 @@
                                 <th>
                                     <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
                                 </th>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Customer</th>
-                                <th>Job</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Payment Method</th>
-                                <th>Reference</th>
-                                <th>Actions</th>
+                                <th data-i18n="common.date">Date</th>
+                                <th data-i18n="transactions.table.type">Type</th>
+                                <th data-i18n="common.customer">Customer</th>
+                                <th data-i18n="jobs.job">Job</th>
+                                <th data-i18n="common.amount">Amount</th>
+                                <th data-i18n="common.status">Status</th>
+                                <th data-i18n="transactions.table.paymentMethod">Payment Method</th>
+                                <th data-i18n="transactions.table.reference">Reference</th>
+                                <th data-i18n="common.actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody>

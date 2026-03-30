@@ -122,7 +122,7 @@
             </div>
             
             <div class="error-code">
-                Error {{.error_code}}
+                <span data-i18n="error.title">Error</span> {{.error_code}}
             </div>
             
             <div class="error-message">
@@ -131,20 +131,20 @@
             
             {{if .error_details}}
             <div class="error-details">
-                <strong>Technical Details:</strong><br>
+                <strong data-i18n="error.technical_details">Technical Details:</strong><br>
                 {{.error_details}}
             </div>
             {{end}}
             
             <div class="error-actions">
                 <button onclick="history.back()" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Go Back
+                    <i class="bi bi-arrow-left"></i> <span data-i18n="error.go_back">Go Back</span>
                 </button>
                 <a href="/" class="btn btn-primary">
-                    <i class="bi bi-house"></i> Home
+                    <i class="bi bi-house"></i> <span data-i18n="error.home">Home</span>
                 </a>
                 <button onclick="location.reload()" class="btn btn-secondary">
-                    <i class="bi bi-arrow-clockwise"></i> Retry
+                    <i class="bi bi-arrow-clockwise"></i> <span data-i18n="error.retry">Retry</span>
                 </button>
             </div>
             
@@ -161,11 +161,25 @@
         // Auto-reload after 30 seconds for temporary errors
         {{if eq .error_code 500}}
         setTimeout(() => {
-            if (confirm('Would you like to automatically retry loading the page?')) {
+            if (window.t ? window.t('error.confirm_auto_retry') && confirm(window.t('error.confirm_auto_retry')) : confirm('Would you like to automatically retry loading the page?')) {
                 location.reload();
             }
         }, 30000);
         {{end}}
+    </script>
+    <script>
+        // Set translated document title if i18n available
+        (function() {
+            try {
+                if (window.t) {
+                    const code = '{{.error_code}}';
+                    const title = window.t('error.page_title', {code: code});
+                    if (title) document.title = title;
+                }
+            } catch (e) {
+                // ignore
+            }
+        })();
     </script>
 </body>
 </html>

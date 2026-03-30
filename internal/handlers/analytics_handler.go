@@ -25,15 +25,15 @@ func NewAnalyticsHandler(db *gorm.DB) *AnalyticsHandler {
 // Dashboard displays the main analytics dashboard
 func (h *AnalyticsHandler) Dashboard(c *gin.Context) {
 	currentUser, _ := GetCurrentUser(c)
-	
+
 	// Get period from query params (default: 30 days for better initial data)
 	period := c.DefaultQuery("period", "30days")
 	log.Printf("Analytics dashboard requested with period: %s", period)
-	
+
 	// Calculate date range
 	endDate := time.Now()
 	var startDate time.Time
-	
+
 	switch period {
 	case "7days":
 		startDate = endDate.AddDate(0, 0, -7)
@@ -49,14 +49,14 @@ func (h *AnalyticsHandler) Dashboard(c *gin.Context) {
 	}
 
 	log.Printf("Analytics date range: %s to %s", startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
-	
+
 	// Get analytics data with simplified approach
 	analytics := h.getSimplifiedAnalyticsData(startDate, endDate)
 	log.Printf("Analytics data retrieved for period %s", period)
-	
+
 	c.HTML(http.StatusOK, "analytics_dashboard_new.html", gin.H{
 		"title":       "Analytics Dashboard",
-		"currentPage": "analytics", 
+		"currentPage": "analytics",
 		"user":        currentUser,
 		"analytics":   analytics,
 		"period":      period,
@@ -68,18 +68,18 @@ func (h *AnalyticsHandler) Dashboard(c *gin.Context) {
 // getSimplifiedAnalyticsData collects simplified analytics data for the new dashboard
 func (h *AnalyticsHandler) getSimplifiedAnalyticsData(startDate, endDate time.Time) map[string]interface{} {
 	log.Printf("Getting simplified analytics data from %s to %s", startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
-	
+
 	analytics := map[string]interface{}{
-		"revenue":         h.getSimplifiedRevenue(startDate, endDate),
-		"equipment":       h.getSimplifiedEquipment(startDate, endDate),
-		"customers":       h.getSimplifiedCustomers(startDate, endDate),
-		"jobs":            h.getSimplifiedJobs(startDate, endDate),
-		"trends":          h.getSimplifiedTrends(startDate, endDate),
-		"topEquipment":    h.getTopEquipment(startDate, endDate, 10),
-		"topCustomers":    h.getTopCustomers(startDate, endDate, 10),
-		"utilization":     h.getUtilizationMetrics(),
+		"revenue":      h.getSimplifiedRevenue(startDate, endDate),
+		"equipment":    h.getSimplifiedEquipment(startDate, endDate),
+		"customers":    h.getSimplifiedCustomers(startDate, endDate),
+		"jobs":         h.getSimplifiedJobs(startDate, endDate),
+		"trends":       h.getSimplifiedTrends(startDate, endDate),
+		"topEquipment": h.getTopEquipment(startDate, endDate, 10),
+		"topCustomers": h.getTopCustomers(startDate, endDate, 10),
+		"utilization":  h.getUtilizationMetrics(),
 	}
-	
+
 	log.Printf("Simplified analytics data retrieved successfully")
 	return analytics
 }
@@ -88,7 +88,7 @@ func (h *AnalyticsHandler) getSimplifiedAnalyticsData(startDate, endDate time.Ti
 func (h *AnalyticsHandler) getSimplifiedRevenue(startDate, endDate time.Time) map[string]interface{} {
 	var totalRevenue float64
 	var totalJobs int64
-	
+
 	// Simple query for total revenue from jobs in the period
 	result := h.db.Raw(`
 		SELECT 
@@ -98,43 +98,43 @@ func (h *AnalyticsHandler) getSimplifiedRevenue(startDate, endDate time.Time) ma
 		WHERE endDate BETWEEN ? AND ?
 		AND (final_revenue > 0 OR revenue > 0)
 	`, startDate, endDate).Row()
-	
+
 	result.Scan(&totalRevenue, &totalJobs)
-	
+
 	avgJobValue := float64(0)
 	if totalJobs > 0 {
 		avgJobValue = totalRevenue / float64(totalJobs)
 	}
-	
+
 	log.Printf("Revenue data: %.2f total, %d jobs, %.2f avg", totalRevenue, totalJobs, avgJobValue)
-	
+
 	return map[string]interface{}{
-		"totalRevenue": totalRevenue,
-		"totalJobs":    totalJobs,
-		"avgJobValue":  avgJobValue,
+		"totalRevenue":  totalRevenue,
+		"totalJobs":     totalJobs,
+		"avgJobValue":   avgJobValue,
 		"revenueGrowth": 0.0, // Simplified - no growth calculation
 	}
 }
 
-// getSimplifiedEquipment calculates basic equipment metrics  
+// getSimplifiedEquipment calculates basic equipment metrics
 func (h *AnalyticsHandler) getSimplifiedEquipment(startDate, endDate time.Time) map[string]interface{} {
 	var totalDevices, activeDevices int64
-	
+
 	// Count total devices
 	h.db.Model(&models.Device{}).Count(&totalDevices)
-	
+
 	// Count active devices (checked out)
 	h.db.Model(&models.Device{}).Where("status = ?", "checked out").Count(&activeDevices)
-	
+
 	utilizationRate := float64(0)
 	if totalDevices > 0 {
 		utilizationRate = (float64(activeDevices) / float64(totalDevices)) * 100
 	}
-	
+
 	availableDevices := totalDevices - activeDevices
-	
+
 	log.Printf("Equipment data: %d total, %d active, %.1f%% utilization", totalDevices, activeDevices, utilizationRate)
-	
+
 	return map[string]interface{}{
 		"totalDevices":     totalDevices,
 		"activeDevices":    activeDevices,
@@ -146,24 +146,24 @@ func (h *AnalyticsHandler) getSimplifiedEquipment(startDate, endDate time.Time) 
 // getSimplifiedCustomers calculates basic customer metrics
 func (h *AnalyticsHandler) getSimplifiedCustomers(startDate, endDate time.Time) map[string]interface{} {
 	var totalCustomers, activeCustomers int64
-	
+
 	// Count total customers
 	h.db.Model(&models.Customer{}).Count(&totalCustomers)
-	
+
 	// Count active customers (with jobs in the period)
 	h.db.Raw(`
 		SELECT COUNT(DISTINCT customerID) 
 		FROM jobs 
 		WHERE startDate BETWEEN ? AND ?
 	`, startDate, endDate).Scan(&activeCustomers)
-	
+
 	retentionRate := float64(0)
 	if totalCustomers > 0 {
 		retentionRate = (float64(activeCustomers) / float64(totalCustomers)) * 100
 	}
-	
+
 	log.Printf("Customer data: %d total, %d active, %.1f%% retention", totalCustomers, activeCustomers, retentionRate)
-	
+
 	return map[string]interface{}{
 		"totalCustomers":  totalCustomers,
 		"activeCustomers": activeCustomers,
@@ -174,7 +174,7 @@ func (h *AnalyticsHandler) getSimplifiedCustomers(startDate, endDate time.Time) 
 // getSimplifiedJobs calculates basic job metrics
 func (h *AnalyticsHandler) getSimplifiedJobs(startDate, endDate time.Time) map[string]interface{} {
 	var completedJobs, activeJobs int64
-	
+
 	// Count completed jobs (statusID 3 or 4)
 	h.db.Raw(`
 		SELECT COUNT(*) 
@@ -182,7 +182,7 @@ func (h *AnalyticsHandler) getSimplifiedJobs(startDate, endDate time.Time) map[s
 		WHERE endDate BETWEEN ? AND ? 
 		AND statusID IN (3, 4)
 	`, startDate, endDate).Scan(&completedJobs)
-	
+
 	// Count active jobs (statusID 1 or 2)
 	h.db.Raw(`
 		SELECT COUNT(*) 
@@ -190,9 +190,9 @@ func (h *AnalyticsHandler) getSimplifiedJobs(startDate, endDate time.Time) map[s
 		WHERE startDate <= ? AND (endDate >= ? OR endDate IS NULL) 
 		AND statusID IN (1, 2)
 	`, endDate, startDate).Scan(&activeJobs)
-	
+
 	log.Printf("Job data: %d completed, %d active", completedJobs, activeJobs)
-	
+
 	return map[string]interface{}{
 		"completedJobs": completedJobs,
 		"activeJobs":    activeJobs,
@@ -204,7 +204,7 @@ func (h *AnalyticsHandler) getSimplifiedJobs(startDate, endDate time.Time) map[s
 func (h *AnalyticsHandler) getSimplifiedTrends(startDate, endDate time.Time) map[string]interface{} {
 	// Simple daily revenue trend
 	var trends []map[string]interface{}
-	
+
 	rows, err := h.db.Raw(`
 		SELECT 
 			DATE(endDate) as date,
@@ -216,14 +216,14 @@ func (h *AnalyticsHandler) getSimplifiedTrends(startDate, endDate time.Time) map
 		ORDER BY date
 		LIMIT 30
 	`, startDate, endDate).Rows()
-	
+
 	if err == nil {
 		defer rows.Close()
 		for rows.Next() {
 			var date string
 			var revenue float64
 			var jobs int
-			
+
 			rows.Scan(&date, &revenue, &jobs)
 			trends = append(trends, map[string]interface{}{
 				"date":    date,
@@ -232,9 +232,9 @@ func (h *AnalyticsHandler) getSimplifiedTrends(startDate, endDate time.Time) map
 			})
 		}
 	}
-	
+
 	log.Printf("Trend data: %d data points", len(trends))
-	
+
 	return map[string]interface{}{
 		"revenue": trends,
 	}
@@ -243,16 +243,16 @@ func (h *AnalyticsHandler) getSimplifiedTrends(startDate, endDate time.Time) map
 // getAnalyticsData collects all analytics data for the dashboard
 func (h *AnalyticsHandler) getAnalyticsData(startDate, endDate time.Time) map[string]interface{} {
 	analytics := map[string]interface{}{
-		"revenue":         h.getRevenueAnalytics(startDate, endDate),
-		"equipment":       h.getEquipmentAnalytics(startDate, endDate),
-		"customers":       h.getCustomerAnalytics(startDate, endDate),
-		"jobs":           h.getJobAnalytics(startDate, endDate),
-		"topEquipment":   h.getTopEquipment(startDate, endDate, 10),
-		"topCustomers":   h.getTopCustomers(startDate, endDate, 10),
-		"utilization":    h.getUtilizationMetrics(),
-		"trends":         h.getTrendData(startDate, endDate),
+		"revenue":      h.getRevenueAnalytics(startDate, endDate),
+		"equipment":    h.getEquipmentAnalytics(startDate, endDate),
+		"customers":    h.getCustomerAnalytics(startDate, endDate),
+		"jobs":         h.getJobAnalytics(startDate, endDate),
+		"topEquipment": h.getTopEquipment(startDate, endDate, 10),
+		"topCustomers": h.getTopCustomers(startDate, endDate, 10),
+		"utilization":  h.getUtilizationMetrics(),
+		"trends":       h.getTrendData(startDate, endDate),
 	}
-	
+
 	// Ensure trends always has a proper structure
 	if trends, ok := analytics["trends"].(map[string]interface{}); ok {
 		if trends["revenue"] == nil {
@@ -263,21 +263,21 @@ func (h *AnalyticsHandler) getAnalyticsData(startDate, endDate time.Time) map[st
 			"revenue": []map[string]interface{}{},
 		}
 	}
-	
+
 	return analytics
 }
 
 // GetDeviceAnalytics returns detailed analytics for a specific device
 func (h *AnalyticsHandler) GetDeviceAnalytics(c *gin.Context) {
 	deviceID := c.Param("deviceId")
-	
+
 	// Get period from query params (default: all time)
 	period := c.DefaultQuery("period", "all")
-	
+
 	// Calculate date range
 	endDate := time.Now()
 	var startDate time.Time
-	
+
 	switch period {
 	case "30days":
 		startDate = endDate.AddDate(0, 0, -30)
@@ -292,7 +292,7 @@ func (h *AnalyticsHandler) GetDeviceAnalytics(c *gin.Context) {
 	}
 
 	analytics := h.getDeviceAnalyticsData(deviceID, startDate, endDate, period)
-	
+
 	c.JSON(http.StatusOK, analytics)
 }
 
@@ -306,7 +306,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 		CategoryName string  `json:"categoryName" gorm:"column:category_name"`
 		Status       string  `json:"status" gorm:"column:status"`
 	}
-	
+
 	deviceResult := h.db.Raw(`
 		SELECT 
 			d.deviceID,
@@ -319,21 +319,21 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 		LEFT JOIN categories c ON p.categoryID = c.categoryID
 		WHERE d.deviceID = ?
 	`, deviceID).Scan(&deviceInfo)
-	
+
 	log.Printf("DEBUG: Device info query error: %v", deviceResult.Error)
-	log.Printf("DEBUG: Device info - ID: %s, Name: %s, Serial: %v, Category: %s, Status: %s", 
+	log.Printf("DEBUG: Device info - ID: %s, Name: %s, Serial: %v, Category: %s, Status: %s",
 		deviceInfo.DeviceID, deviceInfo.ProductName, deviceInfo.SerialNumber, deviceInfo.CategoryName, deviceInfo.Status)
 
 	// Get total revenue and booking statistics
 	var revenueStats struct {
-		TotalRevenue  float64 `json:"totalRevenue"`
-		TotalBookings int     `json:"totalBookings"`
-		TotalRentals  int     `json:"totalRentals"`
-		AvgDailyRate  float64 `json:"avgDailyRate"`
+		TotalRevenue  float64    `json:"totalRevenue"`
+		TotalBookings int        `json:"totalBookings"`
+		TotalRentals  int        `json:"totalRentals"`
+		AvgDailyRate  float64    `json:"avgDailyRate"`
 		FirstBooking  *time.Time `json:"firstBooking"`
 		LastBooking   *time.Time `json:"lastBooking"`
 	}
-	
+
 	h.db.Raw(`
 		SELECT 
 			COALESCE(SUM(
@@ -341,11 +341,11 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 					WHEN jd.custom_price IS NOT NULL THEN 
 						CASE 
 							WHEN j.discount_type = 'percent' THEN 
-								jd.custom_price * DATEDIFF(COALESCE(j.endDate, NOW()), j.startDate) * (1 - j.discount/100)
+									jd.custom_price * DATE_PART('day', (COALESCE(j.endDate, NOW())::timestamp - j.startDate::timestamp)) * (1 - j.discount/100)
 							WHEN j.discount_type = 'amount' THEN 
-								(jd.custom_price * DATEDIFF(COALESCE(j.endDate, NOW()), j.startDate)) - j.discount
+									(jd.custom_price * DATE_PART('day', (COALESCE(j.endDate, NOW())::timestamp - j.startDate::timestamp))) - j.discount
 							ELSE 
-								jd.custom_price * DATEDIFF(COALESCE(j.endDate, NOW()), j.startDate)
+									jd.custom_price * DATE_PART('day', (COALESCE(j.endDate, NOW())::timestamp - j.startDate::timestamp))
 						END
 					ELSE 
 						CASE 
@@ -370,7 +370,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 		WHERE jd.deviceID = ? 
 		AND j.startDate BETWEEN ? AND ?
 	`, deviceID, deviceID, deviceID, startDate, endDate).Scan(&revenueStats)
-	
+
 	// Calculate average daily rate
 	if revenueStats.TotalRentals > 0 {
 		revenueStats.AvgDailyRate = revenueStats.TotalRevenue / float64(revenueStats.TotalRentals)
@@ -378,22 +378,22 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 
 	// Get customer booking history with details - simplified approach
 	type CustomerBooking struct {
-		CustomerName  string    `json:"customer_name" gorm:"column:customer_name"`
-		CustomerEmail *string   `json:"customer_email" gorm:"column:customer_email"`
-		JobID         string    `json:"jobid" gorm:"column:jobID"`
-		StartDate     time.Time `json:"startdate" gorm:"column:startDate"`
+		CustomerName  string     `json:"customer_name" gorm:"column:customer_name"`
+		CustomerEmail *string    `json:"customer_email" gorm:"column:customer_email"`
+		JobID         string     `json:"jobid" gorm:"column:jobID"`
+		StartDate     time.Time  `json:"startdate" gorm:"column:startDate"`
 		EndDate       *time.Time `json:"enddate" gorm:"column:endDate"`
-		Description   *string   `json:"description" gorm:"column:description"`
-		RentalDays    int       `json:"rental_days" gorm:"column:rental_days"`
-		Revenue       float64   `json:"revenue" gorm:"column:revenue"`
-		DailyRate     float64   `json:"daily_rate" gorm:"column:daily_rate"`
-		Discount      float64   `json:"discount" gorm:"column:discount"`
-		DiscountType  *string   `json:"discount_type" gorm:"column:discount_type"`
-		JobStatus     string    `json:"job_status" gorm:"column:job_status"`
+		Description   *string    `json:"description" gorm:"column:description"`
+		RentalDays    int        `json:"rental_days" gorm:"column:rental_days"`
+		Revenue       float64    `json:"revenue" gorm:"column:revenue"`
+		DailyRate     float64    `json:"daily_rate" gorm:"column:daily_rate"`
+		Discount      float64    `json:"discount" gorm:"column:discount"`
+		DiscountType  *string    `json:"discount_type" gorm:"column:discount_type"`
+		JobStatus     string     `json:"job_status" gorm:"column:job_status"`
 	}
-	
+
 	var customerBookings []CustomerBooking
-	
+
 	// First try: Simple query to get any bookings for this device
 	log.Printf("DEBUG: Looking for bookings for device: %s", deviceID)
 	result := h.db.Raw(`
@@ -412,10 +412,10 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 			j.startDate,
 			j.endDate,
 			j.description,
-			GREATEST(1, CASE 
-				WHEN j.endDate IS NOT NULL THEN DATEDIFF(j.endDate, j.startDate) + 1
-				ELSE DATEDIFF(NOW(), j.startDate) + 1
-			END) as rental_days,
+				GREATEST(1, CASE 
+					WHEN j.endDate IS NOT NULL THEN DATE_PART('day', (j.endDate::timestamp - j.startDate::timestamp)) + 1
+					ELSE DATE_PART('day', (NOW()::timestamp - j.startDate::timestamp)) + 1
+				END) as rental_days,
 			CASE 
 				WHEN jd.custom_price IS NOT NULL THEN jd.custom_price
 				ELSE COALESCE(p.itemcostperday, 0)
@@ -453,18 +453,18 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 		ORDER BY j.startDate DESC
 		LIMIT 50
 	`, deviceID).Scan(&customerBookings)
-	
+
 	log.Printf("DEBUG: Query result error: %v, found %d bookings", result.Error, len(customerBookings))
 	log.Printf("DEBUG: Device ID requested: %s", deviceID)
-	
+
 	// Debug: print first booking details if any found
 	if len(customerBookings) > 0 {
 		first := customerBookings[0]
-		log.Printf("DEBUG: First booking - Customer: %s, JobID: %s, Start: %v, End: %v, Days: %d, Rate: %.2f, Discount: %.2f (%s), Revenue: %.2f, Status: %s", 
-			first.CustomerName, first.JobID, first.StartDate, first.EndDate, first.RentalDays, first.DailyRate, first.Discount, 
+		log.Printf("DEBUG: First booking - Customer: %s, JobID: %s, Start: %v, End: %v, Days: %d, Rate: %.2f, Discount: %.2f (%s), Revenue: %.2f, Status: %s",
+			first.CustomerName, first.JobID, first.StartDate, first.EndDate, first.RentalDays, first.DailyRate, first.Discount,
 			*first.DiscountType, first.Revenue, first.JobStatus)
 	}
-	
+
 	// If no bookings found, try even simpler query
 	if len(customerBookings) == 0 {
 		log.Printf("DEBUG: No bookings found, trying simpler query")
@@ -489,17 +489,17 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 				0.0 as discount,
 				NULL as discount_type,
 				300.0 as revenue,
-				CAST(j.statusID as CHAR) as job_status
+					CAST(j.statusID AS TEXT) as job_status
 			FROM job_devices jd
 			JOIN jobs j ON jd.jobID = j.jobID
 			JOIN customers c ON j.customerID = c.customerID
 			WHERE jd.deviceID = ?
-			LIMIT 5
+				LIMIT 5
 		`, deviceID).Scan(&customerBookings)
 		log.Printf("DEBUG: Simpler query found %d bookings", len(customerBookings))
 		if len(customerBookings) > 0 {
 			first := customerBookings[0]
-			log.Printf("DEBUG: First booking from simpler query - Customer: %s, JobID: %s, Start: %v, End: %v, Days: %d, Rate: %.2f, Revenue: %.2f, Status: %s", 
+			log.Printf("DEBUG: First booking from simpler query - Customer: %s, JobID: %s, Start: %v, End: %v, Days: %d, Rate: %.2f, Revenue: %.2f, Status: %s",
 				first.CustomerName, first.JobID, first.StartDate, first.EndDate, first.RentalDays, first.DailyRate, first.Revenue, first.JobStatus)
 		}
 	}
@@ -510,21 +510,21 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 		Revenue  float64 `json:"revenue"`
 		Bookings int     `json:"bookings"`
 	}
-	
+
 	var monthlyRevenue []MonthlyRevenue
 	h.db.Raw(`
 		SELECT 
-			DATE_FORMAT(j.startDate, '%Y-%m') as month,
+				to_char(j.startDate, 'YYYY-MM') as month,
 			COALESCE(SUM(
 				CASE 
 					WHEN jd.custom_price IS NOT NULL THEN 
 						CASE 
 							WHEN j.discount_type = 'percent' THEN 
-								jd.custom_price * DATEDIFF(COALESCE(j.endDate, NOW()), j.startDate) * (1 - j.discount/100)
+									jd.custom_price * DATE_PART('day', (COALESCE(j.endDate, NOW())::timestamp - j.startDate::timestamp)) * (1 - j.discount/100)
 							WHEN j.discount_type = 'amount' THEN 
-								(jd.custom_price * DATEDIFF(COALESCE(j.endDate, NOW()), j.startDate)) - j.discount
+									(jd.custom_price * DATE_PART('day', (COALESCE(j.endDate, NOW())::timestamp - j.startDate::timestamp))) - j.discount
 							ELSE 
-								jd.custom_price * DATEDIFF(COALESCE(j.endDate, NOW()), j.startDate)
+									jd.custom_price * DATE_PART('day', (COALESCE(j.endDate, NOW())::timestamp - j.startDate::timestamp))
 						END
 					ELSE 
 						CASE 
@@ -544,22 +544,22 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 		JOIN products p ON d.productID = p.productID
 		WHERE jd.deviceID = ? 
 		AND j.startDate BETWEEN ? AND ?
-		GROUP BY DATE_FORMAT(j.startDate, '%Y-%m')
+				GROUP BY to_char(j.startDate, 'YYYY-MM')
 		ORDER BY month DESC
 		LIMIT 12
 	`, deviceID, startDate, endDate).Scan(&monthlyRevenue)
 
 	// Get utilization metrics
 	var utilizationStats struct {
-		DaysBooked     int     `json:"daysBooked"`
-		DaysAvailable  int     `json:"daysAvailable"`
+		DaysBooked      int     `json:"daysBooked"`
+		DaysAvailable   int     `json:"daysAvailable"`
 		UtilizationRate float64 `json:"utilizationRate"`
 	}
-	
+
 	totalDaysInPeriod := int(endDate.Sub(startDate).Hours() / 24)
 	utilizationStats.DaysAvailable = totalDaysInPeriod
 	utilizationStats.DaysBooked = revenueStats.TotalRentals
-	
+
 	if totalDaysInPeriod > 0 {
 		utilizationStats.UtilizationRate = (float64(revenueStats.TotalRentals) / float64(totalDaysInPeriod)) * 100
 	}
@@ -568,7 +568,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 	var bookingCount int = revenueStats.TotalBookings
 	var avgDuration float64
 	var avgBookingValue float64 = revenueStats.AvgDailyRate
-	
+
 	if len(customerBookings) > 0 {
 		totalDays := 0
 		for _, booking := range customerBookings {
@@ -576,7 +576,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 		}
 		avgDuration = float64(totalDays) / float64(len(customerBookings))
 	}
-	
+
 	// Transform monthly revenue to daily trends for charts
 	var revenueTrends []map[string]interface{}
 	for _, monthly := range monthlyRevenue {
@@ -586,14 +586,14 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 			"jobs":    monthly.Bookings,
 		})
 	}
-	
+
 	// Create status distribution based on booking data
 	statusCounts := map[string]int{
 		"Completed": 0,
 		"Active":    0,
 		"Cancelled": 0,
 	}
-	
+
 	for _, booking := range customerBookings {
 		status := booking.JobStatus
 		if status == "completed" || status == "finished" {
@@ -606,7 +606,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 			statusCounts["Completed"]++ // Default unknown status to completed
 		}
 	}
-	
+
 	// Transform customer bookings for frontend
 	var transformedBookings []map[string]interface{}
 	for _, booking := range customerBookings {
@@ -614,7 +614,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 			"jobid":        booking.JobID,
 			"customerName": booking.CustomerName,
 			"startdate":    booking.StartDate.Format("2006-01-02"),
-			"enddate":      func() string {
+			"enddate": func() string {
 				if booking.EndDate != nil {
 					return booking.EndDate.Format("2006-01-02")
 				}
@@ -624,7 +624,7 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 			"status":  booking.JobStatus,
 		})
 	}
-	
+
 	return map[string]interface{}{
 		"device": map[string]interface{}{
 			"deviceId":     deviceInfo.DeviceID,
@@ -634,11 +634,11 @@ func (h *AnalyticsHandler) getDeviceAnalyticsData(deviceID string, startDate, en
 			"status":       deviceInfo.Status,
 		},
 		"revenue": map[string]interface{}{
-			"totalRevenue":     revenueStats.TotalRevenue,
-			"bookingCount":     bookingCount,
-			"avgDuration":      avgDuration,
-			"avgBookingValue":  avgBookingValue,
-			"utilizationRate":  utilizationStats.UtilizationRate,
+			"totalRevenue":    revenueStats.TotalRevenue,
+			"bookingCount":    bookingCount,
+			"avgDuration":     avgDuration,
+			"avgBookingValue": avgBookingValue,
+			"utilizationRate": utilizationStats.UtilizationRate,
 		},
 		"trends": map[string]interface{}{
 			"revenue": revenueTrends,
@@ -667,7 +667,7 @@ func (h *AnalyticsHandler) getRevenueAnalytics(startDate, endDate time.Time) map
 		Where("endDate BETWEEN ? AND ? AND final_revenue IS NOT NULL AND final_revenue > 0", startDate, endDate).
 		Select("COALESCE(SUM(final_revenue), 0) as total, COUNT(*) as count, COALESCE(AVG(final_revenue), 0) as avg").
 		Row().Scan(&totalRevenue, &totalJobs, &avgJobValue)
-	
+
 	// If no final_revenue data, try regular revenue field
 	if totalRevenue == 0 {
 		h.db.Model(&models.Job{}).
@@ -679,7 +679,7 @@ func (h *AnalyticsHandler) getRevenueAnalytics(startDate, endDate time.Time) map
 	// Previous period for comparison
 	prevStartDate := startDate.AddDate(0, 0, -int(endDate.Sub(startDate).Hours()/24))
 	prevEndDate := startDate
-	
+
 	var prevRevenue float64
 	var prevJobs int64
 	// Use the same flexible approach for previous period
@@ -687,7 +687,7 @@ func (h *AnalyticsHandler) getRevenueAnalytics(startDate, endDate time.Time) map
 		Where("endDate BETWEEN ? AND ? AND final_revenue IS NOT NULL AND final_revenue > 0", prevStartDate, prevEndDate).
 		Select("COALESCE(SUM(final_revenue), 0) as total, COUNT(*) as count").
 		Row().Scan(&prevRevenue, &prevJobs)
-	
+
 	if prevRevenue == 0 {
 		h.db.Model(&models.Job{}).
 			Where("endDate BETWEEN ? AND ? AND revenue IS NOT NULL AND revenue > 0", prevStartDate, prevEndDate).
@@ -707,11 +707,11 @@ func (h *AnalyticsHandler) getRevenueAnalytics(startDate, endDate time.Time) map
 	}
 
 	return map[string]interface{}{
-		"totalRevenue":   totalRevenue,
-		"totalJobs":      totalJobs,
-		"avgJobValue":    avgJobValue,
-		"revenueGrowth":  revenueGrowth,
-		"jobsGrowth":     jobsGrowth,
+		"totalRevenue":  totalRevenue,
+		"totalJobs":     totalJobs,
+		"avgJobValue":   avgJobValue,
+		"revenueGrowth": revenueGrowth,
+		"jobsGrowth":    jobsGrowth,
 	}
 }
 
@@ -768,12 +768,12 @@ func (h *AnalyticsHandler) getEquipmentAnalytics(startDate, endDate time.Time) m
 	}
 
 	return map[string]interface{}{
-		"totalDevices":      totalDevices,
-		"activeDevices":     activeDevices,
+		"totalDevices":       totalDevices,
+		"activeDevices":      activeDevices,
 		"maintenanceDevices": maintenanceDevices,
-		"utilizationRate":   utilizationRate,
-		"revenuePerDevice":  revenuePerDevice,
-		"availableDevices":  totalDevices - activeDevices - maintenanceDevices,
+		"utilizationRate":    utilizationRate,
+		"revenuePerDevice":   revenuePerDevice,
+		"availableDevices":   totalDevices - activeDevices - maintenanceDevices,
 	}
 }
 
@@ -822,7 +822,7 @@ func (h *AnalyticsHandler) getJobAnalytics(startDate, endDate time.Time) map[str
 
 	// Active jobs
 	h.db.Model(&models.Job{}).
-		Where("startDate <= ? AND (endDate >= ? OR endDate IS NULL) AND statusID IN (?)", 
+		Where("startDate <= ? AND (endDate >= ? OR endDate IS NULL) AND statusID IN (?)",
 			endDate, startDate, []int{1, 2}).
 		Count(&activeJobs)
 
@@ -831,18 +831,18 @@ func (h *AnalyticsHandler) getJobAnalytics(startDate, endDate time.Time) map[str
 		Where("endDate < ? AND statusID NOT IN (?)", time.Now(), []int{3, 4}).
 		Count(&overdueJobs)
 
-	// Average job duration
+		// Average job duration
 	h.db.Model(&models.Job{}).
-		Where("endDate BETWEEN ? AND ? AND startDate IS NOT NULL AND endDate IS NOT NULL", 
+		Where("endDate BETWEEN ? AND ? AND startDate IS NOT NULL AND endDate IS NOT NULL",
 			startDate, endDate).
-		Select("AVG(DATEDIFF(endDate, startDate))").
+		Select("AVG(DATE_PART('day', (endDate::timestamp - startDate::timestamp)))").
 		Scan(&avgJobDuration)
 
 	return map[string]interface{}{
-		"completedJobs":    completedJobs,
-		"activeJobs":       activeJobs,
-		"overdueJobs":      overdueJobs,
-		"avgJobDuration":   avgJobDuration,
+		"completedJobs":  completedJobs,
+		"activeJobs":     activeJobs,
+		"overdueJobs":    overdueJobs,
+		"avgJobDuration": avgJobDuration,
 	}
 }
 
@@ -910,7 +910,7 @@ func (h *AnalyticsHandler) getTopEquipment(startDate, endDate time.Time, limit i
 		var totalRevenue, avgRevenue float64
 
 		rows.Scan(&deviceID, &productName, &rentalCount, &totalRevenue, &avgRevenue)
-		
+
 		results = append(results, map[string]interface{}{
 			"deviceid":     deviceID,
 			"productName":  productName,
@@ -989,7 +989,7 @@ func (h *AnalyticsHandler) getAllDeviceRevenues(startDate, endDate time.Time, so
 		var totalRevenue, avgRevenue, productPrice float64
 
 		rows.Scan(&deviceID, &productName, &rentalCount, &totalRevenue, &avgRevenue, &productPrice, &deviceStatus)
-		
+
 		results = append(results, map[string]interface{}{
 			"deviceid":     deviceID,
 			"productName":  productName,
@@ -1021,7 +1021,7 @@ func (h *AnalyticsHandler) getTopCustomers(startDate, endDate time.Time, limit i
 			AND j.final_revenue IS NOT NULL
 					WHERE c.customerID IS NOT NULL
 		GROUP BY c.customerID, c.companyname, c.firstname, c.lastname
-		HAVING total_revenue > 0
+		HAVING COALESCE(SUM(j.final_revenue), 0) > 0
 		ORDER BY total_revenue DESC
 		LIMIT ?
 	`, startDate, endDate, limit).Rows()
@@ -1038,7 +1038,7 @@ func (h *AnalyticsHandler) getTopCustomers(startDate, endDate time.Time, limit i
 		var totalRevenue, avgRevenue float64
 
 		rows.Scan(&customerID, &customerName, &jobCount, &totalRevenue, &avgRevenue)
-		
+
 		results = append(results, map[string]interface{}{
 			"customerid":   customerID,
 			"customerName": customerName,
@@ -1079,7 +1079,7 @@ func (h *AnalyticsHandler) getUtilizationMetrics() map[string]interface{} {
 		var utilizationRate float64
 
 		rows.Scan(&productName, &totalDevices, &activeDevices, &utilizationRate)
-		
+
 		results = append(results, map[string]interface{}{
 			"productName":     productName,
 			"totalDevices":    totalDevices,
@@ -1132,10 +1132,10 @@ func (h *AnalyticsHandler) getTrendData(startDate, endDate time.Time) map[string
 // GetRevenueAPI returns revenue data as JSON API
 func (h *AnalyticsHandler) GetRevenueAPI(c *gin.Context) {
 	period := c.DefaultQuery("period", "1year")
-	
+
 	endDate := time.Now()
 	var startDate time.Time
-	
+
 	switch period {
 	case "7days":
 		startDate = endDate.AddDate(0, 0, -7)
@@ -1156,10 +1156,10 @@ func (h *AnalyticsHandler) GetRevenueAPI(c *gin.Context) {
 // GetEquipmentAPI returns equipment analytics as JSON API
 func (h *AnalyticsHandler) GetEquipmentAPI(c *gin.Context) {
 	period := c.DefaultQuery("period", "1year")
-	
+
 	endDate := time.Now()
 	var startDate time.Time
-	
+
 	switch period {
 	case "7days":
 		startDate = endDate.AddDate(0, 0, -7)
@@ -1182,10 +1182,10 @@ func (h *AnalyticsHandler) GetAllDeviceRevenuesAPI(c *gin.Context) {
 	period := c.DefaultQuery("period", "1year")
 	sortBy := c.DefaultQuery("sort", "revenue") // revenue, device_id, product_name, rental_count
 	order := c.DefaultQuery("order", "desc")    // asc, desc
-	
+
 	endDate := time.Now()
 	var startDate time.Time
-	
+
 	switch period {
 	case "7days":
 		startDate = endDate.AddDate(0, 0, -7)
@@ -1206,12 +1206,12 @@ func (h *AnalyticsHandler) GetAllDeviceRevenuesAPI(c *gin.Context) {
 		"product_name": "p.name",
 		"rental_count": "rental_count",
 	}
-	
+
 	sortColumn, exists := validSorts[sortBy]
 	if !exists {
 		sortColumn = "total_revenue"
 	}
-	
+
 	if order != "asc" && order != "desc" {
 		order = "desc"
 	}
@@ -1228,10 +1228,10 @@ func (h *AnalyticsHandler) GetAllDeviceRevenuesAPI(c *gin.Context) {
 func (h *AnalyticsHandler) ExportAnalytics(c *gin.Context) {
 	format := c.DefaultQuery("format", "csv")
 	period := c.DefaultQuery("period", "1year")
-	
+
 	endDate := time.Now()
 	var startDate time.Time
-	
+
 	switch period {
 	case "7days":
 		startDate = endDate.AddDate(0, 0, -7)
@@ -1261,10 +1261,10 @@ func (h *AnalyticsHandler) exportToCSV(c *gin.Context, startDate, endDate time.T
 
 	// Get analytics data
 	analytics := h.getAnalyticsData(startDate, endDate)
-	
+
 	// Write CSV headers and data
 	csvData := "Metric,Value\n"
-	
+
 	// Revenue metrics
 	if revenue, ok := analytics["revenue"].(map[string]interface{}); ok {
 		csvData += "Total Revenue," + strconv.FormatFloat(revenue["totalRevenue"].(float64), 'f', 2, 64) + "\n"
@@ -1274,7 +1274,7 @@ func (h *AnalyticsHandler) exportToCSV(c *gin.Context, startDate, endDate time.T
 			csvData += "Revenue Growth %," + strconv.FormatFloat(growth, 'f', 1, 64) + "\n"
 		}
 	}
-	
+
 	// Equipment metrics
 	if equipment, ok := analytics["equipment"].(map[string]interface{}); ok {
 		csvData += "Total Devices," + strconv.FormatInt(equipment["totalDevices"].(int64), 10) + "\n"
@@ -1284,7 +1284,7 @@ func (h *AnalyticsHandler) exportToCSV(c *gin.Context, startDate, endDate time.T
 			csvData += "Revenue per Device," + strconv.FormatFloat(revenue, 'f', 2, 64) + "\n"
 		}
 	}
-	
+
 	// Customer metrics
 	if customers, ok := analytics["customers"].(map[string]interface{}); ok {
 		csvData += "Total Customers," + strconv.FormatInt(customers["totalCustomers"].(int64), 10) + "\n"
@@ -1293,7 +1293,7 @@ func (h *AnalyticsHandler) exportToCSV(c *gin.Context, startDate, endDate time.T
 			csvData += "Customer Retention %," + strconv.FormatFloat(retention, 'f', 1, 64) + "\n"
 		}
 	}
-	
+
 	// Top equipment section
 	csvData += "\nTop Equipment by Revenue\n"
 	csvData += "Device ID,Product Name,Rental Count,Total Revenue\n"
@@ -1307,7 +1307,7 @@ func (h *AnalyticsHandler) exportToCSV(c *gin.Context, startDate, endDate time.T
 			)
 		}
 	}
-	
+
 	// Top customers section
 	csvData += "\nTop Customers by Revenue\n"
 	csvData += "Customer Name,Job Count,Total Revenue\n"
@@ -1408,12 +1408,12 @@ func (h *AnalyticsHandler) addPDFSection(pdf *gofpdf.Fpdf, title string, data in
 // addRevenueMetrics adds revenue metrics to PDF
 func (h *AnalyticsHandler) addRevenueMetrics(pdf *gofpdf.Fpdf, data map[string]interface{}) {
 	y := pdf.GetY()
-	
+
 	// Total Revenue
 	if totalRevenue, ok := data["totalRevenue"].(float64); ok {
 		pdf.Cell(90, 6, fmt.Sprintf("Total Revenue: EUR %.2f", totalRevenue))
 	}
-	
+
 	// Total Jobs
 	if totalJobs, ok := data["totalJobs"].(int64); ok {
 		pdf.SetXY(105, y)
@@ -1422,12 +1422,12 @@ func (h *AnalyticsHandler) addRevenueMetrics(pdf *gofpdf.Fpdf, data map[string]i
 
 	y += 8
 	pdf.SetXY(15, y)
-	
+
 	// Average Job Value
 	if avgJobValue, ok := data["avgJobValue"].(float64); ok {
 		pdf.Cell(90, 6, fmt.Sprintf("Average Job Value: EUR %.2f", avgJobValue))
 	}
-	
+
 	// Revenue Growth
 	if revenueGrowth, ok := data["revenueGrowth"].(float64); ok {
 		pdf.SetXY(105, y)
@@ -1438,12 +1438,12 @@ func (h *AnalyticsHandler) addRevenueMetrics(pdf *gofpdf.Fpdf, data map[string]i
 // addEquipmentMetrics adds equipment metrics to PDF
 func (h *AnalyticsHandler) addEquipmentMetrics(pdf *gofpdf.Fpdf, data map[string]interface{}) {
 	y := pdf.GetY()
-	
+
 	// Total Devices
 	if totalDevices, ok := data["totalDevices"].(int64); ok {
 		pdf.Cell(90, 6, fmt.Sprintf("Total Devices: %d", totalDevices))
 	}
-	
+
 	// Active Devices
 	if activeDevices, ok := data["activeDevices"].(int64); ok {
 		pdf.SetXY(105, y)
@@ -1452,12 +1452,12 @@ func (h *AnalyticsHandler) addEquipmentMetrics(pdf *gofpdf.Fpdf, data map[string
 
 	y += 8
 	pdf.SetXY(15, y)
-	
+
 	// Utilization Rate
 	if utilizationRate, ok := data["utilizationRate"].(float64); ok {
 		pdf.Cell(90, 6, fmt.Sprintf("Utilization Rate: %.1f%%", utilizationRate))
 	}
-	
+
 	// Revenue per Device
 	if revenuePerDevice, ok := data["revenuePerDevice"].(float64); ok {
 		pdf.SetXY(105, y)
@@ -1468,12 +1468,12 @@ func (h *AnalyticsHandler) addEquipmentMetrics(pdf *gofpdf.Fpdf, data map[string
 // addCustomerMetrics adds customer metrics to PDF
 func (h *AnalyticsHandler) addCustomerMetrics(pdf *gofpdf.Fpdf, data map[string]interface{}) {
 	y := pdf.GetY()
-	
+
 	// Total Customers
 	if totalCustomers, ok := data["totalCustomers"].(int64); ok {
 		pdf.Cell(90, 6, fmt.Sprintf("Total Customers: %d", totalCustomers))
 	}
-	
+
 	// Active Customers
 	if activeCustomers, ok := data["activeCustomers"].(int64); ok {
 		pdf.SetXY(105, y)
@@ -1482,12 +1482,12 @@ func (h *AnalyticsHandler) addCustomerMetrics(pdf *gofpdf.Fpdf, data map[string]
 
 	y += 8
 	pdf.SetXY(15, y)
-	
+
 	// New Customers
 	if newCustomers, ok := data["newCustomers"].(int64); ok {
 		pdf.Cell(90, 6, fmt.Sprintf("New Customers: %d", newCustomers))
 	}
-	
+
 	// Retention Rate
 	if retentionRate, ok := data["retentionRate"].(float64); ok {
 		pdf.SetXY(105, y)
@@ -1498,12 +1498,12 @@ func (h *AnalyticsHandler) addCustomerMetrics(pdf *gofpdf.Fpdf, data map[string]
 // addJobMetrics adds job metrics to PDF
 func (h *AnalyticsHandler) addJobMetrics(pdf *gofpdf.Fpdf, data map[string]interface{}) {
 	y := pdf.GetY()
-	
+
 	// Completed Jobs
 	if completedJobs, ok := data["completedJobs"].(int64); ok {
 		pdf.Cell(90, 6, fmt.Sprintf("Completed Jobs: %d", completedJobs))
 	}
-	
+
 	// Active Jobs
 	if activeJobs, ok := data["activeJobs"].(int64); ok {
 		pdf.SetXY(105, y)
@@ -1512,12 +1512,12 @@ func (h *AnalyticsHandler) addJobMetrics(pdf *gofpdf.Fpdf, data map[string]inter
 
 	y += 8
 	pdf.SetXY(15, y)
-	
+
 	// Overdue Jobs
 	if overdueJobs, ok := data["overdueJobs"].(int64); ok {
 		pdf.Cell(90, 6, fmt.Sprintf("Overdue Jobs: %d", overdueJobs))
 	}
-	
+
 	// Average Duration
 	if avgJobDuration, ok := data["avgJobDuration"].(float64); ok {
 		pdf.SetXY(105, y)
@@ -1556,7 +1556,7 @@ func (h *AnalyticsHandler) addTopEquipmentTable(pdf *gofpdf.Fpdf, data interface
 			if i >= 10 { // Limit to top 10
 				break
 			}
-			
+
 			// Alternate row colors
 			if i%2 == 1 {
 				pdf.SetFillColor(248, 250, 252)
@@ -1629,7 +1629,7 @@ func (h *AnalyticsHandler) addTopCustomersTable(pdf *gofpdf.Fpdf, data interface
 			if i >= 10 { // Limit to top 10
 				break
 			}
-			
+
 			// Alternate row colors
 			if i%2 == 1 {
 				pdf.SetFillColor(248, 250, 252)

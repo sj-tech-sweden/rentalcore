@@ -11,11 +11,11 @@
     <div class="rc-page">
         <header class="rc-page-header rc-flex rc-flex-between rc-flex-items-center">
             <div>
-                <h1 class="rc-heading-3 rc-mb-xxs"><i class="bi bi-link-45deg"></i> Cable Finder</h1>
-                <p class="rc-text-sm rc-text-secondary">Cable management lives in WarehouseCore. Use the button below to search by plug type and length.</p>
+                 <h1 class="rc-heading-3 rc-mb-xxs"><i class="bi bi-link-45deg"></i> <span data-i18n="cables_redirect.title">Cable Finder</span></h1>
+                 <p class="rc-text-sm rc-text-secondary" data-i18n="cables_redirect.description">Cable management lives in WarehouseCore. Use the button below to search by plug type and length.</p>
             </div>
             <a class="rc-btn rc-btn-primary" href="{{.targetURL}}" target="_blank" rel="noopener">
-                <i class="bi bi-box-arrow-up-right"></i> Open Cable Search
+                 <i class="bi bi-box-arrow-up-right"></i> <span data-i18n="cables_redirect.open_button">Open Cable Search</span>
             </a>
         </header>
 
@@ -23,18 +23,18 @@
             {{if .targetURL}}
             <div class="rc-alert rc-alert-info rc-mb-md">
                 <i class="bi bi-info-circle"></i>
-                We redirected cable inventory to WarehouseCore so you can filter by plug 1/2 and length. Click the button to open <strong>{{.targetURL}}</strong>.
+                 <span data-i18n="cables_redirect.info_alert">We redirected cable inventory to WarehouseCore so you can filter by plug 1/2 and length. Click the button to open <strong>{{.targetURL}}</strong>.</span>
             </div>
             {{else}}
             <div class="rc-alert rc-alert-error rc-mb-md">
                 <i class="bi bi-exclamation-triangle"></i>
-                WarehouseCore domain is not configured. Set <code>WAREHOUSECORE_DOMAIN</code> in your environment so we can link to the cable search.
+                 <span data-i18n="cables_redirect.no_domain">WarehouseCore domain is not configured. Set <code>WAREHOUSECORE_DOMAIN</code> in your environment so we can link to the cable search.</span>
             </div>
             {{end}}
             <ul class="rc-list rc-text-sm rc-text-secondary">
-                <li>Search cables by plug 1, plug 2, and length range.</li>
-                <li>Save and assign cables directly from WarehouseCore.</li>
-                <li>Return here when finished; assignments remain synced through the shared database.</li>
+                 <li data-i18n="cables_redirect.list.search">Search cables by plug 1, plug 2, and length range.</li>
+                 <li data-i18n="cables_redirect.list.save">Save and assign cables directly from WarehouseCore.</li>
+                 <li data-i18n="cables_redirect.list.return">Return here when finished; assignments remain synced through the shared database.</li>
             </ul>
         </main>
     </div>

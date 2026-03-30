@@ -45,7 +45,11 @@ func (rm *RetentionManager) CanAutoDelete(documentType string) (bool, error) {
 		return false, fmt.Errorf("failed to get retention policy: %w", err)
 	}
 
-	return policy.AutoDeleteAfter, nil
+	if policy.AutoDeleteAfter == nil {
+		return false, nil
+	}
+
+	return !policy.AutoDeleteAfter.After(time.Now()), nil
 }
 
 // CreateRetentionPolicy creates a new retention policy
@@ -78,7 +82,7 @@ func (rm *RetentionManager) GetRetentionPolicies() ([]RetentionPolicy, error) {
 // GetExpiringDocuments gets documents expiring within the specified duration
 func (rm *RetentionManager) GetExpiringDocuments(within time.Duration) ([]GoBDRecord, error) {
 	cutoff := time.Now().Add(within)
-	
+
 	var records []GoBDRecord
 	if err := rm.db.Where("retention_date <= ?", cutoff).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("failed to get expiring documents: %w", err)
@@ -142,7 +146,7 @@ func (rm *RetentionManager) markForDeletion(record GoBDRecord) error {
 	// 4. Log the deletion request in audit logs
 
 	// For now, we'll just log the action
-	log.Printf("Record %d (%s:%s) marked for deletion - retention period expired on %s", 
+	log.Printf("Record %d (%s:%s) marked for deletion - retention period expired on %s",
 		record.ID, record.DocumentType, record.DocumentID, record.RetentionDate.Format("2006-01-02"))
 
 	return nil
@@ -183,7 +187,7 @@ func (rm *RetentionManager) GetRetentionStatus() (*RetentionStatus, error) {
 		var expiringSoon int64
 		thirtyDaysFromNow := time.Now().AddDate(0, 0, 30)
 		if err := rm.db.Model(&GoBDRecord{}).
-			Where("document_type = ? AND retention_date BETWEEN ? AND ?", 
+			Where("document_type = ? AND retention_date BETWEEN ? AND ?",
 				policy.DocumentType, time.Now(), thirtyDaysFromNow).
 			Count(&expiringSoon).Error; err != nil {
 			log.Printf("Warning: Failed to count expiring documents for policy %s: %v", policy.DocumentType, err)
@@ -191,10 +195,10 @@ func (rm *RetentionManager) GetRetentionStatus() (*RetentionStatus, error) {
 		}
 
 		status.Policies[policy.DocumentType] = RetentionPolicyStatus{
-			Policy:        policy,
-			TotalRecords:  total,
-			ExpiredCount:  expired,
-			ExpiringSoon:  expiringSoon,
+			Policy:       policy,
+			TotalRecords: total,
+			ExpiredCount: expired,
+			ExpiringSoon: expiringSoon,
 		}
 
 		status.TotalDocuments += total
@@ -265,9 +269,9 @@ func (rm *RetentionManager) ValidateRetentionCompliance() (*ComplianceValidation
 
 		if policyCount == 0 {
 			validation.Issues = append(validation.Issues, ComplianceIssue{
-				Type:        "missing_policy",
-				Severity:    "high",
-				Description: fmt.Sprintf("No retention policy found for document type: %s", docType),
+				Type:         "missing_policy",
+				Severity:     "high",
+				Description:  fmt.Sprintf("No retention policy found for document type: %s", docType),
 				DocumentType: docType,
 			})
 		}
@@ -296,20 +300,20 @@ func (rm *RetentionManager) ValidateRetentionCompliance() (*ComplianceValidation
 
 // RetentionCleanupReport represents the result of a retention cleanup operation
 type RetentionCleanupReport struct {
-	StartTime          time.Time     `json:"start_time"`
-	EndTime            time.Time     `json:"end_time"`
-	Duration           time.Duration `json:"duration"`
-	TotalExpired       int           `json:"total_expired"`
-	MarkedForDeletion  int           `json:"marked_for_deletion"`
-	SkippedAutoDelete  int           `json:"skipped_auto_delete"`
-	Errors             []string      `json:"errors"`
+	StartTime         time.Time     `json:"start_time"`
+	EndTime           time.Time     `json:"end_time"`
+	Duration          time.Duration `json:"duration"`
+	TotalExpired      int           `json:"total_expired"`
+	MarkedForDeletion int           `json:"marked_for_deletion"`
+	SkippedAutoDelete int           `json:"skipped_auto_delete"`
+	Errors            []string      `json:"errors"`
 }
 
 // RetentionStatus provides an overview of retention status
 type RetentionStatus struct {
-	TotalDocuments   int64                           `json:"total_documents"`
-	ExpiredDocuments int64                           `json:"expired_documents"`
-	ExpiringSoon     int64                           `json:"expiring_soon"`
+	TotalDocuments   int64                            `json:"total_documents"`
+	ExpiredDocuments int64                            `json:"expired_documents"`
+	ExpiringSoon     int64                            `json:"expiring_soon"`
 	Policies         map[string]RetentionPolicyStatus `json:"policies"`
 }
 
@@ -323,16 +327,16 @@ type RetentionPolicyStatus struct {
 
 // ComplianceValidation represents the result of compliance validation
 type ComplianceValidation struct {
-	CheckedAt       time.Time        `json:"checked_at"`
-	IsCompliant     bool             `json:"is_compliant"`
-	ComplianceLevel string           `json:"compliance_level"` // fully_compliant, partially_compliant, non_compliant
+	CheckedAt       time.Time         `json:"checked_at"`
+	IsCompliant     bool              `json:"is_compliant"`
+	ComplianceLevel string            `json:"compliance_level"` // fully_compliant, partially_compliant, non_compliant
 	Issues          []ComplianceIssue `json:"issues"`
 }
 
 // ComplianceIssue represents a compliance issue
 type ComplianceIssue struct {
-	Type         string `json:"type"`         // missing_retention_date, over_retention, missing_policy
-	Severity     string `json:"severity"`     // low, medium, high, critical
+	Type         string `json:"type"`     // missing_retention_date, over_retention, missing_policy
+	Severity     string `json:"severity"` // low, medium, high, critical
 	Description  string `json:"description"`
 	DocumentType string `json:"document_type,omitempty"`
 	Count        int64  `json:"count,omitempty"`

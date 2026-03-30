@@ -29,12 +29,12 @@
                 <i class="bi bi-gear-wide-connected"></i> RentalCore
             </a>
             <div class="navbar-nav">
-                <a class="nav-link" href="/jobs">Jobs</a>
-                <a class="nav-link" href="/devices">Devices</a>
-                <a class="nav-link" href="/customers">Customers</a>
-                <a class="nav-link" href="/invoices">Invoices</a>
-                <a class="nav-link" href="/invoice-templates">Templates</a>
-                <a class="nav-link" href="/logout">Logout ({{.user.Username}})</a>
+                <a class="nav-link" href="/jobs" data-i18n="nav.jobs">Jobs</a>
+                <a class="nav-link" href="/devices" data-i18n="nav.devices">Devices</a>
+                <a class="nav-link" href="/customers" data-i18n="nav.customers">Customers</a>
+                <a class="nav-link" href="/invoices" data-i18n="nav.invoices">Invoices</a>
+                <a class="nav-link" href="/invoice-templates" data-i18n="invoices.templates">Templates</a>
+                <a class="nav-link" href="/logout" data-i18n="nav.logout">Logout ({{.user.Username}})</a>
             </div>
         </div>
     </nav>
@@ -47,33 +47,33 @@
                 </h3>
                 <div>
                     {{if eq .action "edit"}}
-                    <a href="/invoices/{{.invoice.InvoiceID}}/preview" target="_blank" class="btn btn-info">
-                        <i class="bi bi-eye"></i> Preview
+                    <a href="/invoices/{{.invoice.InvoiceID}}/preview" target="_blank" class="btn btn-info" data-i18n="common.preview">
+                        <i class="bi bi-eye"></i> <span data-i18n="common.preview">Preview</span>
                     </a>
                     {{end}}
-                    <a href="/invoices" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Invoices
+                    <a href="/invoices" class="btn btn-secondary" data-i18n="common.back">
+                        <i class="bi bi-arrow-left"></i> <span data-i18n="common.back">Back to Invoices</span>
                     </a>
                 </div>
             </div>
             
             <div class="card-body">
                 <!-- Loading indicator -->
-                <div id="loadingIndicator" class="d-none text-center py-3">
+                    <div id="loadingIndicator" class="d-none text-center py-3">
                     <div class="spinner-border" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <p class="mt-2">Processing invoice...</p>
+                    <p class="mt-2" data-i18n="invoices.processing">Processing invoice...</p>
                 </div>
 
                 <!-- Error display -->
                 <div id="errorAlert" class="alert alert-danger d-none" role="alert">
-                    <strong>Error:</strong> <span id="errorMessage"></span>
+                    <strong data-i18n="common.error">Error:</strong> <span id="errorMessage"></span>
                 </div>
 
                 <!-- Success display -->
                 <div id="successAlert" class="alert alert-success d-none" role="alert">
-                    <strong>Success:</strong> <span id="successMessage"></span>
+                    <strong data-i18n="common.success">Success:</strong> <span id="successMessage"></span>
                 </div>
 
                 <form id="invoiceForm">
@@ -171,26 +171,26 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="paymentTerms" class="form-label">Payment Terms</label>
+                                <label for="paymentTerms" class="form-label" data-i18n="invoices.paymentTermsLabel">Payment Terms</label>
                                 <input type="text" id="paymentTerms" name="paymentTerms" class="form-control" 
                                        value="{{if eq .action "edit"}}{{if .invoice.PaymentTerms}}{{.invoice.PaymentTerms}}{{end}}{{else}}Net 30{{end}}" 
-                                       placeholder="e.g., Net 30, Cash on Delivery">
+                                       data-i18n-attr="placeholder" placeholder="e.g., Net 30, Cash on Delivery">
                             </div>
 
                             <div class="mb-3">
-                                <label for="status" class="form-label">Status</label>
+                                <label for="status" class="form-label" data-i18n="invoices.statusLabel">Status</label>
                                 <select id="status" name="status" class="form-control">
-                                    <option value="draft"{{if ne .action "edit"}} selected{{else}}{{if eq .invoice.Status "draft"}} selected{{end}}{{end}}>Draft</option>
-                                    <option value="sent"{{if and (eq .action "edit") (eq .invoice.Status "sent")}} selected{{end}}>Sent</option>
-                                    <option value="paid"{{if and (eq .action "edit") (eq .invoice.Status "paid")}} selected{{end}}>Paid</option>
-                                    <option value="overdue"{{if and (eq .action "edit") (eq .invoice.Status "overdue")}} selected{{end}}>Overdue</option>
-                                    <option value="cancelled"{{if and (eq .action "edit") (eq .invoice.Status "cancelled")}} selected{{end}}>Cancelled</option>
+                                    <option value="draft"{{if ne .action "edit"}} selected{{else}}{{if eq .invoice.Status "draft"}} selected{{end}}{{end}} data-i18n="invoices.statuses.draft">Draft</option>
+                                    <option value="sent"{{if and (eq .action "edit") (eq .invoice.Status "sent")}} selected{{end}} data-i18n="invoices.statuses.sent">Sent</option>
+                                    <option value="paid"{{if and (eq .action "edit") (eq .invoice.Status "paid")}} selected{{end}} data-i18n="invoices.statuses.paid">Paid</option>
+                                    <option value="overdue"{{if and (eq .action "edit") (eq .invoice.Status "overdue")}} selected{{end}} data-i18n="invoices.statuses.overdue">Overdue</option>
+                                    <option value="cancelled"{{if and (eq .action "edit") (eq .invoice.Status "cancelled")}} selected{{end}} data-i18n="invoices.statuses.cancelled">Cancelled</option>
                                 </select>
                             </div>
 
                             <div class="mb-3">
-                                <label for="notes" class="form-label">Notes</label>
-                                <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Internal notes about this invoice">{{if eq .action "edit"}}{{.invoice.Notes}}{{end}}</textarea>
+                                <label for="notes" class="form-label" data-i18n="invoices.notesLabel">Notes</label>
+                                <textarea id="notes" name="notes" class="form-control" rows="3" data-i18n-attr="placeholder" placeholder="Internal notes about this invoice">{{if eq .action "edit"}}{{.invoice.Notes}}{{end}}</textarea>
                             </div>
                         </div>
                     </div>

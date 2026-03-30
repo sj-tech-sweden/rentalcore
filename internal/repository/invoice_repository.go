@@ -342,7 +342,7 @@ func (r *InvoiceRepositoryNew) generateInvoiceNumber(tx *gorm.DB) (string, error
 	err := tx.Raw(`
 		SELECT COALESCE(MAX(
 			CAST(
-				SUBSTRING(invoice_number FROM ? FOR 10) AS UNSIGNED
+				SUBSTRING(invoice_number FROM ? FOR 10) AS INTEGER
 			)
 		), 1000) as max_num
 		FROM invoices 
@@ -404,7 +404,7 @@ func (r *InvoiceRepositoryNew) GeneratePreviewInvoiceNumber() (string, error) {
 	err := r.db.DB.Raw(`
 		SELECT COALESCE(MAX(
 			CAST(
-				SUBSTRING(invoice_number FROM ? FOR 4) AS UNSIGNED
+				SUBSTRING(invoice_number FROM ? FOR 4) AS INTEGER
 			)
 		), 0) as max_num
 		FROM invoices 

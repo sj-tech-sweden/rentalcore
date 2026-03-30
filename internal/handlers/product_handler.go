@@ -26,16 +26,16 @@ func NewProductHandler(productRepo *repository.ProductRepository) *ProductHandle
 func (h *ProductHandler) ListProductsWeb(c *gin.Context) {
 	startTime := time.Now()
 	log.Printf("🚀 ProductHandler.ListProductsWeb() started")
-	
+
 	user, _ := GetCurrentUser(c)
-	
+
 	params := &models.FilterParams{}
 	if err := c.ShouldBindQuery(params); err != nil {
 		log.Printf("❌ Error binding query parameters: %v", err)
 		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/error?code=400&message=Bad Request&details=%s", err.Error()))
 		return
 	}
-	
+
 	// Handle search parameter
 	searchParam := c.Query("search")
 	if searchParam != "" {
@@ -47,7 +47,7 @@ func (h *ProductHandler) ListProductsWeb(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
-	
+
 	limit := 20 // Products per page
 	params.Limit = limit
 	params.Offset = (page - 1) * limit
@@ -71,18 +71,18 @@ func (h *ProductHandler) ListProductsWeb(c *gin.Context) {
 		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/error?code=500&message=Database Error&details=%s", err.Error()))
 		return
 	}
-	
+
 	totalPages := int((totalProducts + int64(limit) - 1) / int64(limit))
 	if totalPages == 0 {
 		totalPages = 1
 	}
-	
+
 	// Get products from database with pagination
 	dbStart := time.Now()
 	products, err := h.productRepo.List(params)
 	dbTime := time.Since(dbStart)
 	log.Printf("⏱️  Database query took: %v", dbTime)
-	
+
 	if err != nil {
 		log.Printf("❌ Database error: %v", err)
 		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/error?code=500&message=Database Error&details=%s", err.Error()))
@@ -102,7 +102,7 @@ func (h *ProductHandler) ListProductsWeb(c *gin.Context) {
 		"totalPages":    totalPages,
 		"totalProducts": int(totalProducts),
 	})
-	
+
 	templateTime := time.Since(templateStart)
 	totalTime := time.Since(startTime)
 	log.Printf("⏱️  Template rendering took: %v", templateTime)
@@ -113,13 +113,13 @@ func (h *ProductHandler) NewProductForm(c *gin.Context) {
 	// Only allow fetch requests from modals, block direct browser access
 	acceptHeader := c.GetHeader("Accept")
 	xRequestedWith := c.GetHeader("X-Requested-With")
-	
+
 	// Block direct browser access - only allow modal/fetch requests
 	if xRequestedWith != "XMLHttpRequest" && !strings.Contains(acceptHeader, "application/json") && !strings.Contains(acceptHeader, "text/html") {
 		c.Redirect(http.StatusFound, "/products")
 		return
 	}
-	
+
 	// If it's a direct browser request (Accept: text/html without XMLHttpRequest), redirect
 	if strings.Contains(acceptHeader, "text/html") && xRequestedWith != "XMLHttpRequest" {
 		c.Redirect(http.StatusFound, "/products")
@@ -127,7 +127,7 @@ func (h *ProductHandler) NewProductForm(c *gin.Context) {
 	}
 
 	user, _ := GetCurrentUser(c)
-	
+
 	// Get categories for the form
 	categories, err := h.productRepo.GetAllCategories()
 	if err != nil {
@@ -136,10 +136,11 @@ func (h *ProductHandler) NewProductForm(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "product_form.html", gin.H{
-		"title":      "New Product",
-		"product":    &models.Product{},
-		"categories": categories,
-		"user":       user,
+		"title":           "New Product",
+		"product":         &models.Product{},
+		"categories":      categories,
+		"user":            user,
+		"PageTemplateKey": "product_form",
 	})
 }
 
@@ -167,7 +168,7 @@ func (h *ProductHandler) GetProductAPI(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
 		return
 	}
-	
+
 	product, err := h.productRepo.GetByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
@@ -231,7 +232,7 @@ func (h *ProductHandler) GetSubcategoriesAPI(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subcategories"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"subcategories": subcategories})
 }
 
@@ -297,7 +298,7 @@ func (h *ProductHandler) GetBrandsAPI(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch brands"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"brands": brands})
 }
 
@@ -309,7 +310,7 @@ func (h *ProductHandler) GetManufacturersAPI(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch manufacturers"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"manufacturers": manufacturers})
 }
 

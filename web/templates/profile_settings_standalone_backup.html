@@ -111,17 +111,17 @@
 
                             <div class="rc-form-group">
                                 <label for="email" class="rc-label">Email Address</label>
-                                <input type="email" class="rc-input" id="email" name="email" 
-                                       value="{{if .user}}{{.user.Email}}{{end}}" placeholder="Enter your email address">
+                                    <input type="email" class="rc-input" id="email" name="email" 
+                                        value="{{if .user}}{{.user.Email}}{{end}}" placeholder="Enter your email address" autocomplete="email">
                             </div>
 
                             <div class="rc-form-group">
                                 <label for="password" class="rc-label">
-                                    New Password
-                                    <small class="rc-text-muted">(leave blank to keep current)</small>
+                                    <span data-i18n="profile.newPassword">New Password</span>
+                                    <small class="rc-text-muted" data-i18n="profile.leaveBlank">(leave blank to keep current)</small>
                                 </label>
-                                <input type="password" class="rc-input" id="password" name="password" 
-                                       placeholder="Enter new password">
+                                <input type="password" class="rc-input" id="password" name="password" autocomplete="new-password"
+                                       data-i18n-attr="placeholder" data-i18n="profile.newPasswordPlaceholder" placeholder="Enter new password">
                             </div>
 
                             <div class="rc-flex rc-gap-md">

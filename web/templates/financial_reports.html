@@ -1,27 +1,8 @@
-<!DOCTYPE html>
-<html lang="de" data-theme="dark">
-<head>
-    <script>
-        (function() {
-            const t=(localStorage.getItem("rc-theme")||"dark");
-            document.documentElement.setAttribute("data-theme",t);
-        })();
-    </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.title}} - RentalCore</title>
+{{template "base.html" .}}
 
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#030712">
-    <meta name="msapplication-TileColor" content="#030712">
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/rental-core-design.css?v={{.timestamp}}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+{{define "financial_reports_css"}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
     <style>
 /* Premium Financial Reports Styles - Matching Dashboard */
 :root {
@@ -487,6 +468,29 @@
     width: 100%;
 }
 
+/* Fullscreen mode keeps the same report UI while hiding global app chrome */
+body.fin-fullscreen .rc-header,
+body.fin-fullscreen .rc-sidebar,
+body.fin-fullscreen .rc-sidebar-backdrop {
+    display: none !important;
+}
+
+body.fin-fullscreen {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+}
+
+body.fin-fullscreen main.rc-container,
+body.fin-fullscreen #rcMainContent {
+    max-width: 100%;
+    width: 100%;
+    padding-top: 0.75rem;
+}
+
+body.fin-fullscreen .fin-header {
+    padding-top: 1rem;
+}
+
 /* Modal styles */
 .fin-modal-backdrop {
     position: fixed;
@@ -625,123 +629,30 @@
     }
 }
     </style>
-</head>
-<body class="rc-animate-fade-in">
-    <!-- Background -->
+{{end}}
+
+{{define "financial_reports_content"}}
     <div class="fin-page-bg"></div>
-
-    <!-- Navigation -->
-    <nav class="rc-navbar">
-        <div class="rc-container">
-            <div class="rc-navbar-content">
-                <a href="/" class="rc-navbar-brand">
-                    <i class="bi bi-gear-wide-connected"></i>
-                    RentalCore
-                </a>
-
-                <!-- Mobile toggle -->
-                <button class="rc-navbar-toggle">
-                    <i class="bi bi-list"></i>
-                </button>
-
-                <!-- Main navigation -->
-                <ul class="rc-navbar-nav">
-                    <li><a href="/jobs" class="rc-nav-link">
-                        <i class="bi bi-briefcase"></i> Jobs
-                    </a></li>
-                    <li><a href="/devices" class="rc-nav-link">
-                        <i class="bi bi-cpu"></i> Devices
-                    </a></li>
-                    <li><a href="/customers" class="rc-nav-link">
-                        <i class="bi bi-people"></i> Customers
-                    </a></li>
-
-                    <!-- Tools Dropdown -->
-                    <li class="rc-dropdown">
-                        <a href="#" class="rc-nav-link rc-dropdown-toggle">
-                            <i class="bi bi-tools"></i> Tools
-                        </a>
-                        <div class="rc-dropdown-menu">
-                            <div class="rc-dropdown-header">
-                                <i class="bi bi-folder"></i> Management
-                            </div>
-                            <a href="/workflow/packages" class="rc-dropdown-item">
-                                <i class="bi bi-box-seam"></i> Equipment Packages
-                            </a>
-                            <hr class="rc-dropdown-divider">
-                            <div class="rc-dropdown-header">
-                                <i class="bi bi-building"></i> Business
-                            </div>
-                            <a href="/invoices" class="rc-dropdown-item">
-                                <i class="bi bi-file-text"></i> Invoices
-                            </a>
-                            <a href="/analytics" class="rc-dropdown-item">
-                                <i class="bi bi-graph-up"></i> Analytics
-                            </a>
-                            <a href="/financial" class="rc-dropdown-item active">
-                                <i class="bi bi-currency-dollar"></i> Financial
-                            </a>
-                        </div>
-                    </li>
-
-                    <!-- User Dropdown -->
-                    {{if .user}}
-                    <li class="rc-dropdown">
-                        <a href="#" class="rc-nav-link rc-dropdown-toggle">
-                            <i class="bi bi-person-circle"></i> {{.user.Username}}
-                        </a>
-                        <div class="rc-dropdown-menu">
-                            <div class="rc-dropdown-header">
-                                <i class="bi bi-person"></i> {{.user.FirstName}} {{.user.LastName}}
-                            </div>
-                            <hr class="rc-dropdown-divider">
-                            <div class="rc-dropdown-header">Personal</div>
-                            <a href="/profile/settings" class="rc-dropdown-item">
-                                <i class="bi bi-gear"></i> Settings
-                            </a>
-                            <hr class="rc-dropdown-divider">
-                            <div class="rc-dropdown-header">Administration</div>
-                            <a href="/users" class="rc-dropdown-item">
-                                <i class="bi bi-people-fill"></i> User Management
-                            </a>
-                            <a href="/security/audit" class="rc-dropdown-item">
-                                <i class="bi bi-shield-check"></i> Security Audit
-                            </a>
-                            <a href="/security/roles" class="rc-dropdown-item">
-                                <i class="bi bi-key"></i> Security Roles
-                            </a>
-                            <a href="/company/settings" class="rc-dropdown-item">
-                                <i class="bi bi-building-gear"></i> Company Settings
-                            </a>
-                            <hr class="rc-dropdown-divider">
-                            <a href="/logout" class="rc-dropdown-item">
-                                <i class="bi bi-box-arrow-right"></i> Logout
-                            </a>
-                        </div>
-                    </li>
-                    {{end}}
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="rc-container rc-py-4" x-data="financialReports()">
+    <div class="rc-container rc-py-4" x-data="financialReports()">
         <!-- Header Section -->
         <div class="fin-header animate-fade-in">
             <div class="fin-header-content">
                 <div>
-                    <h1 class="fin-title">Finanzberichte</h1>
-                    <p class="fin-subtitle">Umfassende Finanzanalysen und Auswertungen</p>
+                    <h1 class="fin-title" data-i18n="financial.title">Financial Reports</h1>
+                    <p class="fin-subtitle" data-i18n="financial.subtitle">Comprehensive financial analyses and reports</p>
                 </div>
                 <div style="display: flex; gap: 0.75rem;">
-                    <a href="/financial" class="fin-btn fin-btn-outline">
+                    <a href="/financial" class="fin-btn fin-btn-outline" data-i18n-attr="title" data-i18n="financial.backToDashboard">
                         <i class="bi bi-arrow-left"></i>
-                        Dashboard
+                        <span data-i18n="financial.backToDashboard">Dashboard</span>
                     </a>
                     <button class="fin-btn fin-btn-primary" @click="showExportModal = true">
                         <i class="bi bi-download"></i>
-                        Export
+                        <span data-i18n="financial.export">Export</span>
+                    </button>
+                    <button class="fin-btn fin-btn-outline" @click="toggleFullscreen()" :title="fullscreen ? (window.t ? window.t('financial.exitFullscreen', 'Exit fullscreen') : 'Exit fullscreen') : (window.t ? window.t('financial.fullscreen', 'Fullscreen') : 'Fullscreen')">
+                        <i class="bi" :class="fullscreen ? 'bi-fullscreen-exit' : 'bi-fullscreen'"></i>
+                        <span x-text="fullscreen ? (window.t ? window.t('financial.exitFullscreen', 'Exit fullscreen') : 'Exit fullscreen') : (window.t ? window.t('financial.fullscreen', 'Fullscreen') : 'Fullscreen')"></span>
                     </button>
                 </div>
             </div>
@@ -752,64 +663,68 @@
             <div class="fin-filter-grid">
                 <div class="fin-filter-group">
                     <label class="fin-filter-label">
-                        <i class="bi bi-file-earmark-bar-graph" style="margin-right: 0.5rem; color: var(--fin-accent);"></i>Berichtstyp
+                        <i class="bi bi-file-earmark-bar-graph" style="margin-right: 0.5rem; color: var(--fin-accent);"></i>
+                        <span data-i18n="financial.reportType">Report type</span>
                     </label>
                     <select class="fin-select" x-model="reportType" @change="generateReport()">
-                        <option value="revenue">Umsatzanalyse</option>
-                        <option value="payment">Zahlungsstatus</option>
-                        <option value="customer">Kundenanalyse</option>
-                        <option value="job">Job-Rentabilität</option>
-                        <option value="tax">Steuerbericht</option>
+                        <option value="revenue" data-i18n="financial.type.revenue">Revenue analysis</option>
+                        <option value="payment" data-i18n="financial.type.payment">Payment status</option>
+                        <option value="customer" data-i18n="financial.type.customer">Customer analysis</option>
+                        <option value="job" data-i18n="financial.type.job">Job profitability</option>
+                        <option value="tax" data-i18n="financial.type.tax">Tax report</option>
                     </select>
                 </div>
                 <div class="fin-filter-group">
                     <label class="fin-filter-label">
-                        <i class="bi bi-calendar" style="margin-right: 0.5rem; color: var(--fin-accent);"></i>Zeitraum
+                        <i class="bi bi-calendar" style="margin-right: 0.5rem; color: var(--fin-accent);"></i>
+                        <span data-i18n="financial.period.label">Period</span>
                     </label>
                     <select class="fin-select" x-model="period" @change="generateReport()">
-                        <option value="daily">Täglich</option>
-                        <option value="monthly" selected>Monatlich</option>
-                        <option value="quarterly">Quartalsweise</option>
-                        <option value="yearly">Jährlich</option>
-                        <option value="custom">Benutzerdefiniert</option>
+                        <option value="daily" data-i18n="financial.period.daily">Daily</option>
+                        <option value="monthly" selected data-i18n="financial.period.monthly">Monthly</option>
+                        <option value="quarterly" data-i18n="financial.period.quarterly">Quarterly</option>
+                        <option value="yearly" data-i18n="financial.period.yearly">Yearly</option>
+                        <option value="custom" data-i18n="financial.period.custom">Custom</option>
                     </select>
                 </div>
                 <div class="fin-filter-group">
                     <label class="fin-filter-label">
-                        <i class="bi bi-calendar-range" style="margin-right: 0.5rem; color: var(--fin-accent);"></i>Von
+                        <i class="bi bi-calendar-range" style="margin-right: 0.5rem; color: var(--fin-accent);"></i>
+                        <span data-i18n="financial.from">From</span>
                     </label>
                     <input type="date" class="fin-input" x-model="startDate" :disabled="period !== 'custom'">
                 </div>
                 <div class="fin-filter-group">
                     <label class="fin-filter-label">
-                        <i class="bi bi-calendar-check" style="margin-right: 0.5rem; color: var(--fin-accent);"></i>Bis
+                        <i class="bi bi-calendar-check" style="margin-right: 0.5rem; color: var(--fin-accent);"></i>
+                        <span data-i18n="financial.to">To</span>
                     </label>
                     <input type="date" class="fin-input" x-model="endDate" :disabled="period !== 'custom'">
                 </div>
             </div>
             <div class="fin-filter-actions">
-                <button class="fin-btn fin-btn-primary" @click="generateReport()" :disabled="loading" style="min-width: 180px;">
-                    <template x-if="loading">
-                        <div class="fin-spinner"></div>
-                    </template>
-                    <template x-if="!loading">
-                        <i class="bi bi-bar-chart-line"></i>
-                    </template>
-                    <span x-text="loading ? 'Generiere...' : 'Bericht generieren'"></span>
-                </button>
+                    <button class="fin-btn fin-btn-primary" @click="generateReport()" :disabled="loading" style="min-width: 180px;">
+                        <template x-if="loading">
+                            <div class="fin-spinner"></div>
+                        </template>
+                        <template x-if="!loading">
+                            <i class="bi bi-bar-chart-line"></i>
+                        </template>
+                        <span x-text="loading ? (typeof window.t === 'function' ? window.t('common.loading', 'Loading...') : 'Loading...') : (typeof window.t === 'function' ? window.t('financial.generateReport', 'Generate Report') : 'Generate Report')"></span>
+                    </button>
                 <button class="fin-btn fin-btn-outline" @click="resetFilters()">
                     <i class="bi bi-arrow-counterclockwise"></i>
-                    Zurücksetzen
+                    <span data-i18n="financial.reset">Reset</span>
                 </button>
             </div>
         </div>
 
         <!-- Main Chart -->
         <div class="fin-card animate-fade-in stagger-2">
-            <div class="fin-card-header">
+                <div class="fin-card-header">
                 <h3 class="fin-card-title">
                     <i class="bi bi-graph-up-arrow"></i>
-                    Umsatzentwicklung
+                    <span data-i18n="financial.mainChartTitle">Revenue trend</span>
                 </h3>
             </div>
             <div class="fin-card-body">
@@ -826,7 +741,7 @@
                 <div class="fin-card-header">
                     <h3 class="fin-card-title">
                         <i class="bi bi-table"></i>
-                        Detaillierte Daten
+                        <span data-i18n="financial.detailedData">Detailed data</span>
                     </h3>
                 </div>
                 <div class="fin-card-body">
@@ -834,18 +749,18 @@
                         <table class="fin-table">
                             <thead>
                                 <tr id="reportTableHeader">
-                                    <th>Zeitraum</th>
-                                    <th>Umsatz</th>
-                                    <th>Ausgaben</th>
-                                    <th>Gewinn</th>
-                                    <th>Transaktionen</th>
+                                    <th data-i18n="financial.table.period">Period</th>
+                                    <th data-i18n="financial.table.revenue">Revenue</th>
+                                    <th data-i18n="financial.table.expenses">Expenses</th>
+                                    <th data-i18n="financial.table.profit">Profit</th>
+                                    <th data-i18n="financial.table.transactions">Transactions</th>
                                 </tr>
                             </thead>
                             <tbody id="reportTableBody">
                                 <tr>
-                                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--fin-text-muted);">
+                                        <td colspan="5" style="text-align: center; padding: 2rem; color: var(--fin-text-muted);">
                                         <i class="bi bi-bar-chart" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-                                        Klicken Sie auf "Bericht generieren" um Daten zu laden
+                                        <span data-i18n="financial.noData">Click "Generate report" to load data</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -859,21 +774,21 @@
                 <div class="fin-card-header">
                     <h3 class="fin-card-title">
                         <i class="bi bi-calculator"></i>
-                        Zusammenfassung
+                        <span data-i18n="financial.summary">Summary</span>
                     </h3>
                 </div>
                 <div class="fin-card-body">
                     <div class="fin-summary-grid" id="summaryStats">
                         <div class="fin-summary-item">
-                            <div class="fin-summary-label">Gesamtumsatz</div>
+                            <div class="fin-summary-label" data-i18n="financial.totalRevenue">Total revenue</div>
                             <div class="fin-summary-value success" id="summaryRevenue">-</div>
                         </div>
                         <div class="fin-summary-item">
-                            <div class="fin-summary-label">Transaktionen</div>
+                            <div class="fin-summary-label" data-i18n="financial.transactions">Transactions</div>
                             <div class="fin-summary-value info" id="summaryTransactions">-</div>
                         </div>
                         <div class="fin-summary-item">
-                            <div class="fin-summary-label">Durchschnitt</div>
+                            <div class="fin-summary-label" data-i18n="financial.average">Average</div>
                             <div class="fin-summary-value" id="summaryAverage">-</div>
                         </div>
                     </div>
@@ -887,7 +802,7 @@
                 <div class="fin-card-header">
                     <h3 class="fin-card-title">
                         <i class="bi bi-pie-chart"></i>
-                        Transaktionstypen
+                        <span data-i18n="financial.transactionTypes">Transaction types</span>
                     </h3>
                 </div>
                 <div class="fin-card-body">
@@ -901,7 +816,7 @@
                 <div class="fin-card-header">
                     <h3 class="fin-card-title">
                         <i class="bi bi-people"></i>
-                        Top Kunden
+                        <span data-i18n="financial.topCustomers">Top customers</span>
                     </h3>
                 </div>
                 <div class="fin-card-body">
@@ -915,11 +830,11 @@
         <!-- Predefined Reports -->
         <div class="fin-card animate-fade-in stagger-5">
             <div class="fin-card-header">
-                <h3 class="fin-card-title">
+                    <h3 class="fin-card-title">
                     <i class="bi bi-file-earmark-text"></i>
-                    Vordefinierte Berichte
+                    <span data-i18n="financial.predefinedReports">Predefined reports</span>
                 </h3>
-                <p style="color: var(--fin-text-secondary); font-size: 0.85rem; margin: 0;">Schneller Zugriff auf häufig verwendete Finanzberichte</p>
+                <p style="color: var(--fin-text-secondary); font-size: 0.85rem; margin: 0;" data-i18n="financial.quickAccess">Quick access to commonly used financial reports</p>
             </div>
             <div class="fin-card-body">
                 <div class="fin-reports-grid">
@@ -927,11 +842,11 @@
                         <div class="fin-report-icon success">
                             <i class="bi bi-currency-euro"></i>
                         </div>
-                        <div class="fin-report-title">Monatlicher Umsatz</div>
-                        <div class="fin-report-desc">Detaillierte monatliche Aufschlüsselung</div>
+                        <div class="fin-report-title" data-i18n="financial.monthlyRevenue">Monthly revenue</div>
+                        <div class="fin-report-desc" data-i18n="financial.monthlyRevenueDesc">Detailed monthly breakdown</div>
                         <button class="fin-report-btn fin-btn-success">
                             <i class="bi bi-arrow-right"></i>
-                            Anzeigen
+                            <span data-i18n="financial.view">View</span>
                         </button>
                     </div>
 
@@ -939,11 +854,11 @@
                         <div class="fin-report-icon primary">
                             <i class="bi bi-people"></i>
                         </div>
-                        <div class="fin-report-title">Kundenanalyse</div>
-                        <div class="fin-report-desc">Zahlungsmuster und Historie</div>
+                        <div class="fin-report-title" data-i18n="financial.customerAnalysis">Customer analysis</div>
+                        <div class="fin-report-desc" data-i18n="financial.customerAnalysisDesc">Payment patterns and history</div>
                         <button class="fin-report-btn" style="background: var(--fin-info); color: white;">
                             <i class="bi bi-arrow-right"></i>
-                            Anzeigen
+                            <span data-i18n="financial.view">View</span>
                         </button>
                     </div>
 
@@ -951,11 +866,11 @@
                         <div class="fin-report-icon info">
                             <i class="bi bi-calculator"></i>
                         </div>
-                        <div class="fin-report-title">Steuerbericht</div>
-                        <div class="fin-report-desc">Steuerfertige Finanzübersicht</div>
+                        <div class="fin-report-title" data-i18n="financial.taxReport">Tax report</div>
+                        <div class="fin-report-desc" data-i18n="financial.taxReportDesc">Tax-ready financial overview</div>
                         <button class="fin-report-btn" style="background: #06b6d4; color: white;">
                             <i class="bi bi-arrow-right"></i>
-                            Anzeigen
+                            <span data-i18n="financial.view">View</span>
                         </button>
                     </div>
 
@@ -963,11 +878,11 @@
                         <div class="fin-report-icon warning">
                             <i class="bi bi-exclamation-triangle"></i>
                         </div>
-                        <div class="fin-report-title">Überfällige Zahlungen</div>
-                        <div class="fin-report-desc">Zahlungen nach Fälligkeit</div>
+                        <div class="fin-report-title" data-i18n="financial.overduePayments">Overdue payments</div>
+                        <div class="fin-report-desc" data-i18n="financial.overduePaymentsDesc">Payments by due date</div>
                         <button class="fin-report-btn" style="background: var(--fin-warning); color: #000;">
                             <i class="bi bi-arrow-right"></i>
-                            Anzeigen
+                            <span data-i18n="financial.view">View</span>
                         </button>
                     </div>
 
@@ -975,11 +890,11 @@
                         <div class="fin-report-icon secondary">
                             <i class="bi bi-briefcase"></i>
                         </div>
-                        <div class="fin-report-title">Job-Rentabilität</div>
-                        <div class="fin-report-desc">Umsatz pro Job Analyse</div>
+                        <div class="fin-report-title" data-i18n="financial.jobProfitability">Job profitability</div>
+                        <div class="fin-report-desc" data-i18n="financial.jobProfitabilityDesc">Revenue per job analysis</div>
                         <button class="fin-report-btn" style="background: var(--fin-text-muted); color: white;">
                             <i class="bi bi-arrow-right"></i>
-                            Anzeigen
+                            <span data-i18n="financial.view">View</span>
                         </button>
                     </div>
 
@@ -987,11 +902,11 @@
                         <div class="fin-report-icon danger">
                             <i class="bi bi-graph-down-arrow"></i>
                         </div>
-                        <div class="fin-report-title">Ausgabenverfolgung</div>
-                        <div class="fin-report-desc">Geschäftsausgaben Analyse</div>
+                        <div class="fin-report-title" data-i18n="financial.expenseTracking">Expense tracking</div>
+                        <div class="fin-report-desc" data-i18n="financial.expenseTrackingDesc">Business expenses analysis</div>
                         <button class="fin-report-btn" style="background: var(--fin-error); color: white;">
                             <i class="bi bi-arrow-right"></i>
-                            Anzeigen
+                            <span data-i18n="financial.view">View</span>
                         </button>
                     </div>
                 </div>
@@ -1004,60 +919,52 @@
                 <div class="fin-modal-backdrop" @click="showExportModal = false"></div>
                 <div class="fin-modal">
                     <div class="fin-modal-header">
-                        <h3 class="fin-modal-title">Finanzberichte exportieren</h3>
+                        <h3 class="fin-modal-title" data-i18n="financial.exportModal.title">Export financial reports</h3>
                         <button class="fin-modal-close" @click="showExportModal = false">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
                     <div class="fin-modal-body">
                         <div class="fin-filter-group" style="margin-bottom: 1rem;">
-                            <label class="fin-filter-label">Export Format</label>
+                            <label class="fin-filter-label" data-i18n="financial.exportFormat">Export format</label>
                             <select class="fin-select" x-model="exportFormat">
-                                <option value="csv">CSV (Excel kompatibel)</option>
-                                <option value="pdf">PDF Bericht</option>
-                                <option value="xlsx">Excel Tabelle</option>
-                                <option value="json">JSON Daten</option>
+                                <option value="csv" data-i18n="financial.exportFormats.csv">CSV (Excel compatible)</option>
+                                <option value="pdf" data-i18n="financial.exportFormats.pdf">PDF report</option>
+                                <option value="xlsx" data-i18n="financial.exportFormats.xlsx">Excel spreadsheet</option>
+                                <option value="json" data-i18n="financial.exportFormats.json">JSON data</option>
                             </select>
                         </div>
                         <div class="fin-filter-group" style="margin-bottom: 1rem;">
-                            <label class="fin-filter-label">Zeitraum</label>
+                            <label class="fin-filter-label" data-i18n="financial.exportRange">Period</label>
                             <select class="fin-select" x-model="exportRange">
-                                <option value="current">Aktuelle Berichtsdaten</option>
-                                <option value="last-month">Letzter Monat</option>
-                                <option value="last-quarter">Letztes Quartal</option>
-                                <option value="last-year">Letztes Jahr</option>
-                                <option value="all">Alle Daten</option>
+                                <option value="current" data-i18n="financial.exportRanges.current">Current report data</option>
+                                <option value="last-month" data-i18n="financial.exportRanges.lastMonth">Last month</option>
+                                <option value="last-quarter" data-i18n="financial.exportRanges.lastQuarter">Last quarter</option>
+                                <option value="last-year" data-i18n="financial.exportRanges.lastYear">Last year</option>
+                                <option value="all" data-i18n="financial.exportRanges.all">All data</option>
                             </select>
                         </div>
                         <label class="fin-checkbox">
                             <input type="checkbox" x-model="includeCharts">
-                            <span class="fin-checkbox-label">Diagramme und Visualisierungen einschließen</span>
+                            <span class="fin-checkbox-label" data-i18n="financial.includeCharts">Include charts and visualizations</span>
                         </label>
                     </div>
                     <div class="fin-modal-footer">
-                        <button class="fin-btn fin-btn-outline" @click="showExportModal = false">
-                            Abbrechen
+                        <button class="fin-btn fin-btn-outline" @click="showExportModal = false" data-i18n="common.cancel">
+                            Cancel
                         </button>
                         <button class="fin-btn fin-btn-primary" @click="performExport()">
                             <i class="bi bi-download"></i>
-                            Exportieren
+                            <span data-i18n="financial.export">Export</span>
                         </button>
                     </div>
                 </div>
             </div>
         </template>
-    </main>
+    </div>
+{{end}}
 
-    <!-- Footer -->
-    <footer class="rc-footer">
-        <div class="rc-container">
-            <div class="rc-footer-content">
-                <p>&copy; 2025 RentalCore. Alle Rechte vorbehalten.</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- JavaScript -->
+{{define "financial_reports_js"}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 function financialReports() {
@@ -1068,6 +975,7 @@ function financialReports() {
         endDate: '',
         loading: false,
         showExportModal: false,
+        fullscreen: false,
         exportFormat: 'csv',
         exportRange: 'current',
         includeCharts: false,
@@ -1076,8 +984,21 @@ function financialReports() {
         topCustomersChart: null,
 
         init() {
+            this.fullscreen = localStorage.getItem('financial_reports_fullscreen') === '1';
+            this.applyFullscreenState();
             this.setDefaultDates();
             this.initCharts();
+            this.setupKeyboardShortcuts();
+        },
+
+        applyFullscreenState() {
+            document.body.classList.toggle('fin-fullscreen', this.fullscreen);
+        },
+
+        toggleFullscreen() {
+            this.fullscreen = !this.fullscreen;
+            localStorage.setItem('financial_reports_fullscreen', this.fullscreen ? '1' : '0');
+            this.applyFullscreenState();
         },
 
         setDefaultDates() {
@@ -1100,7 +1021,7 @@ function financialReports() {
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Umsatz',
+                        label: window.t ? window.t('financial.chart.revenue', 'Revenue') : 'Revenue',
                         data: [],
                         borderColor: '#dc2626',
                         backgroundColor: gradient,
@@ -1112,7 +1033,7 @@ function financialReports() {
                         pointBorderWidth: 2,
                         pointRadius: 4
                     }, {
-                        label: 'Ausgaben',
+                        label: window.t ? window.t('financial.chart.expenses', 'Expenses') : 'Expenses',
                         data: [],
                         borderColor: '#6b7280',
                         backgroundColor: 'transparent',
@@ -1152,7 +1073,7 @@ function financialReports() {
                             displayColors: false,
                             callbacks: {
                                 label: function(context) {
-                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString('de-DE') + ' EUR';
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString('en-US') + ' EUR';
                                 }
                             }
                         }
@@ -1176,7 +1097,7 @@ function financialReports() {
                             ticks: {
                                 color: '#6b7280',
                                 callback: function(value) {
-                                    return value.toLocaleString('de-DE') + ' EUR';
+                                    return value.toLocaleString('en-US') + ' EUR';
                                 }
                             }
                         }
@@ -1230,7 +1151,7 @@ function financialReports() {
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Umsatz',
+                        label: window.t ? window.t('financial.chart.revenue', 'Revenue') : 'Revenue',
                         data: [],
                         backgroundColor: 'rgba(220, 38, 38, 0.8)',
                         borderColor: '#dc2626',
@@ -1256,7 +1177,7 @@ function financialReports() {
                             cornerRadius: 8,
                             callbacks: {
                                 label: function(context) {
-                                    return context.parsed.x.toLocaleString('de-DE') + ' EUR';
+                                    return context.parsed.x.toLocaleString('en-US') + ' EUR';
                                 }
                             }
                         }
@@ -1270,7 +1191,7 @@ function financialReports() {
                             ticks: {
                                 color: '#6b7280',
                                 callback: function(value) {
-                                    return value.toLocaleString('de-DE') + ' EUR';
+                                    return value.toLocaleString('en-US') + ' EUR';
                                 }
                             }
                         },
@@ -1285,6 +1206,65 @@ function financialReports() {
                     }
                 }
             });
+        },
+
+        safeChartUpdate(chart) {
+            if (!chart || !chart.canvas) {
+                console.warn('Chart not ready to update');
+                return;
+            }
+            // Ensure plugin option containers exist to avoid Chart.js configure errors
+            try {
+                if (!chart.options) chart.options = {};
+                if (!chart.options.plugins) chart.options.plugins = {};
+                if (Chart && Chart.registry && Chart.registry.plugins && Chart.registry.plugins.items) {
+                    Object.keys(Chart.registry.plugins.items).forEach(id => {
+                        if (!chart.options.plugins[id]) chart.options.plugins[id] = {};
+                    });
+                }
+                chart.update();
+                return chart;
+            } catch (err) {
+                console.warn('chart.update failed, attempting recreate', err);
+                try {
+                    const canvas = chart.canvas;
+                    const newConfig = {
+                        type: (chart.config && chart.config.type) || 'doughnut',
+                        data: JSON.parse(JSON.stringify(chart.data)),
+                        options: JSON.parse(JSON.stringify(chart.options))
+                    };
+                    // Ensure plugin option containers exist on the recreated config as well
+                    if (!newConfig.options) newConfig.options = {};
+                    if (!newConfig.options.plugins) newConfig.options.plugins = {};
+                    if (Chart && Chart.registry && Chart.registry.plugins && Chart.registry.plugins.items) {
+                        Object.keys(Chart.registry.plugins.items).forEach(id => {
+                            if (!newConfig.options.plugins[id]) newConfig.options.plugins[id] = {};
+                        });
+                    }
+                    chart.destroy();
+                    try {
+                        const rebuilt = new Chart(canvas, newConfig);
+                        return rebuilt;
+                    } catch (firstErr) {
+                        console.warn('Recreate with full options failed, trying minimal options', firstErr);
+                        const minimal = {
+                            type: newConfig.type,
+                            data: newConfig.data,
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: false, tooltip: false },
+                                layout: {}
+                            }
+                        };
+                        const rebuilt2 = new Chart(canvas, minimal);
+                        return rebuilt2;
+                    }
+                } catch (recreateErr) {
+                    console.error('Failed to recreate chart', recreateErr);
+                    throw recreateErr;
+                }
+            }
         },
 
         generateReport() {
@@ -1313,23 +1293,24 @@ function financialReports() {
 
         updateTableHeaders() {
             const header = document.getElementById('reportTableHeader');
+            const t = (key, fallback) => (window.t ? window.t(key, fallback) : fallback);
             let headers = [];
 
             switch(this.reportType) {
                 case 'revenue':
-                    headers = ['Zeitraum', 'Umsatz', 'Ausgaben', 'Gewinn', 'Transaktionen'];
+                    headers = [t('financial.table.period', 'Period'), t('financial.table.revenue', 'Revenue'), t('financial.table.expenses', 'Expenses'), t('financial.table.profit', 'Profit'), t('financial.table.transactions', 'Transactions')];
                     break;
                 case 'payment':
-                    headers = ['Status', 'Anzahl', 'Gesamtbetrag', 'Durchschnitt', 'Prozent'];
+                    headers = [t('financial.table.status', 'Status'), t('financial.table.count', 'Count'), t('financial.table.totalAmount', 'Total amount'), t('financial.table.average', 'Average'), t('financial.table.percent', 'Percent')];
                     break;
                 case 'customer':
-                    headers = ['Kunde', 'Gesamtumsatz', 'Transaktionen', 'Durchschnitt', 'Letzte Zahlung'];
+                    headers = [t('financial.table.customer', 'Customer'), t('financial.table.totalRevenue', 'Total revenue'), t('financial.table.transactions', 'Transactions'), t('financial.table.average', 'Average'), t('financial.table.lastPayment', 'Last payment')];
                     break;
                 case 'job':
-                    headers = ['Job', 'Kunde', 'Umsatz', 'Ausgaben', 'Gewinnmarge'];
+                    headers = [t('financial.table.job', 'Job'), t('financial.table.customer', 'Customer'), t('financial.table.revenue', 'Revenue'), t('financial.table.expenses', 'Expenses'), t('financial.table.profitMargin', 'Profit margin')];
                     break;
                 case 'tax':
-                    headers = ['Zeitraum', 'Bruttoumsatz', 'Steuerbasis', 'MwSt', 'Nettobetrag'];
+                    headers = [t('financial.table.period', 'Period'), t('financial.table.grossRevenue', 'Gross revenue'), t('financial.table.taxBase', 'Tax base'), t('financial.table.vat', 'VAT'), t('financial.table.netAmount', 'Net amount')];
                     break;
             }
 
@@ -1358,7 +1339,7 @@ function financialReports() {
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="5" style="text-align: center; padding: 2rem; color: var(--fin-text-muted);">
-                            Keine Daten für die ausgewählten Kriterien gefunden
+                            ${window.t ? window.t('financial.noResults') : 'No data found for the selected criteria'}
                         </td>
                     </tr>
                 `;
@@ -1375,24 +1356,44 @@ function financialReports() {
                 this.revenueChart.data.labels = chartData.revenue.labels;
                 this.revenueChart.data.datasets[0].data = chartData.revenue.revenue;
                 this.revenueChart.data.datasets[1].data = chartData.revenue.expenses;
-                this.revenueChart.update('active');
+                if (this.revenueChart && this.revenueChart.canvas) {
+                    this.safeChartUpdate(this.revenueChart);
+                } else {
+                    console.warn('Revenue chart not ready to update');
+                }
             }
 
             if (chartData.transactionTypes) {
                 this.transactionTypesChart.data.labels = chartData.transactionTypes.labels;
                 this.transactionTypesChart.data.datasets[0].data = chartData.transactionTypes.data;
-                this.transactionTypesChart.update('active');
+                if (this.transactionTypesChart && this.transactionTypesChart.canvas) {
+                    try {
+                        this.safeChartUpdate(this.transactionTypesChart);
+                    } catch (err) {
+                        console.error('Chart update failed', err, {
+                            chart: this.transactionTypesChart,
+                            chartData: this.transactionTypesChart ? this.transactionTypesChart.data : undefined,
+                            chartOptions: this.transactionTypesChart ? this.transactionTypesChart.options : undefined
+                        });
+                    }
+                } else {
+                    console.warn('Transaction types chart not ready to update');
+                }
             }
 
             if (chartData.topCustomers) {
                 this.topCustomersChart.data.labels = chartData.topCustomers.labels;
                 this.topCustomersChart.data.datasets[0].data = chartData.topCustomers.data;
-                this.topCustomersChart.update('active');
+                if (this.topCustomersChart && this.topCustomersChart.canvas) {
+                    this.safeChartUpdate(this.topCustomersChart);
+                } else {
+                    console.warn('Top customers chart not ready to update');
+                }
             }
         },
 
         updateSummaryStats(summary) {
-            document.getElementById('summaryRevenue').textContent = summary.totalRevenue.toLocaleString('de-DE') + ' EUR';
+            document.getElementById('summaryRevenue').textContent = summary.totalRevenue.toLocaleString('en-US') + ' EUR';
             document.getElementById('summaryTransactions').textContent = summary.totalTransactions;
             document.getElementById('summaryAverage').textContent = summary.averageTransaction.toFixed(2) + ' EUR';
         },
@@ -1441,36 +1442,20 @@ function financialReports() {
             // Trigger download
             window.open(url, '_blank');
             this.showExportModal = false;
+        },
+
+        setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.showExportModal) {
+                    this.showExportModal = false;
+                }
+                if (e.key === 'f' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
+                    this.toggleFullscreen();
+                }
+            });
         }
     };
 }
 
-// Initialize dropdown functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const toggles = document.querySelectorAll('.rc-dropdown-toggle');
-
-    toggles.forEach(toggle => {
-        toggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const dropdown = this.closest('.rc-dropdown');
-
-            if (dropdown) {
-                document.querySelectorAll('.rc-dropdown.show').forEach(other => {
-                    if (other !== dropdown) {
-                        other.classList.remove('show');
-                    }
-                });
-                dropdown.classList.toggle('show');
-            }
-        });
-    });
-
-    document.addEventListener('click', function() {
-        document.querySelectorAll('.rc-dropdown.show').forEach(dropdown => {
-            dropdown.classList.remove('show');
-        });
-    });
-});
     </script>
-</body>
-</html>
+{{end}}

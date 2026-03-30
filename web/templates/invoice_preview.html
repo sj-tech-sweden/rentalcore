@@ -100,16 +100,16 @@
     <!-- Action buttons (not printed) -->
     <div class="invoice-actions no-print">
         <div class="btn-group-vertical">
-            <button onclick="window.print()" class="btn btn-primary mb-2" title="Print Invoice">
+            <button onclick="window.print()" class="btn btn-primary mb-2" data-i18n-attr="title" title="Print Invoice">
                 <i class="bi bi-printer"></i>
             </button>
-            <a href="/invoices/{{.invoice.InvoiceID}}/pdf" class="btn btn-secondary mb-2" title="Download PDF">
+            <a href="/invoices/{{.invoice.InvoiceID}}/pdf" class="btn btn-secondary mb-2" data-i18n-attr="title" title="Download PDF">
                 <i class="bi bi-download"></i>
             </a>
-            <a href="/invoices/{{.invoice.InvoiceID}}/edit" class="btn btn-warning mb-2" title="Edit Invoice">
+            <a href="/invoices/{{.invoice.InvoiceID}}/edit" class="btn btn-warning mb-2" data-i18n-attr="title" title="Edit Invoice">
                 <i class="bi bi-pencil"></i>
             </a>
-            <button onclick="window.close()" class="btn btn-outline-secondary" title="Close">
+            <button onclick="window.close()" class="btn btn-outline-secondary" data-i18n-attr="title" title="Close">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
@@ -139,33 +139,33 @@
             </div>
             
             <div class="col-md-6 text-md-end">
-                <div class="invoice-number">INVOICE</div>
+                <div class="invoice-number" data-i18n="invoice.preview.title">INVOICE</div>
                 <table class="table table-sm mt-3" style="width: auto; margin-left: auto;">
                     <tr>
-                        <td><strong>Invoice #:</strong></td>
+                        <td><strong data-i18n="invoice.preview.number_label">Invoice #:</strong></td>
                         <td>{{.invoice.InvoiceNumber}}</td>
                     </tr>
                     <tr>
-                        <td><strong>Issue Date:</strong></td>
+                        <td><strong data-i18n="invoice.preview.issue_date">Issue Date:</strong></td>
                         <td>{{.invoice.IssueDate.Format "02.01.2006"}}</td>
                     </tr>
                     <tr>
-                        <td><strong>Due Date:</strong></td>
+                        <td><strong data-i18n="invoice.preview.due_date">Due Date:</strong></td>
                         <td>{{.invoice.DueDate.Format "02.01.2006"}}</td>
                     </tr>
                     <tr>
-                        <td><strong>Status:</strong></td>
+                        <td><strong data-i18n="invoice.preview.status_label">Status:</strong></td>
                         <td>
                             {{if eq .invoice.Status "draft"}}
-                                <span class="badge bg-secondary status-badge">Draft</span>
+                                <span class="badge bg-secondary status-badge" data-i18n="invoice.status.draft">Draft</span>
                             {{else if eq .invoice.Status "sent"}}
-                                <span class="badge bg-info status-badge">Sent</span>
+                                <span class="badge bg-info status-badge" data-i18n="invoice.status.sent">Sent</span>
                             {{else if eq .invoice.Status "paid"}}
-                                <span class="badge bg-success status-badge">Paid</span>
+                                <span class="badge bg-success status-badge" data-i18n="invoice.status.paid">Paid</span>
                             {{else if eq .invoice.Status "overdue"}}
-                                <span class="badge bg-danger status-badge">Overdue</span>
+                                <span class="badge bg-danger status-badge" data-i18n="invoice.status.overdue">Overdue</span>
                             {{else if eq .invoice.Status "cancelled"}}
-                                <span class="badge bg-dark status-badge">Cancelled</span>
+                                <span class="badge bg-dark status-badge" data-i18n="invoice.status.cancelled">Cancelled</span>
                             {{else}}
                                 <span class="badge bg-light text-dark status-badge">{{.invoice.Status}}</span>
                             {{end}}
@@ -180,7 +180,7 @@
             <div class="col-md-6">
                 <div class="customer-section">
                     <h5 class="text-primary mb-3">
-                        <i class="bi bi-person-circle"></i> Bill To:
+                        <i class="bi bi-person-circle"></i> <span data-i18n="invoice.preview.bill_to">Bill To:</span>
                     </h5>
                     {{if .invoice.Customer}}
                     <strong class="fs-5">{{.invoice.Customer.GetDisplayName}}</strong><br>
@@ -195,7 +195,7 @@
                     </div>
                     {{end}}
                     {{else}}
-                    <div class="text-muted">Customer information not available</div>
+                    <div class="text-muted" data-i18n="invoice.preview.no_customer">Customer information not available</div>
                     {{end}}
                 </div>
             </div>
@@ -204,7 +204,7 @@
                 {{if .invoice.Job}}
                 <div class="customer-section">
                     <h5 class="text-primary mb-3">
-                        <i class="bi bi-briefcase"></i> Job Reference:
+                        <i class="bi bi-briefcase"></i> <span data-i18n="invoice.preview.job_reference">Job Reference:</span>
                     </h5>
                     <strong>{{.invoice.Job.Description}}</strong><br>
                     {{if .invoice.Job.StartDate}}<small class="text-muted">Start: {{.invoice.Job.StartDate.Format "02.01.2006"}}</small><br>{{end}}
@@ -215,7 +215,7 @@
                 {{if .invoice.PaymentTerms}}
                 <div class="{{if not .invoice.Job}}customer-section{{else}}mt-3 p-3 border rounded{{end}}">
                     <h6 class="text-primary">
-                        <i class="bi bi-credit-card"></i> Payment Terms:
+                        <i class="bi bi-credit-card"></i> <span data-i18n="invoice.preview.payment_terms">Payment Terms:</span>
                     </h6>
                     {{.invoice.PaymentTerms}}
                 </div>

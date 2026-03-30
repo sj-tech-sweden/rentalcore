@@ -1,31 +1,8 @@
-<!DOCTYPE html>
-<html lang="de" data-theme="dark">
-<head>
-    <script>
-        (function() {
-            const t=(localStorage.getItem("rc-theme")||"dark");
-            document.documentElement.setAttribute("data-theme",t);
-        })();
-    </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.title}} - RentalCore</title>
+{{template "base.html" .}}
 
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RentalCore">
-    <link rel="apple-touch-icon" href="/static/images/icon-180.png">
-    <meta name="theme-color" content="#030712">
-    <meta name="msapplication-TileColor" content="#030712">
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/rental-core-design.css?v={{.timestamp}}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+{{define "financial_dashboard_css"}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
     <style>
 /* Premium Financial Dashboard Styles */
 :root {
@@ -871,6 +848,33 @@
     color: var(--fin-text-primary);
 }
 
+/* Fullscreen mode keeps the same UI but removes app chrome */
+body.fin-fullscreen .rc-navbar,
+body.fin-fullscreen .rc-footer {
+    display: none;
+}
+
+body.fin-fullscreen .rc-header,
+body.fin-fullscreen .rc-sidebar,
+body.fin-fullscreen .rc-sidebar-backdrop {
+    display: none !important;
+}
+
+body.fin-fullscreen {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+}
+
+body.fin-fullscreen #rcMainContent {
+    max-width: 100%;
+    width: 100%;
+    padding-top: 0.75rem;
+}
+
+body.fin-fullscreen .fin-header {
+    padding-top: 1rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .fin-header-content {
@@ -900,114 +904,17 @@
     }
 }
     </style>
-</head>
-<body class="rc-animate-fade-in">
-    <!-- Background -->
+{{end}}
+
+{{define "financial_dashboard_content"}}
     <div class="fin-page-bg"></div>
-
-    <!-- Navigation -->
-    <nav class="rc-navbar">
-        <div class="rc-container">
-            <div class="rc-navbar-content">
-                <a href="/" class="rc-navbar-brand">
-                    <i class="bi bi-gear-wide-connected"></i>
-                    RentalCore
-                </a>
-
-                <!-- Mobile toggle -->
-                <button class="rc-navbar-toggle">
-                    <i class="bi bi-list"></i>
-                </button>
-
-                <!-- Main navigation -->
-                <ul class="rc-navbar-nav">
-                    <li><a href="/jobs" class="rc-nav-link">
-                        <i class="bi bi-briefcase"></i> Jobs
-                    </a></li>
-                    <li><a href="/devices" class="rc-nav-link">
-                        <i class="bi bi-cpu"></i> Devices
-                    </a></li>
-                    <li><a href="/customers" class="rc-nav-link">
-                        <i class="bi bi-people"></i> Customers
-                    </a></li>
-
-                    <!-- Tools Dropdown -->
-                    <li class="rc-dropdown">
-                        <a href="#" class="rc-nav-link rc-dropdown-toggle">
-                            <i class="bi bi-tools"></i> Tools
-                        </a>
-                        <div class="rc-dropdown-menu">
-                            <div class="rc-dropdown-header">
-                                <i class="bi bi-folder"></i> Management
-                            </div>
-                            <a href="/workflow/packages" class="rc-dropdown-item">
-                                <i class="bi bi-box-seam"></i> Equipment Packages
-                            </a>
-                            <hr class="rc-dropdown-divider">
-                            <div class="rc-dropdown-header">
-                                <i class="bi bi-building"></i> Business
-                            </div>
-                            <a href="/invoices" class="rc-dropdown-item">
-                                <i class="bi bi-file-text"></i> Invoices
-                            </a>
-                            <a href="/analytics" class="rc-dropdown-item">
-                                <i class="bi bi-graph-up"></i> Analytics
-                            </a>
-                            <a href="/financial" class="rc-dropdown-item active">
-                                <i class="bi bi-currency-dollar"></i> Financial
-                            </a>
-                        </div>
-                    </li>
-
-                    <!-- User Dropdown -->
-                    {{if .user}}
-                    <li class="rc-dropdown">
-                        <a href="#" class="rc-nav-link rc-dropdown-toggle">
-                            <i class="bi bi-person-circle"></i> {{.user.Username}}
-                        </a>
-                        <div class="rc-dropdown-menu">
-                            <div class="rc-dropdown-header">
-                                <i class="bi bi-person"></i> {{.user.FirstName}} {{.user.LastName}}
-                            </div>
-                            <hr class="rc-dropdown-divider">
-                            <div class="rc-dropdown-header">Personal</div>
-                            <a href="/profile/settings" class="rc-dropdown-item">
-                                <i class="bi bi-gear"></i> Settings
-                            </a>
-                            <hr class="rc-dropdown-divider">
-                            <div class="rc-dropdown-header">Administration</div>
-                            <a href="/users" class="rc-dropdown-item">
-                                <i class="bi bi-people-fill"></i> User Management
-                            </a>
-                            <a href="/security/audit" class="rc-dropdown-item">
-                                <i class="bi bi-shield-check"></i> Security Audit
-                            </a>
-                            <a href="/security/roles" class="rc-dropdown-item">
-                                <i class="bi bi-key"></i> Security Roles
-                            </a>
-                            <a href="/company/settings" class="rc-dropdown-item">
-                                <i class="bi bi-building-gear"></i> Company Settings
-                            </a>
-                            <hr class="rc-dropdown-divider">
-                            <a href="/logout" class="rc-dropdown-item">
-                                <i class="bi bi-box-arrow-right"></i> Logout
-                            </a>
-                        </div>
-                    </li>
-                    {{end}}
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="rc-container rc-py-4" x-data="financialDashboard()">
+    <div class="rc-container rc-py-4" x-data="financialDashboard()">
         <!-- Header Section -->
         <div class="fin-header animate-fade-in">
             <div class="fin-header-content">
                 <div>
-                    <h1 class="fin-title">Finanzen</h1>
-                    <p class="fin-subtitle">Echtzeit-Umsatz, Cashflow und Finanzperformance im Blick</p>
+                    <h1 class="fin-title" data-i18n="financial.title">Finances</h1>
+                    <p class="fin-subtitle" data-i18n="financial.subtitle">Real-time revenue, cashflow and financial performance</p>
                 </div>
                 <div class="fin-controls">
                     <div class="fin-period-pills">
@@ -1026,22 +933,27 @@
                         <div class="fin-dropdown-menu" x-show="open" @click.away="open = false" x-transition>
                             <a href="/financial/api/export/transactions?format=csv" class="fin-dropdown-item">
                                 <i class="bi bi-file-earmark-spreadsheet"></i>
-                                Transaktionen CSV
+                                <span data-i18n="financial.exportFormats.csv">Transactions CSV</span>
                             </a>
                             <a href="/financial/api/export/revenue?format=csv" class="fin-dropdown-item">
                                 <i class="bi bi-file-earmark-text"></i>
-                                Umsatzbericht CSV
+                                <span data-i18n="financial.exportFormats.csv">Revenue CSV</span>
                             </a>
                             <a href="javascript:void(0)" @click="exportPDF()" class="fin-dropdown-item">
                                 <i class="bi bi-file-earmark-pdf"></i>
-                                Finanzbericht PDF
+                                <span data-i18n="financial.exportFormats.pdf">Financial PDF</span>
                             </a>
                         </div>
                     </div>
 
                     <button class="fin-btn fin-btn-primary" @click="refresh()" :disabled="loading">
                         <i class="bi bi-arrow-clockwise" :class="{ 'spin': loading }"></i>
-                        <span x-text="loading ? 'Laden...' : 'Aktualisieren'"></span>
+                        <span x-text="loading ? (typeof window.t === 'function' ? window.t('common.loading', 'Loading...') : 'Loading...') : (typeof window.t === 'function' ? window.t('financial.refresh', 'Refresh') : 'Refresh')"></span>
+                    </button>
+
+                    <button class="fin-btn fin-btn-outline" @click="toggleFullscreen()" :title="fullscreen ? (window.t ? window.t('financial.exitFullscreen', 'Exit fullscreen') : 'Exit fullscreen') : (window.t ? window.t('financial.fullscreen', 'Fullscreen') : 'Fullscreen')">
+                        <i class="bi" :class="fullscreen ? 'bi-fullscreen-exit' : 'bi-fullscreen'"></i>
+                        <span x-text="fullscreen ? (window.t ? window.t('financial.exitFullscreen', 'Exit fullscreen') : 'Exit fullscreen') : (window.t ? window.t('financial.fullscreen', 'Fullscreen') : 'Fullscreen')"></span>
                     </button>
                 </div>
             </div>
@@ -1061,7 +973,7 @@
                     </span>
                 </div>
                 <div class="fin-metric-value" id="total-revenue">{{printf "%.0f" .stats.totalRevenue}}</div>
-                <div class="fin-metric-label">Gesamtumsatz</div>
+                <div class="fin-metric-label" data-i18n="financial.totalRevenue">Total revenue</div>
             </div>
 
             <!-- Profit -->
@@ -1075,8 +987,8 @@
                         +18.2%
                     </span>
                 </div>
-                <div class="fin-metric-value" id="profit-value">{{printf "%.0f" .stats.profit}}</div>
-                <div class="fin-metric-label">Netto Gewinn</div>
+                <div class="fin-metric-value" id="profit-value">{{with index .stats "profit"}}{{printf "%.0f" .}}{{else}}0{{end}}</div>
+                <div class="fin-metric-label" data-i18n="financial.table.profit">Net profit</div>
             </div>
 
             <!-- Pending Payments -->
@@ -1087,11 +999,11 @@
                     </div>
                     <span class="fin-metric-trend neutral">
                         <i class="bi bi-dash"></i>
-                        {{.stats.pendingTransactions}} offen
+                        {{.stats.pendingTransactions}} <span data-i18n="financial.dashboard.pendingOpen">open</span>
                     </span>
                 </div>
                 <div class="fin-metric-value" id="pending-payments">{{printf "%.0f" .stats.pendingPayments}}</div>
-                <div class="fin-metric-label">Ausstehend</div>
+                <div class="fin-metric-label" data-i18n="financial.dashboard.pending">Pending</div>
             </div>
 
             <!-- Overdue Payments -->
@@ -1102,15 +1014,15 @@
                     </div>
                     <span class="fin-metric-trend" :class="{{.stats.overduePayments}} > 0 ? 'negative' : 'positive'">
                         <template x-if="{{.stats.overduePayments}} > 0">
-                            <><i class="bi bi-arrow-up"></i>Warnung</>
+                            <><i class="bi bi-arrow-up"></i><span data-i18n="financial.dashboard.warning">Warning</span></>
                         </template>
                         <template x-if="{{.stats.overduePayments}} == 0">
-                            <><i class="bi bi-check"></i>Ok</>
+                            <><i class="bi bi-check"></i><span data-i18n="financial.dashboard.ok">OK</span></>
                         </template>
                     </span>
                 </div>
                 <div class="fin-metric-value" id="overdue-payments">{{printf "%.0f" .stats.overduePayments}}</div>
-                <div class="fin-metric-label">Uberfällig</div>
+                <div class="fin-metric-label" data-i18n="financial.dashboard.overdue">Overdue</div>
             </div>
 
             <!-- Monthly Revenue -->
@@ -1125,18 +1037,18 @@
                     </span>
                 </div>
                 <div class="fin-metric-value" id="monthly-revenue">{{printf "%.0f" .stats.monthlyRevenue}}</div>
-                <div class="fin-metric-label">Diesen Monat</div>
+                <div class="fin-metric-label" data-i18n="financial.thisMonth">This month</div>
             </div>
 
             <!-- Health Score -->
             <div class="fin-metric-card health animate-fade-in stagger-6" @click="showDetail('health')">
                 <div class="fin-metric-header" style="justify-content: center; margin-bottom: 0.5rem;">
-                    <span style="color: #06b6d4; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Finanzgesundheit</span>
+                    <span style="color: #06b6d4; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;" data-i18n="financial.dashboard.health">Financial health</span>
                 </div>
                 <div style="display: flex; justify-content: center; margin: 0.5rem 0;">
                     <div class="fin-health-ring" id="health-ring">85</div>
                 </div>
-                <div class="fin-metric-label" style="text-align: center; margin-top: 0.5rem;">Sehr Gut</div>
+                <div class="fin-metric-label" style="text-align: center; margin-top: 0.5rem;" data-i18n="financial.dashboard.veryGood">Very good</div>
             </div>
         </div>
 
@@ -1147,12 +1059,12 @@
                 <div class="fin-chart-header">
                     <h3 class="fin-chart-title">
                         <i class="bi bi-graph-up-arrow"></i>
-                        Umsatzentwicklung
+                        <span data-i18n="financial.dashboard.revenueTrend">Revenue trend</span>
                     </h3>
                     <div class="fin-period-pills" style="padding: 2px;">
-                        <button class="fin-period-pill" :class="{ 'active': chartPeriod === 'monthly' }" @click="setChartPeriod('monthly')" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">Monat</button>
-                        <button class="fin-period-pill" :class="{ 'active': chartPeriod === 'weekly' }" @click="setChartPeriod('weekly')" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">Woche</button>
-                        <button class="fin-period-pill" :class="{ 'active': chartPeriod === 'daily' }" @click="setChartPeriod('daily')" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">Tag</button>
+                        <button class="fin-period-pill" :class="{ 'active': chartPeriod === 'monthly' }" @click="setChartPeriod('monthly')" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;" data-i18n="financial.period.monthly">Month</button>
+                        <button class="fin-period-pill" :class="{ 'active': chartPeriod === 'weekly' }" @click="setChartPeriod('weekly')" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;" data-i18n="financial.dashboard.week">Week</button>
+                        <button class="fin-period-pill" :class="{ 'active': chartPeriod === 'daily' }" @click="setChartPeriod('daily')" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;" data-i18n="financial.dashboard.day">Day</button>
                     </div>
                 </div>
                 <div class="fin-chart-container">
@@ -1165,7 +1077,7 @@
                 <div class="fin-chart-header">
                     <h3 class="fin-chart-title">
                         <i class="bi bi-pie-chart"></i>
-                        Zahlungsstatus
+                        <span data-i18n="financial.dashboard.paymentStatus">Payment status</span>
                     </h3>
                 </div>
                 <div class="fin-chart-container">
@@ -1182,7 +1094,7 @@
                 </div>
                 <div class="fin-secondary-content">
                     <div class="fin-secondary-value" id="avg-transaction">850</div>
-                    <div class="fin-secondary-label">Durchschn. Transaktion</div>
+                    <div class="fin-secondary-label" data-i18n="financial.dashboard.avgTransaction">Avg. transaction</div>
                 </div>
             </div>
 
@@ -1192,7 +1104,7 @@
                 </div>
                 <div class="fin-secondary-content">
                     <div class="fin-secondary-value">70%</div>
-                    <div class="fin-secondary-label">Gewinnmarge</div>
+                    <div class="fin-secondary-label" data-i18n="financial.dashboard.profitMargin">Profit margin</div>
                 </div>
             </div>
 
@@ -1202,7 +1114,7 @@
                 </div>
                 <div class="fin-secondary-content">
                     <div class="fin-secondary-value" id="transaction-count">156</div>
-                    <div class="fin-secondary-label">Transaktionen gesamt</div>
+                    <div class="fin-secondary-label" data-i18n="financial.dashboard.totalTransactions">Total transactions</div>
                 </div>
             </div>
         </div>
@@ -1212,10 +1124,10 @@
             <div class="fin-table-header">
                 <h3 class="fin-table-title">
                     <i class="bi bi-list-ul"></i>
-                    Letzte Transaktionen
+                    <span data-i18n="financial.dashboard.recentTransactions">Recent transactions</span>
                 </h3>
                 <a href="/financial/transactions" class="fin-btn fin-btn-outline">
-                    Alle anzeigen
+                    <span data-i18n="financial.dashboard.viewAll">View all</span>
                     <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -1223,20 +1135,20 @@
                 <table class="fin-table">
                     <thead>
                         <tr>
-                            <th>Datum</th>
-                            <th>Typ</th>
-                            <th>Kunde</th>
-                            <th>Betrag</th>
-                            <th>Status</th>
-                            <th>Referenz</th>
-                            <th>Aktionen</th>
+                            <th data-i18n="financial.dashboard.table.date">Date</th>
+                            <th data-i18n="financial.dashboard.table.type">Type</th>
+                            <th data-i18n="financial.dashboard.table.customer">Customer</th>
+                            <th data-i18n="financial.dashboard.table.amount">Amount</th>
+                            <th data-i18n="financial.dashboard.table.status">Status</th>
+                            <th data-i18n="financial.dashboard.table.reference">Reference</th>
+                            <th data-i18n="financial.dashboard.table.actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="recent-transactions">
                         <tr>
                             <td colspan="7" style="text-align: center; padding: 3rem;">
                                 <div class="fin-spinner" style="margin: 0 auto 1rem;"></div>
-                                <div style="color: var(--fin-text-muted);">Lade Transaktionen...</div>
+                                <div style="color: var(--fin-text-muted);" data-i18n="financial.dashboard.loadingTransactions">Loading transactions...</div>
                             </td>
                         </tr>
                     </tbody>
@@ -1250,32 +1162,32 @@
                 <div class="fin-action-icon">
                     <i class="bi bi-plus-lg"></i>
                 </div>
-                <div class="fin-action-title">Neue Transaktion</div>
-                <div class="fin-action-desc">Zahlung oder Ausgabe erfassen</div>
+                <div class="fin-action-title" data-i18n="financial.dashboard.quick.newTransaction">New transaction</div>
+                <div class="fin-action-desc" data-i18n="financial.dashboard.quick.newTransactionDesc">Record payment or expense</div>
             </a>
 
             <div class="fin-action-card animate-fade-in stagger-2" @click="generateInvoices()">
                 <div class="fin-action-icon" style="background: rgba(34, 197, 94, 0.1); color: var(--fin-success);">
                     <i class="bi bi-file-earmark-text"></i>
                 </div>
-                <div class="fin-action-title">Rechnungen erstellen</div>
-                <div class="fin-action-desc">Automatische Rechnungsgenerierung</div>
+                <div class="fin-action-title" data-i18n="financial.dashboard.quick.generateInvoices">Generate invoices</div>
+                <div class="fin-action-desc" data-i18n="financial.dashboard.quick.generateInvoicesDesc">Automatic invoice generation</div>
             </div>
 
             <a href="/financial/reports" class="fin-action-card animate-fade-in stagger-3">
                 <div class="fin-action-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--fin-info);">
                     <i class="bi bi-bar-chart-line"></i>
                 </div>
-                <div class="fin-action-title">Berichte</div>
-                <div class="fin-action-desc">Detaillierte Finanzberichte</div>
+                <div class="fin-action-title" data-i18n="financial.dashboard.quick.reports">Reports</div>
+                <div class="fin-action-desc" data-i18n="financial.dashboard.quick.reportsDesc">Detailed financial reports</div>
             </a>
 
             <div class="fin-action-card animate-fade-in stagger-4" @click="sendReminders()">
                 <div class="fin-action-icon" style="background: rgba(234, 179, 8, 0.1); color: var(--fin-warning);">
                     <i class="bi bi-bell"></i>
                 </div>
-                <div class="fin-action-title">Erinnerungen senden</div>
-                <div class="fin-action-desc">Zahlungserinnerungen versenden</div>
+                <div class="fin-action-title" data-i18n="financial.dashboard.quick.sendReminders">Send reminders</div>
+                <div class="fin-action-desc" data-i18n="financial.dashboard.quick.sendRemindersDesc">Send payment reminders</div>
             </div>
         </div>
 
@@ -1294,18 +1206,10 @@
                 </div>
             </div>
         </template>
-    </main>
+    </div>
+{{end}}
 
-    <!-- Footer -->
-    <footer class="rc-footer">
-        <div class="rc-container">
-            <div class="rc-footer-content">
-                <p>&copy; 2025 RentalCore. Alle Rechte vorbehalten.</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- JavaScript -->
+{{define "financial_dashboard_js"}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
 function financialDashboard() {
@@ -1316,16 +1220,29 @@ function financialDashboard() {
         modalOpen: false,
         modalTitle: '',
         modalContent: '',
+        fullscreen: false,
         revenueChart: null,
         paymentStatusChart: null,
 
         init() {
+            this.fullscreen = localStorage.getItem('financial_dashboard_fullscreen') === '1';
+            this.applyFullscreenState();
             this.initCharts();
             this.loadTransactions();
             this.updateCharts();
             this.startAutoRefresh();
             this.setupKeyboardShortcuts();
             this.animateNumbers();
+        },
+
+        applyFullscreenState() {
+            document.body.classList.toggle('fin-fullscreen', this.fullscreen);
+        },
+
+        toggleFullscreen() {
+            this.fullscreen = !this.fullscreen;
+            localStorage.setItem('financial_dashboard_fullscreen', this.fullscreen ? '1' : '0');
+            this.applyFullscreenState();
         },
 
         setPeriod(p) {
@@ -1357,7 +1274,7 @@ function financialDashboard() {
                 data: {
                     labels: [],
                     datasets: [{
-                        label: 'Umsatz',
+                        label: window.t ? window.t('financial.chart.revenue', 'Revenue') : 'Revenue',
                         data: [],
                         borderColor: '#dc2626',
                         backgroundColor: gradient,
@@ -1370,7 +1287,7 @@ function financialDashboard() {
                         pointRadius: 4,
                         pointHoverRadius: 6
                     }, {
-                        label: 'Ausgaben',
+                        label: window.t ? window.t('financial.chart.expenses', 'Expenses') : 'Expenses',
                         data: [],
                         borderColor: '#6b7280',
                         backgroundColor: 'transparent',
@@ -1411,7 +1328,7 @@ function financialDashboard() {
                             displayColors: false,
                             callbacks: {
                                 label: function(context) {
-                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString('de-DE') + ' EUR';
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString('en-US') + ' EUR';
                                 }
                             }
                         }
@@ -1437,7 +1354,7 @@ function financialDashboard() {
                                 color: '#6b7280',
                                 font: { size: 11 },
                                 callback: function(value) {
-                                    return value.toLocaleString('de-DE') + ' EUR';
+                                    return value.toLocaleString('en-US') + ' EUR';
                                 }
                             }
                         }
@@ -1445,14 +1362,29 @@ function financialDashboard() {
                 }
             });
 
-            // Payment Status Chart
-            const statusCtx = document.getElementById('paymentStatusChart').getContext('2d');
-            this.paymentStatusChart = new Chart(statusCtx, {
+            this.rebuildPaymentStatusChart([0, 0, 0, 0]);
+        },
+
+        rebuildPaymentStatusChart(statusData) {
+            const canvas = document.getElementById('paymentStatusChart');
+            if (!canvas) {
+                console.warn('Payment status canvas not found');
+                return;
+            }
+            if (this.paymentStatusChart) {
+                try { this.paymentStatusChart.destroy(); } catch (_) {}
+            }
+            this.paymentStatusChart = new Chart(canvas, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Abgeschlossen', 'Ausstehend', 'Fehlgeschlagen', 'Storniert'],
+                    labels: [
+                        (window.t ? window.t('financial.status.completed', 'Completed') : 'Completed'),
+                        (window.t ? window.t('financial.status.pending', 'Pending') : 'Pending'),
+                        (window.t ? window.t('financial.status.failed', 'Failed') : 'Failed'),
+                        (window.t ? window.t('financial.status.cancelled', 'Cancelled') : 'Cancelled')
+                    ],
                     datasets: [{
-                        data: [0, 0, 0, 0],
+                        data: statusData,
                         backgroundColor: ['#22c55e', '#eab308', '#ef4444', '#6b7280'],
                         borderWidth: 0,
                         hoverOffset: 10
@@ -1487,6 +1419,66 @@ function financialDashboard() {
             });
         },
 
+        safeChartUpdate(chart) {
+            if (!chart || !chart.canvas) {
+                console.warn('Chart not ready to update');
+                return;
+            }
+            // Ensure plugin option containers exist to avoid Chart.js configure errors
+            try {
+                if (!chart.options) chart.options = {};
+                if (!chart.options.plugins) chart.options.plugins = {};
+                if (Chart && Chart.registry && Chart.registry.plugins && Chart.registry.plugins.items) {
+                    Object.keys(Chart.registry.plugins.items).forEach(id => {
+                        if (!chart.options.plugins[id]) chart.options.plugins[id] = {};
+                    });
+                }
+                chart.update();
+                return chart;
+            } catch (err) {
+                console.warn('chart.update failed, attempting recreate', err);
+                try {
+                    const canvas = chart.canvas;
+                    const newConfig = {
+                        type: (chart.config && chart.config.type) || 'doughnut',
+                        data: JSON.parse(JSON.stringify(chart.data)),
+                        options: JSON.parse(JSON.stringify(chart.options))
+                    };
+                    // Ensure plugin option containers exist on the recreated config as well
+                    if (!newConfig.options) newConfig.options = {};
+                    if (!newConfig.options.plugins) newConfig.options.plugins = {};
+                    if (Chart && Chart.registry && Chart.registry.plugins && Chart.registry.plugins.items) {
+                        Object.keys(Chart.registry.plugins.items).forEach(id => {
+                            if (!newConfig.options.plugins[id]) newConfig.options.plugins[id] = {};
+                        });
+                    }
+                    chart.destroy();
+                    try {
+                        const rebuilt = new Chart(canvas, newConfig);
+                        return rebuilt;
+                    } catch (firstErr) {
+                        // Fallback: try creating with minimal options to avoid plugin configure issues
+                        console.warn('Recreate with full options failed, trying minimal options', firstErr);
+                        const minimal = {
+                            type: newConfig.type,
+                            data: newConfig.data,
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: false, tooltip: false },
+                                layout: {}
+                            }
+                        };
+                        const rebuilt2 = new Chart(canvas, minimal);
+                        return rebuilt2;
+                    }
+                } catch (recreateErr) {
+                    console.error('Failed to recreate chart', recreateErr);
+                    throw recreateErr;
+                }
+            }
+        },
+
         updateCharts() {
             this.updateRevenueChart();
             this.updatePaymentStatusChart();
@@ -1500,7 +1492,11 @@ function financialDashboard() {
                         this.revenueChart.data.labels = data.data.map(item => item.period);
                         this.revenueChart.data.datasets[0].data = data.data.map(item => item.revenue || 0);
                         this.revenueChart.data.datasets[1].data = data.data.map(item => item.expenses || 0);
-                        this.revenueChart.update('active');
+                        if (this.revenueChart && this.revenueChart.canvas) {
+                            this.revenueChart = this.safeChartUpdate(this.revenueChart) || this.revenueChart;
+                        } else {
+                            console.warn('Revenue chart not ready to update');
+                        }
                     }
                 })
                 .catch(error => console.error('Error loading revenue data:', error));
@@ -1508,10 +1504,19 @@ function financialDashboard() {
 
         updatePaymentStatusChart() {
             fetch('/financial/api/payment-report')
-                .then(response => response.json())
+                .then(response => {
+                    const ct = response.headers.get('content-type') || '';
+                    if (!response.ok) {
+                        return response.text().then(t => { console.error('Payment report error response:', t); throw new Error('Server error'); });
+                    }
+                    if (!ct.includes('application/json')) {
+                        return response.text().then(t => { console.error('Unexpected non-JSON response for payment report:', t); throw new Error('Invalid JSON'); });
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     const statusData = [0, 0, 0, 0];
-                    if (data.statusBreakdown) {
+                    if (data && data.statusBreakdown) {
                         data.statusBreakdown.forEach(item => {
                             switch(item.status) {
                                 case 'completed': statusData[0] = item.count; break;
@@ -1521,8 +1526,14 @@ function financialDashboard() {
                             }
                         });
                     }
-                    this.paymentStatusChart.data.datasets[0].data = statusData;
-                    this.paymentStatusChart.update('active');
+                    try {
+                        this.rebuildPaymentStatusChart(statusData);
+                    } catch (err) {
+                        console.error('Payment status chart rebuild failed', err, {
+                            chart: this.paymentStatusChart,
+                            statusData
+                        });
+                    }
                 })
                 .catch(error => console.error('Error loading payment status:', error));
         },
@@ -1538,18 +1549,18 @@ function financialDashboard() {
                         data.transactions.slice(0, 10).forEach(transaction => {
                             const row = document.createElement('tr');
                             row.innerHTML = `
-                                <td>${new Date(transaction.transactionDate).toLocaleDateString('de-DE')}</td>
+                                <td>${new Date(transaction.transactionDate).toLocaleDateString('en-US')}</td>
                                 <td><span class="fin-type-badge"><i class="bi bi-tag"></i> ${transaction.type}</span></td>
-                                <td>${transaction.customer ? (transaction.customer.companyname || 'Privat') : 'N/A'}</td>
-                                <td class="fin-amount positive">${transaction.amount.toLocaleString('de-DE', {minimumFractionDigits: 2})} EUR</td>
+                                <td>${transaction.customer ? (transaction.customer.companyname || (window.t ? window.t('financial.dashboard.privateCustomer', 'Private') : 'Private')) : 'N/A'}</td>
+                                <td class="fin-amount positive">${transaction.amount.toLocaleString('en-US', {minimumFractionDigits: 2})} EUR</td>
                                 <td><span class="fin-badge fin-badge-${transaction.status}">${transaction.status}</span></td>
                                 <td style="color: var(--fin-text-muted);">${transaction.referenceNumber || '-'}</td>
                                 <td>
                                     <div style="display: flex; gap: 0.5rem;">
-                                        <button class="fin-btn fin-btn-ghost" onclick="window.location.href='/financial/transactions/${transaction.transactionID}'" title="Anzeigen">
+                                        <button class="fin-btn fin-btn-ghost" onclick="window.location.href='/financial/transactions/${transaction.transactionID}'" title="View" data-i18n-attr="title:financial.view">
                                             <i class="bi bi-eye"></i>
                                         </button>
-                                        <button class="fin-btn fin-btn-ghost" onclick="window.location.href='/financial/transactions/${transaction.transactionID}/edit'" title="Bearbeiten">
+                                        <button class="fin-btn fin-btn-ghost" onclick="window.location.href='/financial/transactions/${transaction.transactionID}/edit'" title="Edit" data-i18n-attr="title:common.update">
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                     </div>
@@ -1561,7 +1572,7 @@ function financialDashboard() {
                         tbody.innerHTML = `
                             <tr>
                                 <td colspan="7" style="text-align: center; padding: 3rem; color: var(--fin-text-muted);">
-                                    Keine Transaktionen gefunden
+                                    ${window.t ? window.t('financial.dashboard.noTransactions', 'No transactions found') : 'No transactions found'}
                                 </td>
                             </tr>
                         `;
@@ -1572,7 +1583,7 @@ function financialDashboard() {
                     document.getElementById('recent-transactions').innerHTML = `
                         <tr>
                             <td colspan="7" style="text-align: center; padding: 3rem; color: var(--fin-error);">
-                                Fehler beim Laden der Transaktionen
+                                ${window.t ? window.t('financial.dashboard.loadTransactionsError', 'Error loading transactions') : 'Error loading transactions'}
                             </td>
                         </tr>
                     `;
@@ -1581,15 +1592,15 @@ function financialDashboard() {
 
         showDetail(metric) {
             const titles = {
-                'revenue': 'Umsatzdetails',
-                'profit': 'Gewinnanalyse',
-                'pending': 'Ausstehende Zahlungen',
-                'monthly': 'Monatsumsatz',
-                'overdue': 'Uberfällige Zahlungen',
-                'health': 'Finanzgesundheit'
+                'revenue': window.t ? window.t('financial.dashboard.modal.revenueTitle', 'Revenue details') : 'Revenue details',
+                'profit': window.t ? window.t('financial.dashboard.modal.profitTitle', 'Profit analysis') : 'Profit analysis',
+                'pending': window.t ? window.t('financial.dashboard.modal.pendingTitle', 'Pending payments') : 'Pending payments',
+                'monthly': window.t ? window.t('financial.monthlyRevenue', 'Monthly revenue') : 'Monthly revenue',
+                'overdue': window.t ? window.t('financial.dashboard.modal.overdueTitle', 'Overdue payments') : 'Overdue payments',
+                'health': window.t ? window.t('financial.dashboard.modal.healthTitle', 'Financial health') : 'Financial health'
             };
 
-            this.modalTitle = titles[metric] || 'Details';
+            this.modalTitle = titles[metric] || (window.t ? window.t('financial.dashboard.modal.details', 'Details') : 'Details');
 
             const totalRevenue = document.getElementById('total-revenue').textContent;
             const profitValue = document.getElementById('profit-value').textContent;
@@ -1599,33 +1610,34 @@ function financialDashboard() {
 
             let content = '';
 
+            const t = (k, f) => (window.t ? window.t(k, f) : f);
             switch(metric) {
                 case 'revenue':
                     content = `
                         <div class="fin-detail-grid">
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Abgeschlossen</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.completed', 'Completed')}</div>
                                 <div class="fin-detail-value">${totalRevenue} EUR</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Wachstum</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.growth', 'Growth')}</div>
                                 <div class="fin-detail-value" style="color: var(--fin-success);">+12.5%</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Durchschnitt</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.average', 'Average')}</div>
                                 <div class="fin-detail-value">850 EUR</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Anzahl</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.count', 'Count')}</div>
                                 <div class="fin-detail-value">156</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
                             <a href="/financial/transactions" class="fin-btn fin-btn-primary">
-                                <i class="bi bi-list"></i> Alle Transaktionen
+                                <i class="bi bi-list"></i> ${t('financial.dashboard.modal.allTransactions', 'All transactions')}
                             </a>
                             <a href="/financial/api/export/revenue?format=csv" class="fin-btn fin-btn-outline">
-                                <i class="bi bi-download"></i> Exportieren
+                                <i class="bi bi-download"></i> ${t('financial.dashboard.modal.export', 'Export')}
                             </a>
                         </div>
                     `;
@@ -1635,28 +1647,28 @@ function financialDashboard() {
                     content = `
                         <div class="fin-detail-grid">
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Netto Gewinn</div>
+                                <div class="fin-detail-label">${t('financial.table.profit', 'Net profit')}</div>
                                 <div class="fin-detail-value" style="color: var(--fin-success);">${profitValue} EUR</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Wachstum</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.growth', 'Growth')}</div>
                                 <div class="fin-detail-value" style="color: var(--fin-success);">+18.2%</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Gewinnmarge</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.profitMargin', 'Profit margin')}</div>
                                 <div class="fin-detail-value">32.5%</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">vs. Vorjahr</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.vsLastYear', 'vs. last year')}</div>
                                 <div class="fin-detail-value">+28.4%</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
                             <a href="/financial/reports" class="fin-btn fin-btn-primary">
-                                <i class="bi bi-bar-chart-line"></i> Profitbericht
+                                <i class="bi bi-bar-chart-line"></i> ${t('financial.dashboard.modal.profitReport', 'Profit report')}
                             </a>
                             <a href="/financial/api/export/revenue?format=pdf" class="fin-btn fin-btn-outline">
-                                <i class="bi bi-file-pdf"></i> Als PDF
+                                <i class="bi bi-file-pdf"></i> ${t('financial.dashboard.modal.asPdf', 'As PDF')}
                             </a>
                         </div>
                     `;
@@ -1666,28 +1678,28 @@ function financialDashboard() {
                     content = `
                         <div class="fin-detail-grid">
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Ausstehend</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.pending', 'Pending')}</div>
                                 <div class="fin-detail-value">${pendingPayments} EUR</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Anzahl</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.count', 'Count')}</div>
                                 <div class="fin-detail-value">{{.stats.pendingTransactions}}</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Durchschn. Tage</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.avgDays', 'Avg. days')}</div>
                                 <div class="fin-detail-value">8.3</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Einzugsrate</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.collectionRate', 'Collection rate')}</div>
                                 <div class="fin-detail-value">94.2%</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                            <button class="fin-btn fin-btn-primary" onclick="alert('Erinnerungen werden gesendet!')">
-                                <i class="bi bi-bell"></i> Erinnerungen senden
+                            <button class="fin-btn fin-btn-primary" onclick="alert(window.t ? window.t('financial.dashboard.alerts.remindersSending', 'Sending payment reminders!') : 'Sending payment reminders!')">
+                                <i class="bi bi-bell"></i> ${t('financial.dashboard.quick.sendReminders', 'Send reminders')}
                             </button>
                             <a href="/financial/transactions?status=pending" class="fin-btn fin-btn-outline">
-                                <i class="bi bi-list"></i> Anzeigen
+                                <i class="bi bi-list"></i> ${t('financial.view', 'View')}
                             </a>
                         </div>
                     `;
@@ -1697,28 +1709,28 @@ function financialDashboard() {
                     content = `
                         <div class="fin-detail-grid">
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Dieser Monat</div>
+                                <div class="fin-detail-label">${t('financial.thisMonth', 'This month')}</div>
                                 <div class="fin-detail-value">${monthlyRevenue} EUR</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Letzter Monat</div>
+                                <div class="fin-detail-label">${t('financial.exportRanges.lastMonth', 'Last month')}</div>
                                 <div class="fin-detail-value">24.300 EUR</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Wachstum</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.growth', 'Growth')}</div>
                                 <div class="fin-detail-value" style="color: var(--fin-success);">+8.3%</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Zielerreichung</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.targetAchieved', 'Target achieved')}</div>
                                 <div class="fin-detail-value">87%</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                            <button class="fin-btn fin-btn-primary" onclick="alert('Rechnungen werden generiert!')">
-                                <i class="bi bi-file-text"></i> Rechnungen generieren
+                            <button class="fin-btn fin-btn-primary" onclick="alert(window.t ? window.t('financial.dashboard.alerts.invoiceGenerationWip', 'Invoice generation - feature in development!') : 'Invoice generation - feature in development!')">
+                                <i class="bi bi-file-text"></i> ${t('financial.dashboard.modal.generateInvoices', 'Generate invoices')}
                             </button>
                             <a href="/financial/reports" class="fin-btn fin-btn-outline">
-                                <i class="bi bi-bar-chart"></i> Monatsbericht
+                                <i class="bi bi-bar-chart"></i> ${t('financial.monthlyReport', 'Monthly report')}
                             </a>
                         </div>
                     `;
@@ -1728,28 +1740,28 @@ function financialDashboard() {
                     content = `
                         <div class="fin-detail-grid">
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Uberfällig</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.overdue', 'Overdue')}</div>
                                 <div class="fin-detail-value" style="color: var(--fin-error);">${overduePayments} EUR</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Anzahl</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.count', 'Count')}</div>
                                 <div class="fin-detail-value">7</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Älteste</div>
-                                <div class="fin-detail-value">23 Tage</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.oldest', 'Oldest')}</div>
+                                <div class="fin-detail-value">23 ${t('financial.dashboard.modal.days', 'days')}</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Risikostufe</div>
-                                <div class="fin-detail-value" style="color: var(--fin-error);">Hoch</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.riskLevel', 'Risk level')}</div>
+                                <div class="fin-detail-value" style="color: var(--fin-error);">${t('financial.dashboard.modal.high', 'High')}</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                            <button class="fin-btn fin-btn-primary" style="background: var(--fin-error);" onclick="alert('Dringende Erinnerungen werden gesendet!')">
-                                <i class="bi bi-exclamation-triangle"></i> Dringende Aktion
+                            <button class="fin-btn fin-btn-primary" style="background: var(--fin-error);" onclick="alert(window.t ? window.t('financial.dashboard.alerts.urgentReminders') : 'Sending urgent reminders!')">
+                                <i class="bi bi-exclamation-triangle"></i> ${t('financial.dashboard.modal.urgentAction', 'Urgent action')}
                             </button>
                             <a href="/financial/transactions?overdue=true" class="fin-btn fin-btn-outline">
-                                <i class="bi bi-list"></i> Anzeigen
+                                <i class="bi bi-list"></i> ${t('financial.view', 'View')}
                             </a>
                         </div>
                     `;
@@ -1759,28 +1771,28 @@ function financialDashboard() {
                     content = `
                         <div class="fin-detail-grid">
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Gesamt Score</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.totalScore', 'Total score')}</div>
                                 <div class="fin-detail-value" style="color: #06b6d4;">85/100</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Liquidität</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.liquidity', 'Liquidity')}</div>
                                 <div class="fin-detail-value" style="color: var(--fin-success);">90</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Zahlungsfähigkeit</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.solvency', 'Solvency')}</div>
                                 <div class="fin-detail-value" style="color: var(--fin-success);">88</div>
                             </div>
                             <div class="fin-detail-item">
-                                <div class="fin-detail-label">Wachstum</div>
+                                <div class="fin-detail-label">${t('financial.dashboard.modal.growth', 'Growth')}</div>
                                 <div class="fin-detail-value" style="color: var(--fin-success);">78</div>
                             </div>
                         </div>
                         <div style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                            <p style="color: var(--fin-text-secondary); font-size: 0.875rem; margin: 0;">Ihre Finanzgesundheit ist sehr gut. Alle wichtigen Indikatoren sind im grünen Bereich. Fortfahren mit den aktuellen Geschäftspraktiken.</p>
+                            <p style="color: var(--fin-text-secondary); font-size: 0.875rem; margin: 0;">${t('financial.dashboard.modal.healthText', 'Your financial health is very good. All key indicators are in the green zone. Continue with current business practices.')}</p>
                         </div>
                         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
                             <a href="/financial/reports" class="fin-btn fin-btn-primary">
-                                <i class="bi bi-bar-chart-line"></i> Detaillierter Bericht
+                                <i class="bi bi-bar-chart-line"></i> ${t('financial.dashboard.modal.detailedReport', 'Detailed report')}
                             </a>
                         </div>
                     `;
@@ -1792,15 +1804,15 @@ function financialDashboard() {
         },
 
         generateInvoices() {
-            alert('Rechnungsgenerierung - Feature in Entwicklung!');
+            alert(window.t ? window.t('financial.dashboard.alerts.invoiceGenerationWip') : 'Invoice generation - feature in development!');
         },
 
         sendReminders() {
-            alert('Zahlungserinnerungen werden gesendet!');
+            alert(window.t ? window.t('financial.dashboard.alerts.remindersSending', 'Sending payment reminders!') : 'Sending payment reminders!');
         },
 
         exportPDF() {
-            alert('PDF Export - Feature in Entwicklung!');
+            alert(window.t ? window.t('financial.dashboard.alerts.pdfExportWip') : 'PDF export - feature in development!');
         },
 
         startAutoRefresh() {
@@ -1822,6 +1834,9 @@ function financialDashboard() {
                 if (e.key === 'Escape' && this.modalOpen) {
                     this.modalOpen = false;
                 }
+                if (e.key === 'f' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
+                    this.toggleFullscreen();
+                }
             });
         },
 
@@ -1840,7 +1855,7 @@ function financialDashboard() {
                     const easeOut = 1 - Math.pow(1 - progress, 3);
                     const currentValue = Math.round(finalValue * easeOut);
 
-                    el.textContent = currentValue.toLocaleString('de-DE');
+                    el.textContent = currentValue.toLocaleString('en-US');
 
                     if (progress < 1) {
                         requestAnimationFrame(animate);
@@ -1853,33 +1868,6 @@ function financialDashboard() {
     };
 }
 
-// Initialize dropdown functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const toggles = document.querySelectorAll('.rc-dropdown-toggle');
-
-    toggles.forEach(toggle => {
-        toggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const dropdown = this.closest('.rc-dropdown');
-
-            if (dropdown) {
-                document.querySelectorAll('.rc-dropdown.show').forEach(other => {
-                    if (other !== dropdown) {
-                        other.classList.remove('show');
-                    }
-                });
-                dropdown.classList.toggle('show');
-            }
-        });
-    });
-
-    document.addEventListener('click', function() {
-        document.querySelectorAll('.rc-dropdown.show').forEach(dropdown => {
-            dropdown.classList.remove('show');
-        });
-    });
-});
-
 // Spin animation for refresh button
 const style = document.createElement('style');
 style.textContent = `
@@ -1889,5 +1877,4 @@ style.textContent = `
 `;
 document.head.appendChild(style);
     </script>
-</body>
-</html>
+{{end}}

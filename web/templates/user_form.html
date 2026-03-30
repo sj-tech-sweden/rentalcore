@@ -82,15 +82,15 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="username" name="username" 
-                                                   value="{{.formUser.Username}}" required>
+                                              <input type="text" class="form-control" id="username" name="username" 
+                                                  value="{{.formUser.Username}}" required autocomplete="username">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                                            <input type="email" class="form-control" id="email" name="email" 
-                                                   value="{{.formUser.Email}}" required>
+                                              <input type="email" class="form-control" id="email" name="email" 
+                                                  value="{{.formUser.Email}}" required autocomplete="email">
                                         </div>
                                     </div>
                                 </div>
@@ -121,8 +121,8 @@
                                             <small class="text-muted">(leave blank to keep current password)</small>
                                         {{end}}
                                     </label>
-                                    <input type="password" class="form-control" id="password" name="password" 
-                                           {{if not .formUser.UserID}}required{{end}}>
+                                     <input type="password" class="form-control" id="password" name="password" autocomplete="new-password"
+                                         data-i18n-attr="placeholder" data-i18n="auth.password" {{if not .formUser.UserID}}required{{end}}>
                                 </div>
 
                                 <div class="mb-3">

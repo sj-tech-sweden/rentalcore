@@ -1,5 +1,7 @@
 # 🎯 RentalCore - Professional Equipment Rental Management System
 
+Fork from [https://git.server-nt.de/ntielmann/rentalcore](https://git.server-nt.de/ntielmann/rentalcore)
+
 A comprehensive, enterprise-grade equipment rental management system built with Go, featuring advanced analytics, device tracking, and customer management. Designed for exclusive Docker deployment with professional theming and modern web interface.
 
 ## 📑 Table of Contents

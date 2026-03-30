@@ -145,7 +145,7 @@ func (h *InvoiceHandlerNew) GenerateInvoicePDF(c *gin.Context) {
 	if len(pdfBytes) < 4 || string(pdfBytes[:4]) != "%PDF" {
 		log.Printf("GenerateInvoicePDF: Invalid PDF content returned (not starting with %%PDF)")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "PDF generation failed - invalid PDF format",
+			"error":   "PDF generation failed - invalid PDF format",
 			"details": "The generated content is not a valid PDF file",
 		})
 		return
@@ -285,14 +285,14 @@ func (h *InvoiceHandlerNew) NewInvoiceForm(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "invoice_form_new.html", gin.H{
-		"title":            "New Invoice",
-		"user":             user,
-		"customers":        customers,
-		"jobs":             jobs,
-		"products":         products,
-		"action":           "create",
-		"defaultIssueDate": time.Now().Format("2006-01-02"),
-		"defaultDueDate":   time.Now().AddDate(0, 0, 30).Format("2006-01-02"),
+		"title":                "New Invoice",
+		"user":                 user,
+		"customers":            customers,
+		"jobs":                 jobs,
+		"products":             products,
+		"action":               "create",
+		"defaultIssueDate":     time.Now().Format("2006-01-02"),
+		"defaultDueDate":       time.Now().AddDate(0, 0, 30).Format("2006-01-02"),
 		"previewInvoiceNumber": previewInvoiceNumber,
 	})
 }
@@ -300,7 +300,7 @@ func (h *InvoiceHandlerNew) NewInvoiceForm(c *gin.Context) {
 // GetInvoice displays a single invoice
 func (h *InvoiceHandlerNew) GetInvoice(c *gin.Context) {
 	user, _ := GetCurrentUser(c)
-	
+
 	invoiceIDStr := c.Param("id")
 	invoiceID, err := strconv.ParseUint(invoiceIDStr, 10, 64)
 	if err != nil {
@@ -323,9 +323,10 @@ func (h *InvoiceHandlerNew) GetInvoice(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "invoice_detail.html", gin.H{
-		"title":   fmt.Sprintf("Invoice %s", invoice.InvoiceNumber),
-		"invoice": invoice,
-		"user":    user,
+		"title":           fmt.Sprintf("Invoice %s", invoice.InvoiceNumber),
+		"invoice":         invoice,
+		"user":            user,
+		"PageTemplateKey": "invoice_detail",
 	})
 }
 
@@ -385,7 +386,7 @@ func (h *InvoiceHandlerNew) EditInvoiceForm(c *gin.Context) {
 // PreviewInvoice shows a preview of the invoice
 func (h *InvoiceHandlerNew) PreviewInvoice(c *gin.Context) {
 	user, _ := GetCurrentUser(c)
-	
+
 	invoiceIDStr := c.Param("id")
 	invoiceID, err := strconv.ParseUint(invoiceIDStr, 10, 64)
 	if err != nil {
@@ -588,4 +589,3 @@ func (h *InvoiceHandlerNew) UpdateInvoiceStatus(c *gin.Context) {
 		"message": "Invoice status updated successfully",
 	})
 }
-

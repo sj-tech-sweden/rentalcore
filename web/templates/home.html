@@ -320,7 +320,7 @@
                         </div>
                     </a>
 
-                    <div class="rc-card" style="transition: var(--transition-normal);">
+                    <a href="" id="case-mgmt-nav-link" class="rc-card rc-nav-crosslink" style="transition: var(--transition-normal); text-decoration: none; display: block; cursor: pointer;">
                         <div class="rc-flex" style="align-items: center; gap: var(--space-lg);">
                             <div style="font-size: 2rem; color: var(--accent-red);">
                                 <i class="bi bi-box"></i>
@@ -328,12 +328,37 @@
                             <div>
                                 <h3 style="color: var(--text-primary); margin-bottom: var(--space-xs);">Case Management</h3>
                                 <p class="rc-text-sm">Case management now lives in WarehouseCore.</p>
-                                <div class="rc-text-sm" style="color: var(--accent-red); margin-top: var(--space-xs);">
-                                    <i class="bi bi-info-circle"></i> Use the WarehouseCore navigation to continue
+                                <div class="rc-text-sm" style="color: var(--accent-blue); margin-top: var(--space-xs);">
+                                    <i class="bi bi-box-arrow-up-right"></i> Open in WarehouseCore
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
+                    <script>
+                    (function() {
+                        var link = document.getElementById('case-mgmt-nav-link');
+                        var storageDomain = '{{.WarehouseCoreDomain}}';
+                        var protocol = window.location.protocol;
+                        var targetUrl;
+                        if (storageDomain && storageDomain !== '') {
+                            targetUrl = protocol + '//' + storageDomain + '/cases';
+                        } else {
+                            var hostname = window.location.hostname;
+                            var port = window.location.port;
+                            if (hostname.startsWith('rent.') || hostname.startsWith('rental.')) {
+                                var warehouseHost = hostname.replace(/^rent(al)?\./, 'warehouse.');
+                                targetUrl = protocol + '//' + warehouseHost + '/cases';
+                            } else if (port === '8081') {
+                                targetUrl = protocol + '//' + hostname + ':8082/cases';
+                            } else if (port === '') {
+                                targetUrl = protocol + '//' + hostname + '/cases';
+                            } else {
+                                targetUrl = protocol + '//' + hostname + ':8082/cases';
+                            }
+                        }
+                        link.href = targetUrl;
+                    })();
+                    </script>
                 </div>
             </div>
         </div>
@@ -371,17 +396,11 @@
                 </div>
                 <div class="rc-card-body">
                     <div class="rc-flex rc-flex-col" style="gap: var(--space-sm);">
-                        <a href="/invoices" class="rc-btn rc-btn-ghost" style="justify-content: flex-start;">
-                            <i class="bi bi-file-text"></i> Invoice Management
-                        </a>
                         <a href="/analytics" class="rc-btn rc-btn-ghost" style="justify-content: flex-start;">
                             <i class="bi bi-graph-up"></i> Analytics Dashboard
                         </a>
                         <a href="/financial" class="rc-btn rc-btn-ghost" style="justify-content: flex-start;">
                             <i class="bi bi-calculator"></i> Financial Reports
-                        </a>
-                        <a href="/settings" class="rc-btn rc-btn-ghost" style="justify-content: flex-start;">
-                            <i class="bi bi-gear"></i> System Settings
                         </a>
                     </div>
                 </div>

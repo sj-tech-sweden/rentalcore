@@ -3,6 +3,7 @@
  * Handles interactions for dropdowns, navigation, and components
  */
 
+if (typeof window.RentalCoreDesign === 'undefined') {
 class RentalCoreDesign {
     constructor() {
         this.init();
@@ -390,9 +391,16 @@ class RentalCoreDesign {
     }
 }
 
-// Initialize when DOM is ready
+// Expose class to the global scope so subsequent loads can detect it
+window.RentalCoreDesign = RentalCoreDesign;
+
+// Initialize when DOM is ready (only once)
 document.addEventListener('DOMContentLoaded', () => {
-    window.rcDesign = new RentalCoreDesign();
+    if (!window.rcDesign) {
+        // Use the global class reference so it's safe even if the file
+        // was concatenated or loaded multiple times.
+        window.rcDesign = new (window.RentalCoreDesign)();
+    }
 });
 
 // Utility functions for external use
@@ -463,3 +471,4 @@ window.RentalCore = {
         element.classList.remove('rc-loading');
     }
 };
+}

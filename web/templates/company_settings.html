@@ -39,9 +39,9 @@
         <div class="rc-flex rc-flex-between rc-mb-xl">
             <div>
                 <h1 class="rc-heading-2">
-                    <i class="bi bi-building-gear"></i> Company Settings
+                    <i class="bi bi-building-gear"></i> <span data-i18n="company.title">Company Settings</span>
                 </h1>
-                <p class="rc-text">Manage your company information and settings</p>
+                <p class="rc-text" data-i18n="company.description">Manage your company information and settings</p>
             </div>
         </div>
 
@@ -49,7 +49,7 @@
         <div class="rc-card">
             <div class="rc-card-header">
                 <h3 class="rc-card-title">
-                    <i class="bi bi-building"></i> Company Information
+                    <i class="bi bi-building"></i> <span data-i18n="company.info_title">Company Information</span>
                 </h3>
             </div>
             <div class="rc-card-body">
@@ -64,53 +64,53 @@
                 <form method="POST" action="/settings/company" enctype="multipart/form-data">
                     <div class="rc-grid rc-grid-2 rc-mb-lg">
                         <div class="rc-form-group">
-                            <label class="rc-label" for="company_name">Company Name</label>
+                            <label class="rc-label" for="company_name" data-i18n="company.field.name">Company Name</label>
                             <input type="text" class="rc-input" id="company_name" name="company_name" value="{{if .company}}{{.company.CompanyName}}{{end}}" required>
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label" for="tax_number">Tax Number</label>
+                            <label class="rc-label" for="tax_number" data-i18n="company.field.tax_number">Tax Number</label>
                             <input type="text" class="rc-input" id="tax_number" name="tax_number" value="{{if and .company .company.TaxNumber}}{{.company.TaxNumber}}{{end}}">
                         </div>
                     </div>
                     
                     <div class="rc-grid rc-grid-2 rc-mb-lg">
                         <div class="rc-form-group">
-                            <label class="rc-label" for="email">Email</label>
-                            <input type="email" class="rc-input" id="email" name="email" value="{{if and .company .company.Email}}{{.company.Email}}{{end}}">
+                            <label class="rc-label" for="email" data-i18n="company.field.email">Email</label>
+                            <input type="email" class="rc-input" id="email" name="email" value="{{if and .company .company.Email}}{{.company.Email}}{{end}}" autocomplete="email">
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label" for="phone">Phone</label>
+                            <label class="rc-label" for="phone" data-i18n="company.field.phone">Phone</label>
                             <input type="tel" class="rc-input" id="phone" name="phone" value="{{if and .company .company.Phone}}{{.company.Phone}}{{end}}">
                         </div>
                     </div>
                     
                     <div class="rc-form-group rc-mb-lg">
-                        <label class="rc-label" for="address_line1">Address Line 1</label>
+                        <label class="rc-label" for="address_line1" data-i18n="company.field.address1">Address Line 1</label>
                         <input type="text" class="rc-input" id="address_line1" name="address_line1" value="{{if and .company .company.AddressLine1}}{{.company.AddressLine1}}{{end}}">
                     </div>
                     
                     <div class="rc-form-group rc-mb-lg">
-                        <label class="rc-label" for="address_line2">Address Line 2</label>
+                        <label class="rc-label" for="address_line2" data-i18n="company.field.address2">Address Line 2</label>
                         <input type="text" class="rc-input" id="address_line2" name="address_line2" value="{{if and .company .company.AddressLine2}}{{.company.AddressLine2}}{{end}}">
                     </div>
                     
                     <div class="rc-grid rc-grid-3 rc-mb-lg">
                         <div class="rc-form-group">
-                            <label class="rc-label" for="city">City</label>
+                            <label class="rc-label" for="city" data-i18n="company.field.city">City</label>
                             <input type="text" class="rc-input" id="city" name="city" value="{{if and .company .company.City}}{{.company.City}}{{end}}">
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label" for="postal_code">Postal Code</label>
+                            <label class="rc-label" for="postal_code" data-i18n="company.field.postal">Postal Code</label>
                             <input type="text" class="rc-input" id="postal_code" name="postal_code" value="{{if and .company .company.PostalCode}}{{.company.PostalCode}}{{end}}">
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label" for="country">Country</label>
+                            <label class="rc-label" for="country" data-i18n="company.field.country">Country</label>
                             <input type="text" class="rc-input" id="country" name="country" value="{{if and .company .company.Country}}{{.company.Country}}{{end}}">
                         </div>
                     </div>
                     
                     <div class="rc-form-group rc-mb-lg">
-                        <label class="rc-label" for="logo">Company Logo</label>
+                        <label class="rc-label" for="logo" data-i18n="company.field.logo">Company Logo</label>
                         <input type="file" class="rc-input" id="logo" name="logo" accept="image/*">
                         {{if and .company .company.LogoPath}}
                         <div class="rc-mt-sm">
@@ -121,7 +121,7 @@
                     
                     <div class="rc-flex rc-flex-end">
                         <button type="submit" class="rc-btn rc-btn-primary">
-                            <i class="bi bi-check-lg"></i> Save Changes
+                            <i class="bi bi-check-lg"></i> <span data-i18n="company.save_changes">Save Changes</span>
                         </button>
                     </div>
                 </form>
@@ -152,18 +152,18 @@
                         <div class="rc-grid rc-grid-2 rc-mb-lg">
                             <div class="rc-form-group">
                                 <label class="rc-label" for="smtp_username">SMTP Username</label>
-                                <input type="text" class="rc-input" id="smtp_username" name="smtp_username" placeholder="your-email@gmail.com" required>
+                                <input type="text" class="rc-input" id="smtp_username" name="smtp_username" placeholder="your-email@gmail.com" required autocomplete="username">
                             </div>
                             <div class="rc-form-group">
                                 <label class="rc-label" for="smtp_password">SMTP Password</label>
-                                <input type="password" class="rc-input" id="smtp_password" name="smtp_password" placeholder="Leave blank to keep current password">
+                                <input type="password" class="rc-input" id="smtp_password" name="smtp_password" placeholder="Leave blank to keep current password" autocomplete="new-password">
                             </div>
                         </div>
                         
                         <div class="rc-grid rc-grid-2 rc-mb-lg">
                             <div class="rc-form-group">
                                 <label class="rc-label" for="smtp_from_email">From Email</label>
-                                <input type="email" class="rc-input" id="smtp_from_email" name="smtp_from_email" placeholder="noreply@yourcompany.com" required>
+                                <input type="email" class="rc-input" id="smtp_from_email" name="smtp_from_email" placeholder="noreply@yourcompany.com" required autocomplete="email">
                             </div>
                             <div class="rc-form-group">
                                 <label class="rc-label" for="smtp_from_name">From Name</label>
@@ -179,13 +179,13 @@
                         </div>
                         
                         <div class="rc-flex rc-flex-between">
-                            <button type="button" class="rc-btn rc-btn-secondary" id="test-email-btn">
-                                <i class="bi bi-envelope-check"></i> Test Email
-                            </button>
-                            <button type="submit" class="rc-btn rc-btn-primary">
-                                <i class="bi bi-check-lg"></i> Save Email Settings
-                            </button>
-                        </div>
+                                <button type="button" class="rc-btn rc-btn-secondary" id="test-email-btn" data-i18n="company.email.test">
+                                    <i class="bi bi-envelope-check"></i> Test Email
+                                </button>
+                                <button type="submit" class="rc-btn rc-btn-primary" data-i18n="company.email.save">
+                                    <i class="bi bi-check-lg"></i> Save Email Settings
+                                </button>
+                            </div>
                     </form>
                 </div>
                 

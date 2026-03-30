@@ -512,14 +512,14 @@
                                 <div style="position: relative;">
                                     <i class="modern-input-icon bi bi-envelope"></i>
                                     <input type="email" id="email" name="email" class="modern-input"
-                                           value="{{if .user}}{{.user.Email}}{{end}}" placeholder="Enter your email">
+                                         value="{{if .user}}{{.user.Email}}{{end}}" placeholder="Enter your email" autocomplete="email">
                                 </div>
                             </div>
                         </div>
 
                         <button type="submit" class="modern-btn modern-btn-primary modern-btn-full">
                             <i class="bi bi-check-lg"></i>
-                            Save Personal Information
+                            <span data-i18n="profile.save_personal">Save Personal Information</span>
                         </button>
                     </form>
                 </div>
@@ -603,7 +603,7 @@
                         {{end}}
 
                         <button type="button" class="modern-btn modern-btn-primary" onclick="addPasskey()">
-                            <i class="bi bi-plus-lg"></i> Add New Passkey
+                            <i class="bi bi-plus-lg"></i> <span data-i18n="profile.add_passkey">Add New Passkey</span>
                         </button>
                     </div>
                 </div>
@@ -671,7 +671,7 @@
 
                         <button type="submit" class="modern-btn modern-btn-primary modern-btn-full">
                             <i class="bi bi-check-lg"></i>
-                            Save Preferences
+                            <span data-i18n="profile.save_preferences">Save Preferences</span>
                         </button>
                     </form>
                 </div>
@@ -746,7 +746,7 @@
                         <div style="position: relative;">
                             <i class="modern-input-icon bi bi-lock"></i>
                             <input type="password" id="current_password" name="current_password"
-                                   class="modern-input" placeholder="Enter current password" required>
+                                class="modern-input" placeholder="Enter current password" required autocomplete="current-password">
                         </div>
                     </div>
 
@@ -755,7 +755,7 @@
                         <div style="position: relative;">
                             <i class="modern-input-icon bi bi-key"></i>
                             <input type="password" id="new_password" name="new_password"
-                                   class="modern-input" placeholder="Enter new password" required minlength="6">
+                                class="modern-input" placeholder="Enter new password" required minlength="6" autocomplete="new-password">
                         </div>
                         <small class="text-muted">Minimum 6 characters</small>
                     </div>
@@ -765,7 +765,7 @@
                         <div style="position: relative;">
                             <i class="modern-input-icon bi bi-key"></i>
                             <input type="password" id="confirm_password" name="confirm_password"
-                                   class="modern-input" placeholder="Confirm new password" required minlength="6">
+                                class="modern-input" placeholder="Confirm new password" required minlength="6" autocomplete="new-password">
                         </div>
                     </div>
 

@@ -1,13 +1,17 @@
 {
   "common": {
-    "save": "Save",
-    "cancel": "Cancel",
-    "delete": "Delete",
-    "edit": "Edit",
+    "title": "Jobs",
+    "subtitle": "Manage your rental jobs",
+    "searchTitle": "Search Jobs",
+    "searchPlaceholder": "Search jobs...",
     "create": "Create",
     "update": "Update",
     "search": "Search",
     "filter": "Filter",
+    "clear": "Clear",
+    "export": "Export",
+    "date": "Date",
+    "amount": "Amount",
     "loading": "Loading...",
     "saving": "Saving...",
     "error": "Error",
@@ -18,6 +22,7 @@
     "yes": "Yes",
     "no": "No",
     "close": "Close",
+    "cancel": "Cancel",
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
@@ -39,7 +44,31 @@
     "analytics": "Analytics",
     "settings": "Settings",
     "logout": "Sign Out",
-    "warehousecore": "WarehouseCore"
+    "warehousecore": "WarehouseCore",
+    "securityAudit": "Security & Audit",
+    "securityRoles": "Security & Roles",
+    "profileSettings": "Profile Settings",
+    "companySettings": "Company Settings",
+    "userManagement": "User Management",
+    "login": "Sign In",
+    "brand": "RentalCore",
+    "tools": {
+      "management": "Management",
+      "business": "Business",
+      "equipment_packages": "Equipment Packages",
+      "invoices": "Invoices",
+      "analytics": "Analytics",
+      "financial": "Financial"
+    }
+  },
+  "search": {
+    "title": "Search Results",
+    "enter_to_find": "Enter a search term to find jobs, devices, customers, and cases",
+    "input_placeholder": "Search jobs, devices, customers, and cases...",
+    "saved_searches": "Saved Searches",
+    "global_title": "Global Search",
+    "global_description": "Search across all jobs, devices, customers, and cases from one place",
+    "global_input_placeholder": "Enter search term..."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -54,6 +83,24 @@
   "jobs": {
     "title": "Jobs",
     "subtitle": "Manage your rental jobs",
+    "searchTitle": "Search Jobs",
+    "searchPlaceholder": "Search jobs...",
+    "table": {
+      "job": "Job",
+      "customer": "Customer",
+      "start": "Start",
+      "end": "End",
+      "status": "Status",
+      "devices": "Devices",
+      "revenue": "Revenue",
+      "actions": "Actions",
+      "product": "Product",
+      "quantity": "Quantity",
+      "available": "Available"
+    },
+    "noCategory": "No category",
+    "devicesLabel": "devices",
+    "emptyHelp": "Create your first job to get started.",
     "jobId": "Job ID",
     "jobCode": "Job Code",
     "customer": "Customer",
@@ -72,8 +119,55 @@
       "in_progress": "In Progress",
       "completed": "Completed",
       "cancelled": "Cancelled"
+    },
+    "filterCustomerPlaceholder": "Filter by customer...",
+    "filterAllStatuses": "All Statuses",
+    "filterAllCategories": "All Categories",
+    "filterMinDevicesPlaceholder": "Min devices",
+    "clearFilters": "Clear Filters",
+    "view": "View Details",
+    "details_title": "Job Details",
+    "loading_details": "Loading job details...",
+    "loading_attachments": "Loading attachments...",
+    "loading_devices": "Loading devices...",
+    "history_title": "History",
+    "view_full_history": "View Full History",
+    "no_devices_assigned": "No devices assigned",
+    "no_devices_assigned_desc": "This job has no devices assigned yet.",
+    "deviceOverview": "Device Overview",
+    "back_to_summary": "Back to Job Summary",
+    "click_to_view_devices": "Click to view devices",
+    "error_loading_devices": "Error loading devices: ",
+    "description": "Description",
+    "no_description": "No description",
+    "unknown_customer": "Unknown Customer",
+    "no_name": "No Name",
+    "devices_label": "Devices",
+    "discount": "Discount",
+    "finalRevenue": "Final Revenue",
+    "selectedProducts": "Selected Products",
+    "noProductsSelected": "No products selected yet.",
+    "saveChanges": "Save Changes"
+  },
+  "transactions": {
+    "title": "Financial Transactions",
+    "subtitle": "Manage payments, invoices, and financial records",
+    "new": "New Transaction",
+    "filterTitle": "Filter Transactions",
+    "typeLabel": "Transaction Type",
+    "bulkOperations": "Bulk Operations",
+    "table": {
+      "type": "Type",
+      "paymentMethod": "Payment Method",
+      "reference": "Reference"
     }
   },
+  "users": {
+    "createTitle": "Create User",
+    "createUser": "Create User",
+    "confirmPassword": "Confirm Password"
+  },
+  
   "customers": {
     "title": "Customers",
     "subtitle": "Manage your customer data",
@@ -87,7 +181,50 @@
     "createCustomer": "New Customer",
     "editCustomer": "Edit Customer",
     "deleteCustomer": "Delete Customer",
-    "noCustomers": "No customers found"
+    "noCustomers": "No customers found",
+    "searchTitle": "Search Customers",
+    "searchPlaceholder": "Search customers...",
+    "directory": "Customer Directory",
+    "table": {
+      "customer": "Customer",
+      "contact": "Contact",
+      "location": "Location",
+      "type": "Type",
+      "actions": "Actions"
+    },
+    "empty_search": "Try adjusting your search terms or",
+    "view_all": "view all customers",
+    "empty_help": "Add your first customer to get started with rental management.",
+    "add_first_button": "Add First Customer",
+    "details_title": "Customer Details",
+    "loading_details": "Loading customer details...",
+    "loading_form": "Loading customer form...",
+    "create_success": "Customer created successfully!",
+    "creating": "Creating...",
+    "saving": "Saving...",
+    "delete_confirm": "Are you sure you want to delete this customer?",
+    "error_loading_details": "Error loading customer details: ",
+    "error_loading_form": "Error loading customer form: ",
+    "delete_error_prefix": "Error deleting customer: ",
+    "error_saving": "Error saving customer: ",
+    "error_creating": "Error creating customer: ",
+    "type_label": "Type",
+    "contact_person": "Contact Person",
+    "street": "Street",
+    "houseNumber": "House Number",
+    "zip": "ZIP Code",
+    "city": "City",
+    "federalState": "Federal State",
+    "country": "Country",
+    "notes": "Notes",
+    "notes_placeholder": "Additional notes about this customer...",
+    "type_options": {
+      "customer": "Customer",
+      "supplier": "Supplier",
+      "individual": "Individual",
+      "business": "Business"
+    },
+    "saveChanges": "Save Changes"
   },
   "devices": {
     "title": "Devices",
@@ -101,7 +238,10 @@
     "createDevice": "New Device",
     "editDevice": "Edit Device",
     "deleteDevice": "Delete Device",
-    "noDevices": "No devices found"
+    "noDevices": "No devices found",
+    "redirect_title": "Feature Available in WarehouseCore",
+    "redirect_body": "Rental equipment functionality now lives in WarehouseCore. Use the WarehouseCore navigation entry to continue your work there.",
+    "back": "Back to Dashboard"
   },
   "cables": {
     "title": "Cables",
@@ -191,5 +331,607 @@
     "forgotPassword": "Forgot Password?",
     "loginError": "Login failed",
     "loginSuccess": "Successfully signed in"
+  }
+  ,
+  "navbar": {
+    "brand_rental": "Rental",
+    "brand_core": "Core",
+    "tools": "Tools",
+    "financial": "Financial",
+    "file_pool": "File Pool"
+  }
+
+  ,"login": {
+    "tagline": "The future of rental management",
+    "secure_footer": "Secure login with encrypted passwords & passkeys",
+    "signing_in": "Signing in...",
+    "passkey_not_supported": "Passkeys are not supported in this browser",
+    "auth_failed_prefix": "Authentication failed: "
+  }
+
+  ,"zones": {
+    "title": "Storage Zones",
+    "subtitle": "Organize your warehouse",
+    "zoneId": "Zone ID",
+    "code": "Code",
+    "name": "Name",
+    "type": "Type",
+    "capacity": "Capacity",
+    "active": "Active",
+    "inactive": "Inactive",
+    "noZones": "No zones found",
+    "createZone": "Create New Zone"
+  },
+  "labels": {
+    "title": "Label Designer",
+    "subtitle": "Create and manage label templates for your devices",
+    "template": "Template",
+    "templateName": "Template Name",
+    "labelSize": "Label Size",
+    "elements": "Elements",
+    "noElements": "No Elements",
+    "preview": "Preview",
+    "actions": "Actions",
+    "addElement": "Add Element",
+    "qrCode": "QR Code",
+    "barcode": "Barcode",
+    "text": "Text",
+    "image": "Image / Logo",
+    "properties": "Properties",
+    "position": "Position",
+    "size": "Size",
+    "content": "Content",
+    "style": "Style",
+    "generateAll": "Generate All Labels",
+    "generateMissing": "Generate Missing Labels",
+    "exportAll": "Export All Labels (ZIP)",
+    "printPreview": "Print Preview",
+    "saveTemplate": "Save Template",
+    "setAsDefault": "Set as Default",
+    "deleteTemplate": "Delete Template",
+    "newTemplate": "New Template",
+    "generating": "Generating...",
+    "exporting": "Exporting Labels...",
+    "allHaveLabels": "All devices and cases already have labels!",
+    "missingLabelsFound": "{{count}} items without labels found ({{devices}} Devices + {{cases}} Cases).\n\nGenerate labels now?",
+    "labelsGenerated": "{{success}}/{{total}} labels generated!\n({{devices}} Devices + {{cases}} Cases){{errors}}",
+    "missingLabelsGenerated": "{{success}}/{{total}} missing labels generated!\n({{devices}} Devices + {{cases}} Cases){{errors}}",
+    "noDevicesOrCases": "No devices or cases found!",
+    "setDefaultFirst": "Please set a template as default first!",
+    "noGeneratedLabels": "No generated labels found! Please generate labels first.",
+    "labelsExported": "{{count}} labels successfully exported to ZIP!{{skipped}}",
+    "templateSaved": "Template saved!",
+    "templateUpdated": "Template updated!",
+    "templateDeleted": "Template deleted!",
+    "confirmDelete": "Really delete template?",
+    "setAsDefaultSuccess": "Set as default!"
+  },
+  "maintenance": {
+    "title": "Maintenance",
+    "subtitle": "Manage defects and inspections",
+    "defects": "Defects",
+    "inspections": "Inspections",
+    "stats": {
+      "openDefects": "Open Defects",
+      "inProgressDefects": "In Progress",
+      "repairedDefects": "Repaired",
+      "overdueInspections": "Overdue Inspections",
+      "upcomingInspections": "Upcoming Inspections"
+    }
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "subtitle": "Manage system settings",
+    "tabs": {
+      "zoneTypes": "Zone Types",
+      "led": "LED Behavior",
+      "controllers": "ESP Controllers",
+      "categories": "Categories",
+      "products": "Products",
+      "roles": "Roles & Users",
+      "apiSettings": "API Settings"
+    }
+  },
+  "productManagement": {
+    "productsTitle": "Product Catalog",
+    "productsSubtitle": "Manage product definitions and rental metadata.",
+    "cablesTitle": "Cable Catalog",
+    "cablesSubtitle": "Maintain cable types and assignments."
+  }
+,
+  "documents": {
+    "title": "Documents",
+    "upload": "Upload Document",
+    "filters": "Filters",
+    "typeLabel": "Document Type",
+    "typeOptions": {
+      "all": "All Types",
+      "contract": "Contract",
+      "manual": "Manual",
+      "photo": "Photo",
+      "invoice": "Invoice",
+      "receipt": "Receipt",
+      "signature": "Signature",
+      "other": "Other"
+    },
+    "uploadDate": "Upload Date",
+    "dateOptions": {
+      "all": "All Dates",
+      "today": "Today",
+      "week": "This Week",
+      "month": "This Month",
+      "year": "This Year"
+    },
+    "signatureStatus": "Signature Status",
+    "signatureOptions": {
+      "all": "All Documents",
+      "signed": "Signed",
+      "unsigned": "Unsigned"
+    },
+    "searchPlaceholder": "Search documents...",
+    "view": "View",
+    "download": "Download",
+    "sign": "Sign Document",
+    "uploadFirst": "Upload First Document",
+    "deleteModal": {
+      "title": "Confirm Delete",
+      "body": "Are you sure you want to delete this document? This action cannot be undone and will remove the file permanently.",
+      "confirm": "Delete Document"
+    },
+    "pool": {
+      "title": "File Pool",
+      "description": "Manage documents across your storage",
+      "upload": "Upload",
+      "max_size": "Max 10 MB",
+      "field": {
+        "file": "File",
+        "type": "Type",
+        "description": "Description"
+      },
+      "type": {
+        "other": "Other",
+        "contract": "Contract",
+        "manual": "Manual",
+        "photo": "Photo",
+        "invoice": "Invoice",
+        "receipt": "Receipt",
+        "signature": "Signature"
+      },
+      "upload_button": "Upload",
+      "filter": {
+        "all_types": "All types"
+      },
+      "sort": {
+        "newest": "Newest",
+        "oldest": "Oldest",
+        "name": "Name",
+        "size": "Size"
+      },
+      "no_assigned": "No assigned files yet",
+      "no_unassigned": "No unassigned files",
+      "no_match": "No files match your filters",
+      "confirm_delete": "Delete \"{{name}}\"?",
+      "delete_failed": "Delete failed",
+      "sync_failed": "Sync failed: {{error}}",
+      "sync_failed_try": "Sync failed. Please try again."
+    },
+    "all_system": "All system documents",
+    "no_documents": {
+      "title": "No Documents Found",
+      "none_for_entity": "No documents have been uploaded for this {{entityType}} yet.",
+      "none_system": "No documents have been uploaded to the system yet."
+    },
+    "card": {
+      "file_size": "File Size",
+      "version": "Version",
+      "public": "Public"
+    },
+    "delete_error_prefix": "Error: ",
+    "delete_failed": "Failed to delete document"
+    }
+,
+  "financial": {
+    "title": "Financial Reports",
+    "subtitle": "Comprehensive financial analysis and reporting",
+    "backToDashboard": "Dashboard",
+    "detailedData": "Detailed Data",
+    "exportModal": {
+      "title": "Export Financial Reports"
+    },
+    "reportType": "Report Type",
+    "type": {
+      "revenue": "Revenue Analysis",
+      "payment": "Payment Status",
+      "customer": "Customer Analysis",
+      "job": "Job Profitability",
+      "tax": "Tax Report"
+    },
+    "period": {
+      "label": "Period",
+      "daily": "Daily",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "yearly": "Yearly",
+      "custom": "Custom"
+    },
+    "from": "From",
+    "to": "To",
+    "generateReport": "Generate Report",
+    "reset": "Reset",
+    "mainChartTitle": "Revenue Trends",
+    "table": {
+      "period": "Period",
+      "revenue": "Revenue",
+      "expenses": "Expenses",
+      "profit": "Profit",
+      "transactions": "Transactions",
+      "status": "Status",
+      "count": "Count",
+      "totalAmount": "Total Amount",
+      "average": "Average",
+      "percent": "Percent",
+      "customer": "Customer",
+      "totalRevenue": "Total Revenue",
+      "lastPayment": "Last Payment",
+      "job": "Job",
+      "profitMargin": "Profit Margin",
+      "grossRevenue": "Gross Revenue",
+      "taxBase": "Tax Base",
+      "vat": "VAT",
+      "netAmount": "Net Amount"
+    },
+    "noData": "Click \"Generate Report\" to load data",
+    "noResults": "No data found for the selected criteria",
+    "summary": "Summary",
+    "totalRevenue": "Total Revenue",
+    "transactions": "Transactions",
+    "average": "Average",
+    "transactionTypes": "Transaction Types",
+    "topCustomers": "Top Customers",
+    "predefinedReports": "Predefined Reports",
+    "quickAccess": "Quick access to frequently used financial reports",
+    "monthlyRevenue": "Monthly Revenue",
+    "monthlyRevenueDesc": "Detailed monthly breakdown",
+    "customerAnalysis": "Customer Analysis",
+    "customerAnalysisDesc": "Payment patterns and history",
+    "taxReport": "Tax Report",
+    "taxReportDesc": "Tax-ready financial overview",
+    "overduePayments": "Overdue Payments",
+    "overduePaymentsDesc": "Payments by due date",
+    "jobProfitability": "Job Profitability",
+    "jobProfitabilityDesc": "Revenue per job analysis",
+    "expenseTracking": "Expense Tracking",
+    "expenseTrackingDesc": "Business expense analysis",
+    "view": "View",
+    "export": "Export",
+    "exportFormat": "Export Format",
+    "exportRange": "Period",
+    "exportFormats": {
+      "csv": "CSV (Excel compatible)",
+      "pdf": "PDF Report",
+      "xlsx": "Excel Workbook",
+      "json": "JSON Data"
+    },
+    "exportRanges": {
+      "current": "Current report data",
+      "lastMonth": "Last month",
+      "lastQuarter": "Last quarter",
+      "lastYear": "Last year",
+      "all": "All data"
+    },
+    "includeCharts": "Include charts and visualizations",
+    "status": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "chart": {
+      "revenue": "Revenue",
+      "expenses": "Expenses"
+    },
+    "refresh": "Refresh",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "thisMonth": "This month",
+    "monthlyReport": "Monthly report",
+    "dashboard": {
+      "pendingOpen": "open",
+      "pending": "Pending",
+      "warning": "Warning",
+      "ok": "OK",
+      "overdue": "Overdue",
+      "health": "Financial health",
+      "veryGood": "Very good",
+      "revenueTrend": "Revenue trend",
+      "week": "Week",
+      "day": "Day",
+      "paymentStatus": "Payment status",
+      "avgTransaction": "Avg. transaction",
+      "profitMargin": "Profit margin",
+      "totalTransactions": "Total transactions",
+      "recentTransactions": "Recent transactions",
+      "viewAll": "View all",
+      "loadingTransactions": "Loading transactions...",
+      "privateCustomer": "Private",
+      "noTransactions": "No transactions found",
+      "loadTransactionsError": "Error loading transactions",
+      "footerRights": "All rights reserved.",
+      "quick": {
+        "newTransaction": "New transaction",
+        "newTransactionDesc": "Record payment or expense",
+        "generateInvoices": "Generate invoices",
+        "generateInvoicesDesc": "Automatic invoice generation",
+        "reports": "Reports",
+        "reportsDesc": "Detailed financial reports",
+        "sendReminders": "Send reminders",
+        "sendRemindersDesc": "Send payment reminders"
+      },
+      "table": {
+        "date": "Date",
+        "type": "Type",
+        "customer": "Customer",
+        "amount": "Amount",
+        "status": "Status",
+        "reference": "Reference",
+        "actions": "Actions"
+      },
+      "alerts": {
+        "invoiceGenerationWip": "Invoice generation - feature in development!",
+        "remindersSending": "Sending payment reminders!",
+        "pdfExportWip": "PDF export - feature in development!",
+        "urgentReminders": "Sending urgent reminders!"
+      },
+      "modal": {
+        "details": "Details",
+        "revenueTitle": "Revenue details",
+        "profitTitle": "Profit analysis",
+        "pendingTitle": "Pending payments",
+        "overdueTitle": "Overdue payments",
+        "healthTitle": "Financial health",
+        "completed": "Completed",
+        "growth": "Growth",
+        "average": "Average",
+        "count": "Count",
+        "allTransactions": "All transactions",
+        "export": "Export",
+        "vsLastYear": "vs. last year",
+        "profitReport": "Profit report",
+        "asPdf": "As PDF",
+        "avgDays": "Avg. days",
+        "collectionRate": "Collection rate",
+        "targetAchieved": "Target achieved",
+        "generateInvoices": "Generate invoices",
+        "oldest": "Oldest",
+        "days": "days",
+        "riskLevel": "Risk level",
+        "high": "High",
+        "urgentAction": "Urgent action",
+        "totalScore": "Total score",
+        "liquidity": "Liquidity",
+        "solvency": "Solvency",
+        "healthText": "Your financial health is very good. All key indicators are in the green zone. Continue with current business practices.",
+        "detailedReport": "Detailed report"
+      }
+    }
+  }
+  ,
+  "invoice": {
+    "settings": {
+      "title": "Invoice Settings",
+      "back": "Back to Invoices",
+      "numbering": {
+        "title": "Invoice Numbering",
+        "prefix": "Invoice Number Prefix",
+        "prefix_help": "Prefix that appears before the invoice number",
+        "format": "Invoice Number Format",
+        "format_prefix_year_month": "Prefix + Year + Month + Sequence (INV-202512-0001)",
+        "format_prefix_year": "Prefix + Year + Sequence (INV-2025-0001)",
+        "format_prefix_sequence": "Prefix + Sequence (INV-000001)",
+        "format_year_month": "Year + Month + Sequence (202512-0001)"
+      },
+      "currency": {
+        "title": "Currency & Localization",
+        "symbol": "Currency Symbol",
+        "code": "Currency Code"
+      },
+      "dateformat": {
+        "ddmmyyyy": "DD.MM.YYYY (31.12.2025)",
+        "mmddyyyy": "MM/DD/YYYY (12/31/2025)",
+        "yyyy_mm_dd": "YYYY-MM-DD (2025-12-31)",
+        "dd_mmm_yyyy": "DD MMM YYYY (31 Dec 2025)"
+      },
+      "defaults": {
+        "title": "Default Values",
+        "payment_terms": "Default Payment Terms (days)",
+        "payment_terms_help": "Default number of days for payment due date",
+        "tax_rate": "Default Tax Rate (%)",
+        "tax_rate_help": "Default tax rate applied to new invoices"
+      },
+      "behavior": {
+        "title": "Invoice Behavior",
+        "auto_calc": "Auto-calculate rental days",
+        "auto_calc_help": "Automatically calculate quantity based on rental start and end dates",
+        "show_logo": "Show company logo on invoices",
+        "show_logo_help": "Display company logo in invoice header"
+      },
+      "email": {
+        "title": "Email Settings",
+        "subject": "Email Subject Template",
+        "subject_placeholder": "Invoice {invoice_number} from {company_name}",
+        "subject_help": "Variables: {invoice_number}, {company_name}, {customer_name}, {total_amount}",
+        "body": "Email Body Template",
+        "body_placeholder": "Dear {customer_name},\n\nPlease find attached invoice {invoice_number} for the amount of {total_amount}.\n\nBest regards,\n{company_name}",
+        "body_help": "Variables: {invoice_number}, {company_name}, {customer_name}, {total_amount}, {due_date}",
+        "enter_address": "Please enter an email address",
+        "sending": "Sending...",
+        "send_error_prefix": "Error sending test email: ",
+        "send_success_prefix": "Test email sent successfully to ",
+        "send_success_suffix": "!",
+        "send_failed": "Failed to send test email"
+      },
+      "advanced": {
+        "title": "Advanced Settings",
+        "overdue_grace": "Overdue Grace Period (days)",
+        "overdue_grace_help": "Days after due date before marking as overdue",
+        "late_fee": "Late Fee Percentage",
+        "late_fee_help": "Percentage fee for overdue invoices",
+        "enable_recurring": "Enable recurring invoices",
+        "enable_recurring_help": "Allow creating recurring/subscription invoices",
+        "require_approval": "Require approval before sending invoices",
+        "require_approval_help": "Invoices must be approved before they can be sent"
+      },
+      "actions": {
+        "save": "Save Settings",
+        "cancel": "Cancel",
+        "reset": "Reset to Defaults",
+        "test_email": "Test Email"
+      },
+      "update_error_prefix": "Error: ",
+      "update_success": "Invoice settings updated successfully!",
+      "update_failed": "Failed to update invoice settings",
+      "confirm_reset": "Are you sure you want to reset all settings to their default values?"
+    },
+    "preview": {
+      "title": "Invoice",
+      "number_label": "Invoice #:",
+      "issue_date": "Issue Date:",
+      "due_date": "Due Date:",
+      "status_label": "Status:",
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "cancelled": "Cancelled"
+      },
+      "bill_to": "Bill To:",
+      "no_customer": "Customer information not available",
+      "job_reference": "Job Reference:",
+      "payment_terms": "Payment Terms:"
+    }
+    }
+  ,
+  "user": {
+    "menu": {
+      "personal": "Personal",
+      "administration": "Administration"
+    },
+    "user_management": "User Management",
+    "security_audit": "Security Audit",
+    "security_roles": "Security Roles",
+    "company_settings": "Company Settings"
+  },
+  "error": {
+    "title": "Error",
+    "technical_details": "Technical Details:",
+    "go_back": "Go Back",
+    "home": "Home",
+    "retry": "Retry",
+    "request_id": "Request ID:",
+    "time": "Time:",
+    "confirm_auto_retry": "Would you like to automatically retry loading the page?",
+    "page_title": "Error {{code}} - RentalCore"
+  }
+  ,
+  "invoice_detail": {
+    "modals": {
+      "update_status": {
+        "title": "Update Invoice Status",
+        "confirm_prefix": "Are you sure you want to mark this invoice as",
+        "update": "Update"
+      },
+      "add_payment": {
+        "title": "Add Payment",
+        "amount": "Amount *",
+        "date": "Payment Date *",
+        "method": "Payment Method",
+        "select_method": "Select Method",
+        "methods": {
+          "cash": "Cash",
+          "bank": "Bank Transfer",
+          "card": "Credit Card",
+          "check": "Check",
+          "other": "Other"
+        },
+        "reference": "Reference Number",
+        "notes": "Notes",
+        "notes_placeholder": "Additional payment notes",
+        "add": "Add Payment"
+      }
+    }
+  },
+  "cables_redirect": {
+    "title": "Cable Finder",
+    "description": "Cable management lives in WarehouseCore. Use the button below to search by plug type and length.",
+    "open_button": "Open Cable Search",
+    "info_alert": "We redirected cable inventory to WarehouseCore so you can filter by plug 1/2 and length. Click the button to open {{url}}.",
+    "no_domain": "WarehouseCore domain is not configured. Set {{env}} in your environment so we can link to the cable search.",
+    "list": {
+      "search": "Search cables by plug 1, plug 2, and length range.",
+      "save": "Save and assign cables directly from WarehouseCore.",
+      "return": "Return here when finished; assignments remain synced through the shared database."
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 RentalCore. All rights reserved."
+  }
+  ,
+  "invoice_templates": {
+    "title": "Invoice Templates",
+    "new": "New Template",
+    "table": {
+      "name": "Name",
+      "description": "Description",
+      "default": "Default",
+      "status": "Status",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "default_badge": "Default",
+    "no_description": "No description",
+    "preview": "Preview",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "company": {
+    "title": "Company Settings",
+    "description": "Manage your company information and settings",
+    "info_title": "Company Information",
+    "field": {
+      "name": "Company Name",
+      "tax_number": "Tax Number",
+      "email": "Email",
+      "phone": "Phone",
+      "address1": "Address Line 1",
+      "address2": "Address Line 2",
+      "city": "City",
+      "postal": "Postal Code",
+      "country": "Country",
+      "logo": "Company Logo"
+    },
+    "save_changes": "Save Changes",
+    "email": {
+      "test": "Test Email",
+      "save": "Save Email Settings"
+    }
+  },
+  "profile": {
+    "save_personal": "Save Personal Information",
+    "add_passkey": "Add New Passkey",
+    "save_preferences": "Save Preferences"
+  }
+,
+  "productTree": {
+    "loading": "Products are loading…",
+    "empty": "No products found.",
+    "noProductsAvailable": "No products available for this timeframe."
+  },
+  "product": {
+    "missing_id": "Product ID missing, selection unavailable",
+    "stock_label": "Stock"
+  },
+  "rental": {
+    "label": "Rental product"
   }
 }

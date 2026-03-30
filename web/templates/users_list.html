@@ -800,7 +800,7 @@
     <div class="modal" id="userModal">
         <div class="modal-content" style="min-width: 600px; max-width: 700px;">
             <div class="modal-header">
-                <h3 id="userModalTitle">Create User</h3>
+                <h3 id="userModalTitle" data-i18n="users.createTitle">Create User</h3>
                 <button class="modal-close" onclick="closeUserModal()">
                     <i class="bi bi-x"></i>
                 </button>
@@ -819,21 +819,21 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);">
                     <div>
                         <label style="display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: var(--space-xs);">Username</label>
-                        <input type="text" id="username" name="username" required style="width: 100%; padding: var(--space-sm); border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary);">
+                        <input type="text" id="username" name="username" required autocomplete="username" style="width: 100%; padding: var(--space-sm); border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary);">
                     </div>
                     <div>
                         <label style="display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: var(--space-xs);">Email</label>
-                        <input type="email" id="email" name="email" required placeholder="user@example.com" style="width: 100%; padding: var(--space-sm); border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary);">
+                        <input type="email" id="email" name="email" required placeholder="user@example.com" autocomplete="email" style="width: 100%; padding: var(--space-sm); border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary);">
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-lg);" id="passwordSection">
                     <div>
-                        <label style="display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: var(--space-xs);">Password</label>
-                        <input type="password" id="password" name="password" style="width: 100%; padding: var(--space-sm); border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary);">
+                        <label style="display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: var(--space-xs);" data-i18n="auth.password">Password</label>
+                        <input type="password" id="password" name="password" autocomplete="new-password" data-i18n-attr="placeholder" data-i18n="auth.password" style="width: 100%; padding: var(--space-sm); border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary);">
                     </div>
                     <div>
-                        <label style="display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: var(--space-xs);">Confirm Password</label>
-                        <input type="password" id="confirmPassword" name="confirmPassword" style="width: 100%; padding: var(--space-sm); border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary);">
+                        <label style="display: block; font-weight: 500; color: var(--text-secondary); margin-bottom: var(--space-xs);" data-i18n="users.confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" data-i18n-attr="placeholder" data-i18n="users.confirmPassword" style="width: 100%; padding: var(--space-sm); border: 1px solid var(--surface-3); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary);">
                     </div>
                 </div>
                 <div style="margin-bottom: var(--space-lg);">
@@ -844,8 +844,8 @@
                 </div>
             </form>
             <div class="modal-actions">
-                <button class="rc-btn rc-btn-ghost" onclick="closeUserModal()">Cancel</button>
-                <button class="rc-btn rc-btn-primary" id="userSubmitBtn" onclick="submitUser()">Create User</button>
+                <button class="rc-btn rc-btn-ghost" onclick="closeUserModal()" data-i18n="common.cancel">Cancel</button>
+                <button class="rc-btn rc-btn-primary" id="userSubmitBtn" onclick="submitUser()" data-i18n="users.createUser">Create User</button>
             </div>
         </div>
     </div>

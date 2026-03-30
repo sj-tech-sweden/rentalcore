@@ -306,7 +306,7 @@
                                     <div class="wc-tree-header">
                                         <div class="wc-title">
                                             <i class="bi bi-stars"></i>
-                                            <span id="productTreeSummary">Produkte werden geladen…</span>
+                                            <span id="productTreeSummary" data-i18n="productTree.loading">Products are loading…</span>
                                         </div>
                                         <div class="wc-actions">
                                             <button type="button" class="rc-btn rc-btn-ghost rc-btn-xs" data-action="collapse-product-tree">
@@ -391,7 +391,7 @@
                                                     <td>
                                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                                                             <span class="rc-chip rc-chip-pill" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa; font-size: 0.65rem; padding: 2px 6px;">
-                                                                Mietprodukt
+                                                                <span data-i18n="rental.label">Rental product</span>
                                                             </span>
                                                             <strong>{{.ProductName}}</strong>
                                                         </div>
@@ -1803,10 +1803,10 @@
             root.innerHTML = '';
             if (loading) loading.style.display = 'none';
 
-            if (!Array.isArray(treeData) || treeData.length === 0) {
+                if (!Array.isArray(treeData) || treeData.length === 0) {
                 if (empty) empty.style.display = 'block';
                 root.style.display = 'none';
-                if (summary) summary.textContent = 'Keine Produkte gefunden.';
+                if (summary) summary.textContent = (window.t ? window.t('productTree.empty') : 'No products found.');
                 updateProductTreeSummary({ products: 0, available: 0, total: 0 }, 0);
                 updateSelectedProductsSummary();
                 updateHiddenProductInput();
@@ -1842,14 +1842,14 @@
 
             const title = document.createElement('div');
             title.className = 'wc-node-title';
-            title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(category.name || 'Kategorie')}</span>`;
+            title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(category.name || 'Category')}</span>`;
 
             const stats = collectNodeStats(category);
             const chips = document.createElement('div');
             chips.className = 'rc-node-metrics';
             chips.innerHTML = `
-                <span class="wc-chip">${stats.products} Produkte</span>
-                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+                <span class="wc-chip">${stats.products} products</span>
+                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} available</span>
             `;
 
             header.appendChild(title);
@@ -1861,7 +1861,7 @@
             // Only render children if this node is expanded
             if (isExpanded) {
                 (category.subcategories || []).forEach(sub => body.appendChild(renderSubcategoryNode(sub, `sub-${sub.id}`)));
-                const catProductsGroup = renderProductGroup(category.products, `cat-${category.id}-products`, 'Produkte');
+                const catProductsGroup = renderProductGroup(category.products, `cat-${category.id}-products`, 'Products');
                 if (catProductsGroup) {
                     body.appendChild(catProductsGroup);
                 }
@@ -1900,8 +1900,8 @@
             const chips = document.createElement('div');
             chips.className = 'rc-node-metrics';
             chips.innerHTML = `
-                <span class="wc-chip">${stats.products} Produkte</span>
-                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+                <span class="wc-chip">${stats.products} products</span>
+                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} available</span>
             `;
 
             header.appendChild(title);
@@ -1913,7 +1913,7 @@
             // Only render children if this node is expanded
             if (isExpanded) {
                 (subcategory.subbiercategories || []).forEach(sb => body.appendChild(renderSubbiercategoryNode(sb, `subbier-${sb.id}`)));
-                const subProductsGroup = renderProductGroup(subcategory.products, `sub-${subcategory.id}-products`, 'Produkte');
+                const subProductsGroup = renderProductGroup(subcategory.products, `sub-${subcategory.id}-products`, 'Products');
                 if (subProductsGroup) {
                     body.appendChild(subProductsGroup);
                 }
@@ -1947,8 +1947,8 @@
             const chips = document.createElement('div');
             chips.className = 'rc-node-metrics';
             chips.innerHTML = `
-                <span class="wc-chip">${stats.products} Produkte</span>
-                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+                <span class="wc-chip">${stats.products} products</span>
+                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} available</span>
             `;
 
             header.appendChild(title);
@@ -1988,13 +1988,13 @@
 
             const title = document.createElement('div');
             title.className = 'wc-node-title';
-            title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(label || 'Produkte')}</span>`;
+            title.innerHTML = `<i class="bi bi-chevron-right wc-node-chevron"></i><span>${escapeHtml(label || 'Products')}</span>`;
 
             const chips = document.createElement('div');
             chips.className = 'rc-node-metrics';
             chips.innerHTML = `
-                <span class="wc-chip">${stats.products} Produkte</span>
-                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} frei</span>
+                <span class="wc-chip">${stats.products} products</span>
+                <span class="wc-chip ${stats.available > 0 ? 'success' : stats.total === 0 ? 'muted' : 'danger'}">${stats.available}/${stats.total} available</span>
             `;
 
             header.appendChild(title);
@@ -2043,7 +2043,7 @@
             if (brand) meta.innerHTML += `<span>${escapeHtml(brand)}</span>`;
             if (manufacturer) meta.innerHTML += `<span>${escapeHtml(manufacturer)}</span>`;
             if (barcode) meta.innerHTML += `<span class="wc-chip muted">${escapeHtml(barcode)}</span>`;
-            if (meta.innerHTML === '') meta.innerHTML = '<span style="color: var(--text-secondary);">Keine Zusatzinfos</span>';
+            if (meta.innerHTML === '') meta.innerHTML = '<span style="color: var(--text-secondary);">No additional info</span>';
             info.appendChild(meta);
 
             const inputs = document.createElement('div');
@@ -2052,7 +2052,7 @@
             const availChip = document.createElement('span');
             const availClass = total === 0 ? 'muted' : available > 0 ? 'success' : 'danger';
             availChip.className = `wc-chip ${availClass}`;
-            availChip.innerHTML = `<i class="bi bi-lightning-charge"></i> ${available} / ${total || 0} frei`;
+                availChip.innerHTML = `<i class="bi bi-lightning-charge"></i> ${available} / ${total || 0} available`;
 
             const input = document.createElement('input');
             input.type = 'number';
@@ -2067,7 +2067,7 @@
             });
             if (productId === null || productId === undefined) {
                 input.disabled = true;
-                input.title = 'Produkt-ID fehlt, Auswahl nicht möglich';
+                input.title = (window.t ? window.t('product.missing_id') : 'Product ID missing, selection unavailable');
             }
 
             if (isConsumableProduct(product)) {
@@ -2076,7 +2076,7 @@
                 const stockText = stock !== null ? `${stock}${unit ? ' ' + unit : ''}` : `0${unit ? ' ' + unit : ''}`;
                 const stockChip = document.createElement('span');
                 stockChip.className = 'wc-chip muted';
-                stockChip.innerHTML = `<i class="bi bi-archive"></i> Lager: ${stockText}`;
+                stockChip.innerHTML = `<i class="bi bi-archive"></i> Stock: ${stockText}`;
                 inputs.appendChild(stockChip);
             }
 
@@ -2113,12 +2113,12 @@
                         if (nodeElement._categoryData) {
                             const category = nodeElement._categoryData;
                             (category.subcategories || []).forEach(sub => body.appendChild(renderSubcategoryNode(sub, `sub-${sub.id}`)));
-                            const catProductsGroup = renderProductGroup(category.products, `cat-${category.id}-products`, 'Produkte');
+                            const catProductsGroup = renderProductGroup(category.products, `cat-${category.id}-products`, 'Products');
                             if (catProductsGroup) body.appendChild(catProductsGroup);
                         } else if (nodeElement._subcategoryData) {
                             const subcategory = nodeElement._subcategoryData;
                             (subcategory.subbiercategories || []).forEach(sb => body.appendChild(renderSubbiercategoryNode(sb, `subbier-${sb.id}`)));
-                            const subProductsGroup = renderProductGroup(subcategory.products, `sub-${subcategory.id}-products`, 'Produkte');
+                            const subProductsGroup = renderProductGroup(subcategory.products, `sub-${subcategory.id}-products`, 'Products');
                             if (subProductsGroup) body.appendChild(subProductsGroup);
                         } else if (nodeElement._subbiercategoryData) {
                             const subbiercategory = nodeElement._subbiercategoryData;

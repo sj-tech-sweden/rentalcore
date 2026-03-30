@@ -152,19 +152,19 @@
                 <div>
                     <h2>
                         <i class="fas fa-search me-2"></i>
-                        Search Results
+                        <span data-i18n="search.title">Search Results</span>
                     </h2>
                     <p class="text-muted">
                         {{ if .query }}
                             Showing results for "{{ .query }}"
                         {{ else }}
-                            Enter a search term to find jobs, devices, customers, and cases
+                            <span data-i18n="search.enter_to_find">Enter a search term to find jobs, devices, customers, and cases</span>
                         {{ end }}
                     </p>
                 </div>
                 <div>
                     <a href="/search/saved" class="btn btn-outline-secondary">
-                        <i class="fas fa-bookmark me-2"></i>Saved Searches
+                        <i class="fas fa-bookmark me-2"></i><span data-i18n="search.saved_searches">Saved Searches</span>
                     </a>
                 </div>
             </div>
@@ -180,10 +180,11 @@
                         <span class="input-group-text">
                             <i class="fas fa-search"></i>
                         </span>
-                        <input type="text" 
+                           <input type="text" 
                                class="form-control" 
                                name="q" 
                                placeholder="Search jobs, devices, customers..." 
+                               data-i18n-attr="placeholder:search.input_placeholder"
                                value="{{ .query }}"
                                autofocus>
                     </div>
@@ -197,8 +198,8 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search me-2"></i>Search
+                            <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i><span data-i18n="common.search">Search</span>
                     </button>
                 </div>
             </form>
@@ -333,8 +334,8 @@
     <div class="card">
         <div class="card-body text-center py-5">
             <i class="fas fa-search display-1 text-primary mb-3"></i>
-            <h3>Global Search</h3>
-            <p class="text-muted mb-4">Search across all jobs, devices, customers, and cases from one place</p>
+            <h3 data-i18n="search.global_title">Global Search</h3>
+            <p class="text-muted mb-4" data-i18n="search.global_description">Search across all jobs, devices, customers, and cases from one place</p>
             <div class="row justify-content-center">
                 <div class="col-md-6">
                     <form method="GET" action="/search/global">
@@ -343,6 +344,7 @@
                                    class="form-control" 
                                    name="q" 
                                    placeholder="Enter search term..." 
+                                   data-i18n-attr="placeholder:search.global_input_placeholder"
                                    autofocus>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-search"></i>

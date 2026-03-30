@@ -24,6 +24,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RentalCore">
     <link rel="apple-touch-icon" href="/static/images/icon-180.png">
+        <!-- Mobile Web App (Chrome/Android) compatibility -->
+        <meta name="mobile-web-app-capable" content="yes">
     
     <!-- Theme Colors -->
     <meta name="theme-color" content="#030712">
@@ -253,9 +255,9 @@
             <div class="login-brand">
                 <h1>
                     <i class="bi bi-gear-wide-connected"></i>
-                    RentalCore
+                            <span class="brand-rental" data-i18n="navbar.brand_rental">Rental</span><span class="brand-core" data-i18n="navbar.brand_core">Core</span>
                 </h1>
-                <p>The future of rental management</p>
+                        <p data-i18n="login.tagline">The future of rental management</p>
             </div>
             
             {{if .error}}
@@ -267,35 +269,37 @@
             
             <form method="POST" action="/login" class="login-form">
                 <div class="floating-label">
-                    <input type="text" class="floating-input" id="username" name="username" placeholder="Username" required autofocus>
+                    <input type="text" class="floating-input" id="username" name="username" autocomplete="username" data-i18n="auth.username" data-i18n-attr="placeholder" required autofocus>
                     <label for="username" class="floating-label-text">
                         <i class="bi bi-person"></i>
-                        Username
+                        <span data-i18n="auth.username">Username</span>
                     </label>
                 </div>
                 
                 <div class="floating-label">
-                    <input type="password" class="floating-input" id="password" name="password" placeholder="Password" required>
+                    <input type="password" class="floating-input" id="password" name="password" autocomplete="current-password" data-i18n="auth.password" data-i18n-attr="placeholder" required>
                     <label for="password" class="floating-label-text">
                         <i class="bi bi-lock"></i>
-                        Password
+                        <span data-i18n="auth.password">Password</span>
                     </label>
                 </div>
                 
                 <button type="submit" class="login-submit">
                     <i class="bi bi-box-arrow-in-right"></i>
-                    Sign In
+                    <span data-i18n="auth.login">Sign In</span>
                 </button>
             </form>
             
             
-            <div class="login-footer">
+            <div class="login-footer" data-i18n="login.secure_footer">
                 <i class="bi bi-shield-check"></i>
                 Secure login with encrypted passwords & passkeys
             </div>
         </div>
     </div>
     
+    <script src="/static/js/i18n.js"></script>
+
     <script>
         // Check for available passkeys and auto-prompt
         document.addEventListener('DOMContentLoaded', async function() {
@@ -325,7 +329,8 @@
         document.querySelector('.login-form').addEventListener('submit', function(e) {
             const submitBtn = this.querySelector('.login-submit');
             const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Signing in...';
+            const signingText = (window.t ? window.t('login.signing_in') : 'Signing in...');
+            submitBtn.innerHTML = `<i class="bi bi-hourglass-split"></i> ${signingText}`;
             submitBtn.disabled = true;
             
             // Re-enable if form submission fails (page reload doesn't happen)
@@ -346,7 +351,7 @@
                 // Check if WebAuthn is supported
                 if (!window.PublicKeyCredential) {
                     if (!isAutomatic) {
-                        alert('Passkeys are not supported in this browser');
+                        alert(window.t ? window.t('login.passkey_not_supported') : 'Passkeys are not supported in this browser');
                     }
                     return;
                 }
@@ -357,11 +362,19 @@
                 const response = await fetch('/auth/passkey/start-authentication', {
                     method: 'POST'
                 });
-                
+
+                if (!response.ok) {
+                    console.error('Passkey start-authentication failed:', response.status, response.statusText);
+                    if (!isAutomatic) {
+                        alert('Passkey authentication could not be started (server error).');
+                    }
+                    return;
+                }
+
                 const data = await response.json();
                 if (data.error) {
                     if (!isAutomatic) {
-                        alert('Error starting authentication: ' + data.error);
+                        alert((window.t ? window.t('login.auth_failed_prefix') : 'Authentication failed: ') + data.error);
                     }
                     return;
                 }

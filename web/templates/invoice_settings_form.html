@@ -1,14 +1,14 @@
 {{template "base.html" .}}
 
-{{define "content"}}
+{{define "invoice_settings_form_content"}}
 <div class="container-fluid">
     <div class="row">
         <div class="col-lg-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title">Invoice Settings</h3>
+                    <h3 class="card-title" data-i18n="invoice.settings.title">Invoice Settings</h3>
                     <a href="/invoices" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Invoices
+                        <i class="fas fa-arrow-left"></i> <span data-i18n="invoice.settings.back">Back to Invoices</span>
                     </a>
                 </div>
                 
@@ -17,30 +17,22 @@
                         <div class="row">
                             <!-- Left Column - Numbering & Formatting -->
                             <div class="col-md-6">
-                                <h5>Invoice Numbering</h5>
+                                <h5 data-i18n="invoice.settings.numbering.title">Invoice Numbering</h5>
                                 
                                 <div class="form-group">
-                                    <label for="invoiceNumberPrefix">Invoice Number Prefix</label>
+                                    <label for="invoiceNumberPrefix" data-i18n="invoice.settings.numbering.prefix">Invoice Number Prefix</label>
                                     <input type="text" id="invoiceNumberPrefix" name="invoiceNumberPrefix" class="form-control" 
                                            value="{{.settings.InvoiceNumberPrefix}}" placeholder="INV-">
-                                    <small class="form-text text-muted">Prefix that appears before the invoice number</small>
+                                    <small class="form-text text-muted" data-i18n="invoice.settings.numbering.prefix_help">Prefix that appears before the invoice number</small>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="invoiceNumberFormat">Invoice Number Format</label>
+                                    <label for="invoiceNumberFormat" data-i18n="invoice.settings.numbering.format">Invoice Number Format</label>
                                     <select id="invoiceNumberFormat" name="invoiceNumberFormat" class="form-control" onchange="updateFormatPreview()">
-                                        <option value="{prefix}{year}{month}{sequence:4}" {{if eq .settings.InvoiceNumberFormat "{prefix}{year}{month}{sequence:4}"}}selected{{end}}>
-                                            Prefix + Year + Month + Sequence (INV-202512-0001)
-                                        </option>
-                                        <option value="{prefix}{year}-{sequence:4}" {{if eq .settings.InvoiceNumberFormat "{prefix}{year}-{sequence:4}"}}selected{{end}}>
-                                            Prefix + Year + Sequence (INV-2025-0001)
-                                        </option>
-                                        <option value="{prefix}{sequence:6}" {{if eq .settings.InvoiceNumberFormat "{prefix}{sequence:6}"}}selected{{end}}>
-                                            Prefix + Sequence (INV-000001)
-                                        </option>
-                                        <option value="{year}{month}{sequence:4}" {{if eq .settings.InvoiceNumberFormat "{year}{month}{sequence:4}"}}selected{{end}}>
-                                            Year + Month + Sequence (202512-0001)
-                                        </option>
+                                        <option value="{prefix}{year}{month}{sequence:4}" {{if eq .settings.InvoiceNumberFormat "{prefix}{year}{month}{sequence:4}"}}selected{{end}} data-i18n="invoice.settings.numbering.format_prefix_year_month">Prefix + Year + Month + Sequence (INV-202512-0001)</option>
+                                        <option value="{prefix}{year}-{sequence:4}" {{if eq .settings.InvoiceNumberFormat "{prefix}{year}-{sequence:4}"}}selected{{end}} data-i18n="invoice.settings.numbering.format_prefix_year">Prefix + Year + Sequence (INV-2025-0001)</option>
+                                        <option value="{prefix}{sequence:6}" {{if eq .settings.InvoiceNumberFormat "{prefix}{sequence:6}"}}selected{{end}} data-i18n="invoice.settings.numbering.format_prefix_sequence">Prefix + Sequence (INV-000001)</option>
+                                        <option value="{year}{month}{sequence:4}" {{if eq .settings.InvoiceNumberFormat "{year}{month}{sequence:4}"}}selected{{end}} data-i18n="invoice.settings.numbering.format_year_month">Year + Month + Sequence (202512-0001)</option>
                                     </select>
                                     <small class="form-text text-muted">Format for generating invoice numbers</small>
                                 </div>
@@ -52,19 +44,19 @@
                                     </div>
                                 </div>
 
-                                <h5 class="mt-4">Currency & Localization</h5>
+                                <h5 class="mt-4" data-i18n="invoice.settings.currency.title">Currency & Localization</h5>
                                 
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="currencySymbol">Currency Symbol</label>
+                                            <label for="currencySymbol" data-i18n="invoice.settings.currency.symbol">Currency Symbol</label>
                                             <input type="text" id="currencySymbol" name="currencySymbol" class="form-control" 
                                                    value="{{.settings.CurrencySymbol}}" maxlength="5">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="currencyCode">Currency Code</label>
+                                            <label for="currencyCode" data-i18n="invoice.settings.currency.code">Currency Code</label>
                                             <input type="text" id="currencyCode" name="currencyCode" class="form-control" 
                                                    value="{{.settings.CurrencyCode}}" maxlength="3" placeholder="EUR">
                                         </div>
@@ -74,44 +66,40 @@
                                 <div class="form-group">
                                     <label for="dateFormat">Date Format</label>
                                     <select id="dateFormat" name="dateFormat" class="form-control">
-                                        <option value="DD.MM.YYYY" {{if eq .settings.DateFormat "DD.MM.YYYY"}}selected{{end}}>DD.MM.YYYY (31.12.2025)</option>
-                                        <option value="MM/DD/YYYY" {{if eq .settings.DateFormat "MM/DD/YYYY"}}selected{{end}}>MM/DD/YYYY (12/31/2025)</option>
-                                        <option value="YYYY-MM-DD" {{if eq .settings.DateFormat "YYYY-MM-DD"}}selected{{end}}>YYYY-MM-DD (2025-12-31)</option>
-                                        <option value="DD MMM YYYY" {{if eq .settings.DateFormat "DD MMM YYYY"}}selected{{end}}>DD MMM YYYY (31 Dec 2025)</option>
+                                        <option value="DD.MM.YYYY" {{if eq .settings.DateFormat "DD.MM.YYYY"}}selected{{end}} data-i18n="invoice.settings.dateformat.ddmmyyyy">DD.MM.YYYY (31.12.2025)</option>
+                                        <option value="MM/DD/YYYY" {{if eq .settings.DateFormat "MM/DD/YYYY"}}selected{{end}} data-i18n="invoice.settings.dateformat.mmddyyyy">MM/DD/YYYY (12/31/2025)</option>
+                                        <option value="YYYY-MM-DD" {{if eq .settings.DateFormat "YYYY-MM-DD"}}selected{{end}} data-i18n="invoice.settings.dateformat.yyyy_mm_dd">YYYY-MM-DD (2025-12-31)</option>
+                                        <option value="DD MMM YYYY" {{if eq .settings.DateFormat "DD MMM YYYY"}}selected{{end}} data-i18n="invoice.settings.dateformat.dd_mmm_yyyy">DD MMM YYYY (31 Dec 2025)</option>
                                     </select>
                                 </div>
                             </div>
 
                             <!-- Right Column - Defaults & Behavior -->
                             <div class="col-md-6">
-                                <h5>Default Values</h5>
+                                <h5 data-i18n="invoice.settings.defaults.title">Default Values</h5>
                                 
                                 <div class="form-group">
-                                    <label for="defaultPaymentTerms">Default Payment Terms (days)</label>
+                                    <label for="defaultPaymentTerms" data-i18n="invoice.settings.defaults.payment_terms">Default Payment Terms (days)</label>
                                     <input type="number" id="defaultPaymentTerms" name="defaultPaymentTerms" class="form-control" 
                                            value="{{.settings.DefaultPaymentTerms}}" min="1" max="365">
-                                    <small class="form-text text-muted">Default number of days for payment due date</small>
+                                    <small class="form-text text-muted" data-i18n="invoice.settings.defaults.payment_terms_help">Default number of days for payment due date</small>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="defaultTaxRate">Default Tax Rate (%)</label>
+                                    <label for="defaultTaxRate" data-i18n="invoice.settings.defaults.tax_rate">Default Tax Rate (%)</label>
                                     <input type="number" id="defaultTaxRate" name="defaultTaxRate" class="form-control" 
                                            value="{{.settings.DefaultTaxRate}}" step="0.01" min="0" max="100">
-                                    <small class="form-text text-muted">Default tax rate applied to new invoices</small>
+                                    <small class="form-text text-muted" data-i18n="invoice.settings.defaults.tax_rate_help">Default tax rate applied to new invoices</small>
                                 </div>
 
-                                <h5 class="mt-4">Invoice Behavior</h5>
+                                <h5 class="mt-4" data-i18n="invoice.settings.behavior.title">Invoice Behavior</h5>
                                 
                                 <div class="form-group">
                                     <div class="form-check">
                                         <input type="checkbox" id="autoCalculateRentalDays" name="autoCalculateRentalDays" 
                                                class="form-check-input" {{if .settings.AutoCalculateRentalDays}}checked{{end}}>
-                                        <label class="form-check-label" for="autoCalculateRentalDays">
-                                            Auto-calculate rental days
-                                        </label>
-                                        <small class="form-text text-muted">
-                                            Automatically calculate quantity based on rental start and end dates
-                                        </small>
+                                        <label class="form-check-label" for="autoCalculateRentalDays" data-i18n="invoice.settings.behavior.auto_calc">Auto-calculate rental days</label>
+                                        <small class="form-text text-muted" data-i18n="invoice.settings.behavior.auto_calc_help">Automatically calculate quantity based on rental start and end dates</small>
                                     </div>
                                 </div>
 
@@ -119,33 +107,25 @@
                                     <div class="form-check">
                                         <input type="checkbox" id="showLogoOnInvoice" name="showLogoOnInvoice" 
                                                class="form-check-input" {{if .settings.ShowLogoOnInvoice}}checked{{end}}>
-                                        <label class="form-check-label" for="showLogoOnInvoice">
-                                            Show company logo on invoices
-                                        </label>
-                                        <small class="form-text text-muted">
-                                            Display company logo in invoice header
-                                        </small>
+                                        <label class="form-check-label" for="showLogoOnInvoice" data-i18n="invoice.settings.behavior.show_logo">Show company logo on invoices</label>
+                                        <small class="form-text text-muted" data-i18n="invoice.settings.behavior.show_logo_help">Display company logo in invoice header</small>
                                     </div>
                                 </div>
 
-                                <h5 class="mt-4">Email Settings</h5>
+                                <h5 class="mt-4" data-i18n="invoice.settings.email.title">Email Settings</h5>
                                 
                                 <div class="form-group">
-                                    <label for="emailSubjectTemplate">Email Subject Template</label>
-                                    <input type="text" id="emailSubjectTemplate" name="emailSubjectTemplate" class="form-control" 
-                                           placeholder="Invoice {invoice_number} from {company_name}">
-                                    <small class="form-text text-muted">
-                                        Variables: {invoice_number}, {company_name}, {customer_name}, {total_amount}
-                                    </small>
+                                     <label for="emailSubjectTemplate" data-i18n="invoice.settings.email.subject">Email Subject Template</label>
+                                     <input type="text" id="emailSubjectTemplate" name="emailSubjectTemplate" class="form-control" 
+                                         placeholder="Invoice {invoice_number} from {company_name}" data-i18n-attr="placeholder:invoice.settings.email.subject_placeholder">
+                                     <small class="form-text text-muted" data-i18n="invoice.settings.email.subject_help">Variables: {invoice_number}, {company_name}, {customer_name}, {total_amount}</small>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="emailBodyTemplate">Email Body Template</label>
+                                    <label for="emailBodyTemplate" data-i18n="invoice.settings.email.body">Email Body Template</label>
                                     <textarea id="emailBodyTemplate" name="emailBodyTemplate" class="form-control" rows="4" 
-                                              placeholder="Dear {customer_name},&#10;&#10;Please find attached invoice {invoice_number} for the amount of {total_amount}.&#10;&#10;Best regards,&#10;{company_name}"></textarea>
-                                    <small class="form-text text-muted">
-                                        Variables: {invoice_number}, {company_name}, {customer_name}, {total_amount}, {due_date}
-                                    </small>
+                                              data-i18n-attr="placeholder:invoice.settings.email.body_placeholder"></textarea>
+                                    <small class="form-text text-muted" data-i18n="invoice.settings.email.body_help">Variables: {invoice_number}, {company_name}, {customer_name}, {total_amount}, {due_date}</small>
                                 </div>
                             </div>
                         </div>
@@ -158,7 +138,7 @@
                                         <h5 class="card-title mb-0">
                                             <button class="btn btn-link p-0" type="button" data-toggle="collapse" 
                                                     data-target="#advancedSettings" aria-expanded="false">
-                                                <i class="fas fa-chevron-down"></i> Advanced Settings
+                                                <i class="fas fa-chevron-down"></i> <span data-i18n="invoice.settings.advanced.title">Advanced Settings</span>
                                             </button>
                                         </h5>
                                     </div>
@@ -167,22 +147,18 @@
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label for="overdueGracePeriod">Overdue Grace Period (days)</label>
+                                                        <label for="overdueGracePeriod" data-i18n="invoice.settings.advanced.overdue_grace">Overdue Grace Period (days)</label>
                                                         <input type="number" id="overdueGracePeriod" name="overdueGracePeriod" 
                                                                class="form-control" value="0" min="0" max="30">
-                                                        <small class="form-text text-muted">
-                                                            Days after due date before marking as overdue
-                                                        </small>
+                                                        <small class="form-text text-muted" data-i18n="invoice.settings.advanced.overdue_grace_help">Days after due date before marking as overdue</small>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label for="lateFeePercentage">Late Fee Percentage</label>
+                                                        <label for="lateFeePercentage" data-i18n="invoice.settings.advanced.late_fee">Late Fee Percentage</label>
                                                         <input type="number" id="lateFeePercentage" name="lateFeePercentage" 
                                                                class="form-control" value="0" step="0.01" min="0" max="50">
-                                                        <small class="form-text text-muted">
-                                                            Percentage fee for overdue invoices
-                                                        </small>
+                                                        <small class="form-text text-muted" data-i18n="invoice.settings.advanced.late_fee_help">Percentage fee for overdue invoices</small>
                                                     </div>
                                                 </div>
                                             </div>
@@ -191,12 +167,8 @@
                                                 <div class="form-check">
                                                     <input type="checkbox" id="enableRecurringInvoices" name="enableRecurringInvoices" 
                                                            class="form-check-input">
-                                                    <label class="form-check-label" for="enableRecurringInvoices">
-                                                        Enable recurring invoices
-                                                    </label>
-                                                    <small class="form-text text-muted">
-                                                        Allow creating recurring/subscription invoices
-                                                    </small>
+                                                    <label class="form-check-label" for="enableRecurringInvoices" data-i18n="invoice.settings.advanced.enable_recurring">Enable recurring invoices</label>
+                                                    <small class="form-text text-muted" data-i18n="invoice.settings.advanced.enable_recurring_help">Allow creating recurring/subscription invoices</small>
                                                 </div>
                                             </div>
                                             
@@ -204,12 +176,8 @@
                                                 <div class="form-check">
                                                     <input type="checkbox" id="requireApprovalBeforeSending" name="requireApprovalBeforeSending" 
                                                            class="form-check-input">
-                                                    <label class="form-check-label" for="requireApprovalBeforeSending">
-                                                        Require approval before sending invoices
-                                                    </label>
-                                                    <small class="form-text text-muted">
-                                                        Invoices must be approved before they can be sent
-                                                    </small>
+                                                    <label class="form-check-label" for="requireApprovalBeforeSending" data-i18n="invoice.settings.advanced.require_approval">Require approval before sending invoices</label>
+                                                    <small class="form-text text-muted" data-i18n="invoice.settings.advanced.require_approval_help">Invoices must be approved before they can be sent</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -223,14 +191,14 @@
                             <div class="col-12">
                                 <div class="form-group">
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save"></i> Save Settings
+                                        <i class="fas fa-save"></i> <span data-i18n="invoice.settings.actions.save">Save Settings</span>
                                     </button>
-                                    <a href="/invoices" class="btn btn-secondary">Cancel</a>
+                                    <a href="/invoices" class="btn btn-secondary"><span data-i18n="invoice.settings.actions.cancel">Cancel</span></a>
                                     <button type="button" class="btn btn-info ml-2" onclick="resetToDefaults()">
-                                        <i class="fas fa-undo"></i> Reset to Defaults
+                                        <i class="fas fa-undo"></i> <span data-i18n="invoice.settings.actions.reset">Reset to Defaults</span>
                                     </button>
                                     <button type="button" class="btn btn-success ml-2" onclick="testEmailSettings()">
-                                        <i class="fas fa-envelope"></i> Test Email
+                                        <i class="fas fa-envelope"></i> <span data-i18n="invoice.settings.actions.test_email">Test Email</span>
                                     </button>
                                 </div>
                             </div>
@@ -336,21 +304,21 @@ function submitInvoiceSettings() {
     .then(response => response.json())
     .then(data => {
         if (data.error) {
-            alert('Error: ' + data.error);
+            alert((window.t ? window.t('invoice.settings.update_error_prefix') : 'Error: ') + data.error);
         } else {
-            alert('Invoice settings updated successfully!');
+            alert(window.t ? window.t('invoice.settings.update_success') : 'Invoice settings updated successfully!');
             // Optionally redirect or reload
             // window.location.href = '/invoices';
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to update invoice settings');
-    });
+        alert(window.t ? window.t('invoice.settings.update_failed') : 'Failed to update invoice settings');
+    })
 }
 
 function resetToDefaults() {
-    if (confirm('Are you sure you want to reset all settings to their default values?')) {
+    if (confirm(window.t ? window.t('invoice.settings.confirm_reset') : 'Are you sure you want to reset all settings to their default values?')) {
         // Reset form to default values
         document.getElementById('invoiceNumberPrefix').value = 'INV-';
         document.getElementById('invoiceNumberFormat').value = '{prefix}{year}{month}{sequence:4}';
@@ -374,7 +342,7 @@ function sendTestEmail() {
     const emailAddress = document.getElementById('testEmailAddress').value;
     
     if (!emailAddress) {
-        alert('Please enter an email address');
+        alert(window.t ? window.t('invoice.settings.email.enter_address') : 'Please enter an email address');
         return;
     }
     
@@ -385,7 +353,7 @@ function sendTestEmail() {
     // Show loading state
     const sendButton = document.querySelector('#testEmailModal .btn-primary');
     const originalText = sendButton.innerHTML;
-    sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (window.t ? window.t('invoice.settings.email.sending') : 'Sending...');
     sendButton.disabled = true;
     
     fetch('/api/test-email', {
@@ -398,15 +366,15 @@ function sendTestEmail() {
     .then(response => response.json())
     .then(data => {
         if (data.error) {
-            alert('Error sending test email: ' + data.error);
+            alert((window.t ? window.t('invoice.settings.email.send_error_prefix') : 'Error sending test email: ') + data.error);
         } else {
-            alert('Test email sent successfully to ' + data.sentTo + '!');
+            alert((window.t ? window.t('invoice.settings.email.send_success_prefix') : 'Test email sent successfully to ') + data.sentTo + (window.t ? window.t('invoice.settings.email.send_success_suffix') : '!'));
             $('#testEmailModal').modal('hide');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to send test email');
+        alert(window.t ? window.t('invoice.settings.email.send_failed') : 'Failed to send test email');
     })
     .finally(() => {
         // Restore button state
