@@ -1,0 +1,40 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "labels": ["patch"],
+  "schedule": ["every weekend"],
+  "packageRules": [
+    {
+      "description": "Group all Go module updates into one PR",
+      "matchManagers": ["gomod"],
+      "groupName": "Go modules",
+      "labels": ["patch"]
+    },
+    {
+      "description": "Group all GitHub Actions updates into one PR",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "labels": ["patch"]
+    },
+    {
+      "description": "Minor and major Go module updates need explicit approval",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "major"],
+      "labels": ["minor"],
+      "automerge": false
+    },
+    {
+      "description": "Auto-merge patch-level Go module and Actions updates",
+      "matchUpdateTypes": ["patch", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Separate PR per Docker base image update, labelled minor",
+      "matchManagers": ["dockerfile"],
+      "groupName": "Docker base images",
+      "labels": ["minor"]
+    }
+  ]
+}
