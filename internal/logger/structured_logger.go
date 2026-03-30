@@ -44,41 +44,41 @@ func (l LogLevel) String() string {
 
 // LogEntry represents a structured log entry
 type LogEntry struct {
-	Timestamp    time.Time              `json:"timestamp"`
-	Level        string                 `json:"level"`
-	Message      string                 `json:"message"`
-	Service      string                 `json:"service"`
-	Version      string                 `json:"version"`
-	Environment  string                 `json:"environment"`
-	RequestID    string                 `json:"request_id,omitempty"`
-	UserID       *uint                  `json:"user_id,omitempty"`
-	Username     string                 `json:"username,omitempty"`
-	Method       string                 `json:"method,omitempty"`
-	Path         string                 `json:"path,omitempty"`
-	StatusCode   int                    `json:"status_code,omitempty"`
-	Duration     string                 `json:"duration,omitempty"`
-	IP           string                 `json:"ip,omitempty"`
-	UserAgent    string                 `json:"user_agent,omitempty"`
-	Error        string                 `json:"error,omitempty"`
-	Stack        string                 `json:"stack,omitempty"`
-	Component    string                 `json:"component,omitempty"`
-	Operation    string                 `json:"operation,omitempty"`
-	Resource     string                 `json:"resource,omitempty"`
-	Query        string                 `json:"query,omitempty"`
-	QueryTime    string                 `json:"query_time,omitempty"`
-	Fields       map[string]interface{} `json:"fields,omitempty"`
-	File         string                 `json:"file,omitempty"`
-	Line         int                    `json:"line,omitempty"`
-	Function     string                 `json:"function,omitempty"`
+	Timestamp   time.Time              `json:"timestamp"`
+	Level       string                 `json:"level"`
+	Message     string                 `json:"message"`
+	Service     string                 `json:"service"`
+	Version     string                 `json:"version"`
+	Environment string                 `json:"environment"`
+	RequestID   string                 `json:"request_id,omitempty"`
+	UserID      *uint                  `json:"user_id,omitempty"`
+	Username    string                 `json:"username,omitempty"`
+	Method      string                 `json:"method,omitempty"`
+	Path        string                 `json:"path,omitempty"`
+	StatusCode  int                    `json:"status_code,omitempty"`
+	Duration    string                 `json:"duration,omitempty"`
+	IP          string                 `json:"ip,omitempty"`
+	UserAgent   string                 `json:"user_agent,omitempty"`
+	Error       string                 `json:"error,omitempty"`
+	Stack       string                 `json:"stack,omitempty"`
+	Component   string                 `json:"component,omitempty"`
+	Operation   string                 `json:"operation,omitempty"`
+	Resource    string                 `json:"resource,omitempty"`
+	Query       string                 `json:"query,omitempty"`
+	QueryTime   string                 `json:"query_time,omitempty"`
+	Fields      map[string]interface{} `json:"fields,omitempty"`
+	File        string                 `json:"file,omitempty"`
+	Line        int                    `json:"line,omitempty"`
+	Function    string                 `json:"function,omitempty"`
 }
 
 // StructuredLogger provides production-ready logging
 type StructuredLogger struct {
-	level       LogLevel
-	service     string
-	version     string
-	environment string
-	output      *os.File
+	level        LogLevel
+	service      string
+	version      string
+	environment  string
+	output       *os.File
 	enableCaller bool
 }
 
@@ -190,7 +190,7 @@ func (sl *StructuredLogger) Fatal(message string, err error, fields ...map[strin
 // LogRequest logs HTTP request details
 func (sl *StructuredLogger) LogRequest(c *gin.Context, duration time.Duration, fields ...map[string]interface{}) {
 	logFields := sl.mergeFields(fields...)
-	
+
 	entry := &LogEntry{
 		Timestamp:   time.Now().UTC(),
 		Level:       INFO.String(),
@@ -228,7 +228,7 @@ func (sl *StructuredLogger) LogRequest(c *gin.Context, duration time.Duration, f
 func (sl *StructuredLogger) LogQuery(query string, duration time.Duration, err error, fields ...map[string]interface{}) {
 	level := INFO
 	message := "Database Query"
-	
+
 	logFields := sl.mergeFields(fields...)
 	logFields["query"] = query
 	logFields["query_time"] = duration.String()

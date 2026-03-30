@@ -337,7 +337,6 @@ func (r *AccessoriesConsumablesRepository) ScanConsumableIn(jobConsumableID uint
 	})
 }
 
-
 // ============================================================================
 // Barcode Operations
 // ============================================================================

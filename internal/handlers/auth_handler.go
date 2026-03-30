@@ -428,7 +428,7 @@ func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 			// Clean up invalid session cookie
 			cookieDomain := getCookieDomain(c)
 			c.SetCookie("session_id", "", -1, "/", cookieDomain, false, true)
-			
+
 			if isAPI {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session expired", "code": "SESSION_EXPIRED"})
 			} else {
@@ -446,7 +446,7 @@ func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 			cookieDomain := getCookieDomain(c)
 			h.db.Where("session_id = ?", sessionID).Delete(&models.Session{})
 			c.SetCookie("session_id", "", -1, "/", cookieDomain, false, true)
-			
+
 			if isAPI {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User inactive", "code": "USER_INACTIVE"})
 			} else {

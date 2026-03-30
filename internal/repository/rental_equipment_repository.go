@@ -179,8 +179,8 @@ func (r *RentalEquipmentRepository) GetRentalEquipmentAnalytics() (*models.Renta
 		categories = append(categories, models.RentalCategoryBreakdown{
 			Category:               summary.Category,
 			EquipmentCount:         int(summary.EquipmentCount),
-			TotalRevenue:          summary.TotalRevenue,
-			UsageCount:            0, // Simplified for now
+			TotalRevenue:           summary.TotalRevenue,
+			UsageCount:             0, // Simplified for now
 			AvgRevenuePerEquipment: avgRevenue,
 		})
 	}

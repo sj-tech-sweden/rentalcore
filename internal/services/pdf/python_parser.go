@@ -55,8 +55,8 @@ type PythonParserInput struct {
 // PythonParserOutput represents the output structure from the Python parser
 type PythonParserOutput struct {
 	Document struct {
-		Number         string  `json:"number,omitempty"`
-		Date           string  `json:"date,omitempty"`
+		Number          string  `json:"number,omitempty"`
+		Date            string  `json:"date,omitempty"`
 		CustomerName    string  `json:"customer_name,omitempty"`
 		Subtotal        float64 `json:"subtotal,omitempty"`         // Subtotal before discount
 		DiscountAmount  float64 `json:"discount_amount,omitempty"`  // Total discount

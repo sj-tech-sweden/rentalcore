@@ -338,7 +338,7 @@ func (r *InvoiceRepositoryNew) generateInvoiceNumber(tx *gorm.DB) (string, error
 	// Find the highest existing number for this prefix
 	var maxNumber int
 	pattern := prefix + "%"
-	
+
 	err := tx.Raw(`
 		SELECT COALESCE(MAX(
 			CAST(
@@ -348,7 +348,7 @@ func (r *InvoiceRepositoryNew) generateInvoiceNumber(tx *gorm.DB) (string, error
 		FROM invoices 
 		WHERE invoice_number LIKE ?
 	`, len(prefix)+1, pattern).Scan(&maxNumber).Error
-	
+
 	if err != nil {
 		// Fallback: use timestamp-based number
 		maxNumber = int(time.Now().Unix()) % 100000
@@ -391,16 +391,16 @@ func (r *InvoiceRepositoryNew) GeneratePreviewInvoiceNumber() (string, error) {
 	// Get settings from config - using the configured format
 	prefix := "INV-"
 	format := "{prefix}{year}{month}{sequence:4}"
-	
+
 	// Get current year and month
 	now := time.Now()
 	year := now.Format("2006")
 	month := now.Format("01")
-	
+
 	// Find the highest existing number for this prefix and year/month
 	var maxNumber int
 	pattern := prefix + year + month + "%"
-	
+
 	err := r.db.DB.Raw(`
 		SELECT COALESCE(MAX(
 			CAST(
@@ -410,21 +410,21 @@ func (r *InvoiceRepositoryNew) GeneratePreviewInvoiceNumber() (string, error) {
 		FROM invoices 
 		WHERE invoice_number LIKE ?
 	`, len(prefix)+len(year)+len(month)+1, pattern).Scan(&maxNumber).Error
-	
+
 	if err != nil {
 		// Fallback: use 1 as the next number
 		maxNumber = 0
 		log.Printf("Warning: Could not get max invoice number for preview, using fallback")
 	}
-	
+
 	nextNumber := maxNumber + 1
-	
+
 	// Generate invoice number based on format
 	invoiceNumber := strings.ReplaceAll(format, "{prefix}", prefix)
 	invoiceNumber = strings.ReplaceAll(invoiceNumber, "{year}", year)
 	invoiceNumber = strings.ReplaceAll(invoiceNumber, "{month}", month)
 	invoiceNumber = strings.ReplaceAll(invoiceNumber, "{sequence:4}", fmt.Sprintf("%04d", nextNumber))
-	
+
 	return invoiceNumber, nil
 }
 

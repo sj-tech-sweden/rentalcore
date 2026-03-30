@@ -44,11 +44,11 @@ type PDFExtraction struct {
 	CustomerID       sql.NullInt64   `gorm:"column:customer_id" json:"customer_id"`
 	DocumentDate     sql.NullTime    `gorm:"column:document_date;type:date" json:"document_date"`
 	DocumentNumber   sql.NullString  `gorm:"column:document_number" json:"document_number"`
-	ParsedTotal      sql.NullFloat64 `gorm:"column:parsed_total" json:"parsed_total"`           // Subtotal before discount
-	DiscountAmount   sql.NullFloat64 `gorm:"column:discount_amount" json:"discount_amount"`       // Total discount
-	DiscountPercent  sql.NullFloat64 `gorm:"column:discount_percent" json:"discount_percent"`     // Discount percentage
-	TotalAmount      sql.NullFloat64 `gorm:"column:total_amount" json:"total_amount"`             // Final amount after discount
-	Metadata         sql.NullString  `gorm:"column:metadata;type:json" json:"metadata"` // JSON field
+	ParsedTotal      sql.NullFloat64 `gorm:"column:parsed_total" json:"parsed_total"`         // Subtotal before discount
+	DiscountAmount   sql.NullFloat64 `gorm:"column:discount_amount" json:"discount_amount"`   // Total discount
+	DiscountPercent  sql.NullFloat64 `gorm:"column:discount_percent" json:"discount_percent"` // Discount percentage
+	TotalAmount      sql.NullFloat64 `gorm:"column:total_amount" json:"total_amount"`         // Final amount after discount
+	Metadata         sql.NullString  `gorm:"column:metadata;type:json" json:"metadata"`       // JSON field
 }
 
 // TableName specifies the table name for PDFExtraction

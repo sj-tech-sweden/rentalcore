@@ -8,7 +8,7 @@ import (
 // ProductPackage mirrors the shared WarehouseCore product_packages table
 type ProductPackage struct {
 	PackageID   int             `gorm:"primaryKey;column:package_id" json:"package_id"`
-	ProductID   int             `gorm:"column:product_id" json:"product_id"`        // Links to products table
+	ProductID   int             `gorm:"column:product_id" json:"product_id"` // Links to products table
 	PackageCode string          `gorm:"column:package_code" json:"package_code"`
 	Name        string          `gorm:"column:name" json:"name"`
 	Description sql.NullString  `gorm:"column:description" json:"description"`

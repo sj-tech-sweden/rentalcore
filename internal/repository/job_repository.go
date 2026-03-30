@@ -106,7 +106,7 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 	err := r.db.
 		Preload("JobDevices.Device").
 		Preload("JobPackages.Package").
-		Preload("Creator").  // Load the user who created the job
+		Preload("Creator"). // Load the user who created the job
 		First(&job, id).Error
 	if err != nil {
 		jobRepoDebugLog("🔧 DEBUG JobRepo.GetByID: Error loading job %d: %v\n", id, err)
