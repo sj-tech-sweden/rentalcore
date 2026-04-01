@@ -62,11 +62,11 @@ func (h *RentalEquipmentHandler) DeleteRentalEquipment(c *gin.Context) {
 }
 
 // GetRentalEquipmentAPI godoc
-// @Summary      List rental equipment
-// @Description  This endpoint has moved to WarehouseCore. Returns HTTP 410 Gone.
+// @Summary      Rental equipment API deprecated
+// @Description  This endpoint has moved to WarehouseCore and always returns HTTP 410 Gone.
 // @Tags         rental-equipment
 // @Produce      json
-// @Success      410  {object}  map[string]string  "Feature moved to WarehouseCore"
+// @Failure      410  {object}  map[string]string  "Feature moved to WarehouseCore"
 // @Security     SessionCookie
 // @Router       /rental-equipment [get]
 func (h *RentalEquipmentHandler) GetRentalEquipmentAPI(c *gin.Context) {

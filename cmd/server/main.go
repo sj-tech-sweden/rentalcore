@@ -8,7 +8,6 @@
 
 // @license.name  MIT
 
-// @host      localhost:8081
 // @BasePath  /api/v1
 
 // @securityDefinitions.apikey SessionCookie
@@ -737,7 +736,18 @@ func main() {
 	}
 
 	// Routes
-	docs.SwaggerInfo.Host = cfg.Server.Host + ":" + strconv.Itoa(cfg.Server.Port)
+	swaggerHost := os.Getenv("SWAGGER_PUBLIC_HOST")
+	if swaggerHost == "" {
+		switch cfg.Server.Host {
+		case "", "0.0.0.0", "::":
+			// Leave SwaggerInfo.Host unset so Swagger can fall back to the request host.
+		default:
+			swaggerHost = cfg.Server.Host + ":" + strconv.Itoa(cfg.Server.Port)
+		}
+	}
+	if swaggerHost != "" {
+		docs.SwaggerInfo.Host = swaggerHost
+	}
 	setupRoutes(r, cfg, jobHandler, jobHistoryHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, infoHandler, barcodeHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, pdfHandler, accessoriesConsumablesHandler, rbacMiddleware, complianceMiddleware)
 
 	// Add dedicated error route

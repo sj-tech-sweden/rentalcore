@@ -942,14 +942,14 @@ const docTemplate = `{
                         "SessionCookie": []
                     }
                 ],
-                "description": "This endpoint has moved to WarehouseCore. Returns HTTP 410 Gone.",
+                "description": "This endpoint has moved to WarehouseCore and always returns HTTP 410 Gone.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "rental-equipment"
                 ],
-                "summary": "List rental equipment",
+                "summary": "Rental equipment API deprecated",
                 "responses": {
                     "410": {
                         "description": "Feature moved to WarehouseCore",
@@ -1643,7 +1643,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8081",
+	Host:             "",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "RentalCore API",

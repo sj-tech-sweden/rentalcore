@@ -13,7 +13,6 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:8081",
     "basePath": "/api/v1",
     "paths": {
         "/customers": {
@@ -935,14 +934,14 @@
                         "SessionCookie": []
                     }
                 ],
-                "description": "This endpoint has moved to WarehouseCore. Returns HTTP 410 Gone.",
+                "description": "This endpoint has moved to WarehouseCore and always returns HTTP 410 Gone.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "rental-equipment"
                 ],
-                "summary": "List rental equipment",
+                "summary": "Rental equipment API deprecated",
                 "responses": {
                     "410": {
                         "description": "Feature moved to WarehouseCore",

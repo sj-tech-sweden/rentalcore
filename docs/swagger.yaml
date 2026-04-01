@@ -433,7 +433,6 @@ definitions:
         description: Valid is true if Time is not NULL
         type: boolean
     type: object
-host: localhost:8081
 info:
   contact:
     name: SJ Tech Sweden
@@ -1032,7 +1031,8 @@ paths:
       - products
   /rental-equipment:
     get:
-      description: This endpoint has moved to WarehouseCore. Returns HTTP 410 Gone.
+      description: This endpoint has moved to WarehouseCore and always returns HTTP
+        410 Gone.
       produces:
       - application/json
       responses:
@@ -1044,7 +1044,7 @@ paths:
             type: object
       security:
       - SessionCookie: []
-      summary: List rental equipment
+      summary: Rental equipment API deprecated
       tags:
       - rental-equipment
 securityDefinitions:
