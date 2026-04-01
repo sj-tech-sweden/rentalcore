@@ -1,5 +1,5 @@
 # Build stage - Using Alpine with CGO for SQLite support
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install build dependencies including GCC for CGO/SQLite
 RUN apk add --no-cache git python3 py3-pip gcc musl-dev sqlite-dev
