@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/mail"
 	"os"
 	"path/filepath"
 	"strings"
@@ -698,6 +699,22 @@ func (h *CompanyHandler) TestSMTPConnection(c *gin.Context) {
 	testEmail := c.Query("test_email")
 	if testEmail == "" {
 		testEmail = user.Email
+	}
+
+	// Validate test email to prevent header injection
+	if strings.ContainsAny(testEmail, "\r\n") {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid test email address.",
+		})
+		return
+	}
+	if parsed, err := mail.ParseAddress(testEmail); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid test email address.",
+		})
+		return
+	} else {
+		testEmail = parsed.Address
 	}
 
 	// Create email configuration from company settings
