@@ -112,19 +112,11 @@ jobs:
           git tag -a "${{ steps.version.outputs.new_tag }}" "$MERGE_SHA" -m "Release ${{ steps.version.outputs.new_tag }}"
           git push origin "${{ steps.version.outputs.new_tag }}"
 
-      - name: Create GitHub release
-        if: steps.bump.outputs.should_release == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "${{ steps.version.outputs.new_tag }}" \
-            --target "$MERGE_SHA" \
-            --title "${{ steps.version.outputs.new_tag }}" \
-            --generate-notes
+      # release will be created after the image is built and metadata uploaded
 
       - name: Log in to GHCR
         if: steps.bump.outputs.should_release == 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -136,7 +128,8 @@ jobs:
 
       - name: Build and push image
         if: steps.bump.outputs.should_release == 'true'
-        uses: docker/build-push-action@v6
+        id: build
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -148,3 +141,60 @@ jobs:
             org.opencontainers.image.revision=${{ env.MERGE_SHA }}
             org.opencontainers.image.version=${{ steps.version.outputs.new_version }}
             org.opencontainers.image.title=${{ github.event.repository.name }}
+
+      - name: Make GHCR package public (best-effort)
+        if: steps.bump.outputs.should_release == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          pkg=${{ github.event.repository.name }}
+          owner=${{ github.repository_owner }}
+          token=${{ secrets.GITHUB_TOKEN }}
+
+          # Try org packages API
+          org_url="https://api.github.com/orgs/${owner}/packages/container/${pkg}/visibility"
+          users_url="https://api.github.com/users/${owner}/packages/container/${pkg}/visibility"
+
+          echo "Attempting to set package visibility to public (org endpoint)"
+          resp=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH -H "Authorization: Bearer ${token}" -H "Accept: application/vnd.github+json" ${org_url} -d '{"visibility":"public"}' || true)
+          if [ "$resp" = "200" ] || [ "$resp" = "201" ] || [ "$resp" = "204" ]; then
+            echo "Package visibility set via org endpoint (HTTP $resp)"
+          else
+            echo "Org endpoint returned HTTP $resp, trying users endpoint"
+            resp2=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH -H "Authorization: Bearer ${token}" -H "Accept: application/vnd.github+json" ${users_url} -d '{"visibility":"public"}' || true)
+            echo "Users endpoint returned HTTP $resp2"
+          fi
+
+      - name: Create GitHub release (generate notes via API)
+        if: steps.bump.outputs.should_release == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          REPO="${{ github.repository }}"
+          TAG="${{ steps.version.outputs.new_tag }}"
+          BODY="Release ${TAG} created from PR #${{ github.event.pull_request.number }}"
+          PAYLOAD=$(jq -n --arg tag "$TAG" --arg target "$MERGE_SHA" --arg name "$TAG" --arg body "$BODY" '{tag_name:$tag, target_commitish:$target, name:$name, body:$body, draft:false, prerelease:false, generate_release_notes:true}')
+          resp=$(curl -s -o /tmp/release_resp -w "%{http_code}" -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" -d "$PAYLOAD" "https://api.github.com/repos/${REPO}/releases")
+          if [ "$resp" = "201" ]; then
+            echo "Release created via API"
+            cat /tmp/release_resp
+          else
+            echo "Failed to create release (HTTP $resp)"
+            cat /tmp/release_resp
+            exit 1
+          fi
+
+      - name: Add image info to release (upload small metadata asset)
+        if: steps.bump.outputs.should_release == 'true'
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag=${{ steps.version.outputs.new_version }}
+          echo "image:${IMAGE_NAME}:${tag}" > image-info.txt
+          echo "latest:${IMAGE_NAME}:latest" >> image-info.txt
+          echo "digest:${{ steps.build.outputs.digest }}" >> image-info.txt
+          echo "Uploading image-info.txt to release ${{ steps.version.outputs.new_tag }}"
+          gh release upload "${{ steps.version.outputs.new_tag }}" image-info.txt --clobber

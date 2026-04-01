@@ -26,7 +26,7 @@ RUN python3 -m venv /opt/ocr-venv && \
     chmod +x tools/ocr_parser/parser.py
 
 # Build the application with CGO enabled for SQLite
-RUN CGO_ENABLED=1 GOOS=linux go build -o server cmd/server/main.go
+RUN CGO_ENABLED=1 GOOS=linux go build -o server ./cmd/server
 
 # Production stage
 FROM alpine:latest

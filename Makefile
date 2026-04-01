@@ -8,7 +8,7 @@ all: build user-manager
 # Build the main server
 build:
 	@echo "Building TS Jobscanner server..."
-	go build -o server cmd/server/main.go
+	go build -o server ./cmd/server
 
 # Build the user management tool
 user-manager:
