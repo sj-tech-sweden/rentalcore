@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/smtp"
+	"net/mail"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +17,25 @@ import (
 
 type EmailService struct {
 	config *config.EmailConfig
+}
+
+// sanitizeEmail validates and normalizes an email address to prevent header injection.
+// It returns an empty string if the email is invalid or contains unsafe characters.
+func (s *EmailService) sanitizeEmail(addr string) string {
+	addr = strings.TrimSpace(addr)
+	if addr == "" {
+		return ""
+	}
+	// Disallow CRLF to prevent header injection
+	if strings.ContainsAny(addr, "\r\n") {
+		return ""
+	}
+	parsed, err := mail.ParseAddress(addr)
+	if err != nil || parsed == nil {
+		return ""
+	}
+	// Use the parsed address which is normalized and safe for headers
+	return parsed.Address
 }
 
 func NewEmailService(emailConfig *config.EmailConfig) *EmailService {
@@ -455,9 +475,16 @@ func (s *EmailService) createMIMEMessage(to []string, subject, textBody, htmlBod
 
 	var message strings.Builder
 
+	// Sanitize recipient addresses to prevent header injection
+	var safeTo []string
+	for _, addr := range to {
+		if cleaned := s.sanitizeEmail(addr); cleaned != "" {
+			safeTo = append(safeTo, cleaned)
+		}
+	}
 	// Headers
 	message.WriteString(fmt.Sprintf("From: %s <%s>\r\n", s.config.FromName, s.config.FromEmail))
-	message.WriteString(fmt.Sprintf("To: %s\r\n", strings.Join(to, ", ")))
+	message.WriteString(fmt.Sprintf("To: %s\r\n", strings.Join(safeTo, ", ")))
 	message.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
 	message.WriteString("MIME-Version: 1.0\r\n")
 
