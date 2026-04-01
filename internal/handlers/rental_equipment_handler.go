@@ -49,6 +49,16 @@ func (h *RentalEquipmentHandler) ShowRentalAnalytics(c *gin.Context) {
 	})
 }
 
+// CreateRentalEquipment godoc
+// @Summary      Create rental equipment
+// @Description  Creates rental equipment (functionality moved to WarehouseCore)
+// @Tags         rental-equipment
+// @Accept       json
+// @Produce      json
+// @Param        equipment  body  map[string]interface{}  true  "Rental equipment payload"
+// @Success      410  {object}  map[string]string  "Feature moved to WarehouseCore"
+// @Security     SessionAuth
+// @Router       /rental-equipment [post]
 func (h *RentalEquipmentHandler) CreateRentalEquipment(c *gin.Context) {
 	rentalEquipmentFeatureMovedJSON(c)
 }
@@ -61,6 +71,14 @@ func (h *RentalEquipmentHandler) DeleteRentalEquipment(c *gin.Context) {
 	rentalEquipmentFeatureMovedJSON(c)
 }
 
+// GetRentalEquipmentAPI godoc
+// @Summary      List rental equipment
+// @Description  Returns rental equipment list (functionality moved to WarehouseCore)
+// @Tags         rental-equipment
+// @Produce      json
+// @Success      410  {object}  map[string]string  "Feature moved to WarehouseCore"
+// @Security     SessionAuth
+// @Router       /rental-equipment [get]
 func (h *RentalEquipmentHandler) GetRentalEquipmentAPI(c *gin.Context) {
 	rentalEquipmentFeatureMovedJSON(c)
 }

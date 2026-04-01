@@ -295,6 +295,19 @@ func (h *CustomerHandler) DeleteCustomer(c *gin.Context) {
 }
 
 // API handlers
+// ListCustomersAPI godoc
+// @Summary      List customers
+// @Description  Returns a list of customers with optional search filtering
+// @Tags         customers
+// @Produce      json
+// @Param        search  query  string  false  "Search term"
+// @Param        page    query  integer false  "Page number"
+// @Param        limit   query  integer false  "Items per page"
+// @Success      200  {object}  map[string]interface{}  "customers array"
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /customers [get]
 func (h *CustomerHandler) ListCustomersAPI(c *gin.Context) {
 	params := &models.FilterParams{}
 	if err := c.ShouldBindQuery(params); err != nil {
@@ -311,6 +324,18 @@ func (h *CustomerHandler) ListCustomersAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"customers": customers})
 }
 
+// CreateCustomerAPI godoc
+// @Summary      Create a customer
+// @Description  Creates a new customer record
+// @Tags         customers
+// @Accept       json
+// @Produce      json
+// @Param        customer  body  models.Customer  true  "Customer payload"
+// @Success      201  {object}  models.Customer
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /customers [post]
 func (h *CustomerHandler) CreateCustomerAPI(c *gin.Context) {
 	fmt.Printf("🚨 DEBUG API: CreateCustomerAPI called\n")
 	fmt.Printf("🚨 DEBUG API: Content-Type: %s\n", c.ContentType())
@@ -341,6 +366,17 @@ func (h *CustomerHandler) CreateCustomerAPI(c *gin.Context) {
 	c.JSON(http.StatusCreated, customer)
 }
 
+// GetCustomerAPI godoc
+// @Summary      Get a customer
+// @Description  Returns a single customer by ID
+// @Tags         customers
+// @Produce      json
+// @Param        id  path  integer  true  "Customer ID"
+// @Success      200  {object}  models.Customer
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /customers/{id} [get]
 func (h *CustomerHandler) GetCustomerAPI(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -357,6 +393,19 @@ func (h *CustomerHandler) GetCustomerAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, customer)
 }
 
+// UpdateCustomerAPI godoc
+// @Summary      Update a customer
+// @Description  Updates an existing customer by ID
+// @Tags         customers
+// @Accept       json
+// @Produce      json
+// @Param        id        path  integer          true  "Customer ID"
+// @Param        customer  body  models.Customer  true  "Customer update payload"
+// @Success      200  {object}  models.Customer
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /customers/{id} [put]
 func (h *CustomerHandler) UpdateCustomerAPI(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -379,6 +428,17 @@ func (h *CustomerHandler) UpdateCustomerAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, customer)
 }
 
+// DeleteCustomerAPI godoc
+// @Summary      Delete a customer
+// @Description  Deletes a customer by ID
+// @Tags         customers
+// @Produce      json
+// @Param        id  path  integer  true  "Customer ID"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /customers/{id} [delete]
 func (h *CustomerHandler) DeleteCustomerAPI(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

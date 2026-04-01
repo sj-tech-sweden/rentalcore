@@ -1,6 +1,6 @@
 # TS Jobscanner Makefile
 
-.PHONY: build run clean user-manager help ocr-parser-test
+.PHONY: build run clean user-manager swagger-gen help ocr-parser-test
 
 # Default target
 all: build user-manager
@@ -53,6 +53,13 @@ deps:
 	go mod download
 	go mod tidy
 
+# Generate/update Swagger docs from code annotations
+swagger-gen:
+	@echo "Generating Swagger docs..."
+	@which swag > /dev/null 2>&1 || go install github.com/swaggo/swag/cmd/swag@v1.16.6
+	swag init --generalInfo cmd/server/main.go --output docs --parseDependency --parseInternal
+	@echo "Swagger docs generated in docs/"
+
 # Development setup
 dev-setup: deps build user-manager
 	@echo "Development setup complete!"
@@ -74,6 +81,7 @@ help:
 	@echo "  list-users   - List all users"
 	@echo "  test-db      - Test database connection"
 	@echo "  deps         - Install Go dependencies"
+	@echo "  swagger-gen  - Generate/update Swagger API docs"
 	@echo "  dev-setup    - Complete development setup"
 	@echo "  ocr-parser-test - Setup venv and run OCR parser unit tests"
 	@echo "  help         - Show this help message"

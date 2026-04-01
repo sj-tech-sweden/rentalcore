@@ -613,6 +613,21 @@ func (h *DeviceHandler) GetDevicesBySubbiercategory(c *gin.Context) {
 }
 
 // API handlers
+
+// ListDevicesAPI godoc
+// @Summary      List devices
+// @Description  Returns a list of devices with optional filtering
+// @Tags         devices
+// @Produce      json
+// @Param        search    query  string  false  "Search term"
+// @Param        status    query  string  false  "Filter by status (free, in_use)"
+// @Param        page      query  integer false  "Page number"
+// @Param        limit     query  integer false  "Items per page"
+// @Success      200  {array}   models.Device
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /devices [get]
 func (h *DeviceHandler) ListDevicesAPI(c *gin.Context) {
 	params := &models.FilterParams{}
 	if err := c.ShouldBindQuery(params); err != nil {
@@ -645,6 +660,16 @@ func (h *DeviceHandler) CreateDeviceAPI(c *gin.Context) {
 	c.JSON(http.StatusCreated, device)
 }
 
+// GetDeviceAPI godoc
+// @Summary      Get a device
+// @Description  Returns a single device by ID or serial number
+// @Tags         devices
+// @Produce      json
+// @Param        id  path  string  true  "Device ID or serial number"
+// @Success      200  {object}  map[string]interface{}  "device object"
+// @Failure      404  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /devices/{id} [get]
 func (h *DeviceHandler) GetDeviceAPI(c *gin.Context) {
 	deviceID := c.Param("id")
 	device, err := h.deviceRepo.GetByID(deviceID)
@@ -721,6 +746,15 @@ func (h *DeviceHandler) GetDeviceStatsAPI(c *gin.Context) {
 	})
 }
 
+// GetAvailableDevicesAPI godoc
+// @Summary      Get available devices
+// @Description  Returns all devices currently available for rental
+// @Tags         devices
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}  "devices array"
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /devices/available [get]
 func (h *DeviceHandler) GetAvailableDevicesAPI(c *gin.Context) {
 	devices, err := h.deviceRepo.GetAvailableDevices()
 	if err != nil {
@@ -732,6 +766,17 @@ func (h *DeviceHandler) GetAvailableDevicesAPI(c *gin.Context) {
 }
 
 // GetAvailableDevicesForJobAPI returns devices available for a specific job's date range
+// @Summary      Get available devices for a job
+// @Description  Returns devices available during the date range of the specified job
+// @Tags         devices
+// @Produce      json
+// @Param        jobId  path  integer  true  "Job ID"
+// @Success      200  {object}  map[string]interface{}  "devices array"
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /devices/available/job/{jobId} [get]
 func (h *DeviceHandler) GetAvailableDevicesForJobAPI(c *gin.Context) {
 	jobIDStr := c.Param("jobId")
 	jobID, err := strconv.ParseUint(jobIDStr, 10, 32)
@@ -762,6 +807,18 @@ func (h *DeviceHandler) GetAvailableDevicesForJobAPI(c *gin.Context) {
 }
 
 // GetDeviceTreeWithAvailability returns the device tree structure with availability checking
+// @Summary      Get device tree with availability
+// @Description  Returns the full device tree grouped by category/product with optional availability filtering by date range
+// @Tags         devices
+// @Produce      json
+// @Param        start_date  query  string  false  "Start date for availability check (YYYY-MM-DD)"
+// @Param        end_date    query  string  false  "End date for availability check (YYYY-MM-DD)"
+// @Param        job_id      query  string  false  "Job ID to exclude from availability conflicts"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /devices/tree/availability [get]
 func (h *DeviceHandler) GetDeviceTreeWithAvailability(c *gin.Context) {
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")

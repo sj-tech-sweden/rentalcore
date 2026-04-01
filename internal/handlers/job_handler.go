@@ -850,6 +850,24 @@ func (h *JobHandler) BulkScanDevices(c *gin.Context) {
 }
 
 // API handlers
+
+// ListJobsAPI godoc
+// @Summary      List jobs
+// @Description  Returns a paginated list of jobs with optional filtering
+// @Tags         jobs
+// @Produce      json
+// @Param        search      query  string   false  "Search term"
+// @Param        customer_id query  integer  false  "Filter by customer ID"
+// @Param        status_id   query  integer  false  "Filter by status ID"
+// @Param        start_date  query  string   false  "Filter by start date (YYYY-MM-DD)"
+// @Param        end_date    query  string   false  "Filter by end date (YYYY-MM-DD)"
+// @Param        page        query  integer  false  "Page number"
+// @Param        limit       query  integer  false  "Items per page"
+// @Success      200  {object}  map[string]interface{}  "jobs array"
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /jobs [get]
 func (h *JobHandler) ListJobsAPI(c *gin.Context) {
 	params := &models.FilterParams{}
 	if err := c.ShouldBindQuery(params); err != nil {
@@ -1070,6 +1088,18 @@ func (h *JobHandler) lookupProductLabel(productID uint, cache map[uint]string) s
 	return label
 }
 
+// CreateJobAPI godoc
+// @Summary      Create a job
+// @Description  Creates a new rental job
+// @Tags         jobs
+// @Accept       json
+// @Produce      json
+// @Param        job  body  map[string]interface{}  true  "Job payload (customerid, statusid, description, startdate, enddate, discount, revenue)"
+// @Success      201  {object}  models.Job
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /jobs [post]
 func (h *JobHandler) CreateJobAPI(c *gin.Context) {
 	// Use a map to capture raw JSON data
 	var requestData map[string]interface{}
@@ -1194,6 +1224,17 @@ func (h *JobHandler) CreateJobAPI(c *gin.Context) {
 	c.JSON(http.StatusCreated, job)
 }
 
+// GetJobAPI godoc
+// @Summary      Get a job
+// @Description  Returns a single job by ID
+// @Tags         jobs
+// @Produce      json
+// @Param        id  path  integer  true  "Job ID"
+// @Success      200  {object}  models.Job
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /jobs/{id} [get]
 func (h *JobHandler) GetJobAPI(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -1220,6 +1261,20 @@ func (h *JobHandler) GetJobAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, job)
 }
 
+// UpdateJobAPI godoc
+// @Summary      Update a job
+// @Description  Updates an existing job by ID
+// @Tags         jobs
+// @Accept       json
+// @Produce      json
+// @Param        id   path  integer                 true  "Job ID"
+// @Param        job  body  map[string]interface{}  true  "Job update payload"
+// @Success      200  {object}  models.Job
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /jobs/{id} [put]
 func (h *JobHandler) UpdateJobAPI(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -1345,6 +1400,17 @@ func (h *JobHandler) UpdateJobAPI(c *gin.Context) {
 	c.JSON(http.StatusOK, job)
 }
 
+// DeleteJobAPI godoc
+// @Summary      Delete a job
+// @Description  Deletes a job by ID
+// @Tags         jobs
+// @Produce      json
+// @Param        id  path  integer  true  "Job ID"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /jobs/{id} [delete]
 func (h *JobHandler) DeleteJobAPI(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

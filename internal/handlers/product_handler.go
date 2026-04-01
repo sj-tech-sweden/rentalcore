@@ -145,6 +145,20 @@ func (h *ProductHandler) NewProductForm(c *gin.Context) {
 }
 
 // API handlers (existing)
+
+// ListProducts godoc
+// @Summary      List products
+// @Description  Returns a list of all products with optional filtering
+// @Tags         products
+// @Produce      json
+// @Param        search  query  string  false  "Search term"
+// @Param        page    query  integer false  "Page number"
+// @Param        limit   query  integer false  "Items per page"
+// @Success      200  {object}  map[string]interface{}  "products array"
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /products [get]
 func (h *ProductHandler) ListProducts(c *gin.Context) {
 	params := &models.FilterParams{}
 	if err := c.ShouldBindQuery(params); err != nil {
@@ -161,6 +175,17 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"products": products})
 }
 
+// GetProductAPI godoc
+// @Summary      Get a product
+// @Description  Returns a single product by ID
+// @Tags         products
+// @Produce      json
+// @Param        id  path  integer  true  "Product ID"
+// @Success      200  {object}  map[string]interface{}  "product object"
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /products/{id} [get]
 func (h *ProductHandler) GetProductAPI(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)

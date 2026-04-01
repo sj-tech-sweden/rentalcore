@@ -1,3 +1,17 @@
+// @title           RentalCore API
+// @version         1.0
+// @description     RentalCore is a professional equipment rental management system. This API provides endpoints for managing jobs, customers, devices, products, rental equipment, and financial data.
+// @contact.name    SJ Tech Sweden
+// @contact.url     https://github.com/sj-tech-sweden/rentalcore
+// @license.name    Proprietary
+// @host            localhost:8080
+// @BasePath        /api/v1
+// @schemes         http https
+// @securityDefinitions.apikey  SessionAuth
+// @in              cookie
+// @name            session_id
+// @description     Session cookie obtained after login
+
 package main
 
 import (
@@ -13,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	_ "go-barcode-webapp/docs"
 	"go-barcode-webapp/internal/cache"
 	"go-barcode-webapp/internal/compliance"
 	"go-barcode-webapp/internal/config"
@@ -26,6 +41,8 @@ import (
 	pdfsvc "go-barcode-webapp/internal/services/pdf"
 
 	"github.com/gin-gonic/gin"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
 )
 
 func buildWarehouseProductsURL(r *http.Request) string {
@@ -682,6 +699,9 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok", "service": "RentalCore"})
 	})
+
+	// Swagger UI & OpenAPI spec (available in all modes)
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Add caching for static files
 	r.StaticFS("/static", http.Dir("web/static"))

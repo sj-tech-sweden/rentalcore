@@ -610,7 +610,20 @@ func (h *FinancialHandler) calculateReportSummary(results []struct {
 // API ENDPOINTS
 // ================================================================
 
-// ListTransactionsAPI returns transactions as JSON
+// ListTransactionsAPI godoc
+// @Summary      List financial transactions
+// @Description  Returns a paginated list of financial transactions with optional filtering
+// @Tags         financial
+// @Produce      json
+// @Param        type        query  string  false  "Filter by type (income, expense)"
+// @Param        status      query  string  false  "Filter by status"
+// @Param        customerid  query  integer false  "Filter by customer ID"
+// @Param        page        query  integer false  "Page number (default 1)"
+// @Param        pageSize    query  integer false  "Page size (default 50, max 100)"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /financial/transactions [get]
 func (h *FinancialHandler) ListTransactionsAPI(c *gin.Context) {
 	var transactions []models.FinancialTransaction
 
@@ -669,7 +682,15 @@ func (h *FinancialHandler) ListTransactionsAPI(c *gin.Context) {
 	})
 }
 
-// GetFinancialStatsAPI returns financial statistics as JSON
+// GetFinancialStatsAPI godoc
+// @Summary      Get financial statistics
+// @Description  Returns summary financial statistics (revenue, expenses, profit)
+// @Tags         financial
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]string
+// @Security     SessionAuth
+// @Router       /financial/stats [get]
 func (h *FinancialHandler) GetFinancialStatsAPI(c *gin.Context) {
 	stats, err := h.getFinancialStats()
 	if err != nil {

@@ -1,0 +1,1213 @@
+basePath: /api/v1
+definitions:
+  go-barcode-webapp_internal_models.Brand:
+    properties:
+      brandID:
+        type: integer
+      manufacturerID:
+        type: integer
+      name:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.Category:
+    properties:
+      abbreviation:
+        type: string
+      categoryID:
+        type: integer
+      name:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.CountType:
+    properties:
+      abbreviation:
+        type: string
+      count_type_id:
+        type: integer
+      created_at:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.Customer:
+    properties:
+      ZIP:
+        type: string
+      city:
+        type: string
+      companyname:
+        type: string
+      country:
+        type: string
+      customerID:
+        type: integer
+      customertype:
+        type: string
+      email:
+        type: string
+      federalstate:
+        type: string
+      firstname:
+        type: string
+      housenumber:
+        type: string
+      jobs:
+        items:
+          $ref: '#/definitions/go-barcode-webapp_internal_models.Job'
+        type: array
+      lastname:
+        type: string
+      notes:
+        type: string
+      phonenumber:
+        type: string
+      street:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.Device:
+    properties:
+      barcode:
+        type: string
+      conditionRating:
+        type: number
+      currentLocation:
+        type: string
+      deviceID:
+        type: string
+      gpsLatitude:
+        type: number
+      gpsLongitude:
+        type: number
+      insuranceID:
+        type: integer
+      insurancenumber:
+        type: string
+      job_devices:
+        items:
+          $ref: '#/definitions/go-barcode-webapp_internal_models.JobDevice'
+        type: array
+      lastMaintenanceCost:
+        type: number
+      lastmaintenance:
+        type: string
+      nextmaintenance:
+        type: string
+      notes:
+        type: string
+      product:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Product'
+      productID:
+        type: integer
+      purchaseDate:
+        type: string
+      qrCode:
+        type: string
+      serialnumber:
+        type: string
+      status:
+        type: string
+      totalRevenue:
+        type: number
+      usageHours:
+        type: number
+    type: object
+  go-barcode-webapp_internal_models.Job:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      creator:
+        allOf:
+        - $ref: '#/definitions/go-barcode-webapp_internal_models.User'
+        description: Relations
+      customer:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Customer'
+      customerID:
+        type: integer
+      description:
+        type: string
+      device_count:
+        type: integer
+      discount:
+        type: number
+      discount_type:
+        type: string
+      endDate:
+        type: string
+      final_revenue:
+        type: number
+      job_category:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.JobCategory'
+      job_code:
+        type: string
+      job_devices:
+        items:
+          $ref: '#/definitions/go-barcode-webapp_internal_models.JobDevice'
+        type: array
+      job_packages:
+        items:
+          $ref: '#/definitions/go-barcode-webapp_internal_models.JobPackage'
+        type: array
+      jobID:
+        type: integer
+      jobcategoryID:
+        type: integer
+      revenue:
+        type: number
+      startDate:
+        type: string
+      status:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Status'
+      statusID:
+        type: integer
+      updated_at:
+        type: string
+      updated_by:
+        type: integer
+    type: object
+  go-barcode-webapp_internal_models.JobCategory:
+    properties:
+      abbreviation:
+        type: string
+      jobcategoryID:
+        type: integer
+      name:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.JobDevice:
+    properties:
+      custom_price:
+        type: number
+      device:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Device'
+      deviceID:
+        type: string
+      is_package_item:
+        type: boolean
+      job:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Job'
+      jobID:
+        type: integer
+      pack_status:
+        type: string
+      pack_ts:
+        type: string
+      package_id:
+        type: integer
+    type: object
+  go-barcode-webapp_internal_models.JobPackage:
+    properties:
+      added_at:
+        type: string
+      added_by:
+        type: integer
+      added_by_user:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.User'
+      custom_price:
+        $ref: '#/definitions/sql.NullFloat64'
+      job:
+        allOf:
+        - $ref: '#/definitions/go-barcode-webapp_internal_models.Job'
+        description: Relationships
+      job_id:
+        type: integer
+      job_package_id:
+        type: integer
+      notes:
+        $ref: '#/definitions/sql.NullString'
+      package:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.ProductPackage'
+      package_id:
+        type: integer
+      quantity:
+        type: integer
+      reservations:
+        items:
+          $ref: '#/definitions/go-barcode-webapp_internal_models.JobPackageReservation'
+        type: array
+    type: object
+  go-barcode-webapp_internal_models.JobPackageReservation:
+    properties:
+      assigned_at:
+        $ref: '#/definitions/sql.NullTime'
+      device:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Device'
+      device_id:
+        type: string
+      job_package:
+        allOf:
+        - $ref: '#/definitions/go-barcode-webapp_internal_models.JobPackage'
+        description: Relationships
+      job_package_id:
+        type: integer
+      quantity:
+        type: integer
+      released_at:
+        $ref: '#/definitions/sql.NullTime'
+      reservation_id:
+        type: integer
+      reservation_status:
+        type: string
+      reserved_at:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.Manufacturer:
+    properties:
+      manufacturerID:
+        type: integer
+      name:
+        type: string
+      website:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.Product:
+    properties:
+      brand:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Brand'
+      brandID:
+        type: integer
+      category:
+        allOf:
+        - $ref: '#/definitions/go-barcode-webapp_internal_models.Category'
+        description: Relations
+      categoryID:
+        type: integer
+      count_type:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.CountType'
+      count_type_id:
+        type: integer
+      depth:
+        type: number
+      description:
+        type: string
+      generic_barcode:
+        type: string
+      height:
+        type: number
+      is_accessory:
+        description: Accessory and Consumable fields
+        type: boolean
+      is_consumable:
+        type: boolean
+      itemcostperday:
+        type: number
+      maintenanceInterval:
+        type: integer
+      manufacturer:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Manufacturer'
+      manufacturerID:
+        type: integer
+      min_stock_level:
+        type: number
+      name:
+        type: string
+      pos_in_category:
+        type: integer
+      powerconsumption:
+        type: number
+      price_per_unit:
+        type: number
+      productID:
+        type: integer
+      stock_quantity:
+        type: number
+      subbiercategory:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Subbiercategory'
+      subbiercategoryID:
+        type: string
+      subcategory:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Subcategory'
+      subcategoryID:
+        type: string
+      weight:
+        type: number
+      width:
+        type: number
+    type: object
+  go-barcode-webapp_internal_models.ProductPackage:
+    properties:
+      created_at:
+        type: string
+      description:
+        $ref: '#/definitions/sql.NullString'
+      name:
+        type: string
+      package_code:
+        type: string
+      package_id:
+        type: integer
+      price:
+        $ref: '#/definitions/sql.NullFloat64'
+      product_id:
+        description: Links to products table
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.Status:
+    properties:
+      jobs:
+        items:
+          $ref: '#/definitions/go-barcode-webapp_internal_models.Job'
+        type: array
+      status:
+        type: string
+      statusID:
+        type: integer
+    type: object
+  go-barcode-webapp_internal_models.Subbiercategory:
+    properties:
+      abbreviation:
+        type: string
+      name:
+        type: string
+      subbiercategoryID:
+        type: string
+      subcategory:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Subcategory'
+      subcategoryID:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.Subcategory:
+    properties:
+      abbreviation:
+        type: string
+      category:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Category'
+      categoryID:
+        type: integer
+      name:
+        type: string
+      subcategoryID:
+        type: string
+    type: object
+  go-barcode-webapp_internal_models.User:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      forcePasswordChange:
+        type: boolean
+      isActive:
+        type: boolean
+      lastLogin:
+        type: string
+      lastName:
+        type: string
+      updatedAt:
+        type: string
+      userID:
+        type: integer
+      username:
+        type: string
+    type: object
+  sql.NullFloat64:
+    properties:
+      float64:
+        format: float64
+        type: number
+      valid:
+        description: Valid is true if Float64 is not NULL
+        type: boolean
+    type: object
+  sql.NullString:
+    properties:
+      string:
+        type: string
+      valid:
+        description: Valid is true if String is not NULL
+        type: boolean
+    type: object
+  sql.NullTime:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: SJ Tech Sweden
+    url: https://github.com/sj-tech-sweden/rentalcore
+  description: RentalCore is a professional equipment rental management system. This
+    API provides endpoints for managing jobs, customers, devices, products, rental
+    equipment, and financial data.
+  license:
+    name: Proprietary
+  title: RentalCore API
+  version: "1.0"
+paths:
+  /customers:
+    get:
+      description: Returns a list of customers with optional search filtering
+      parameters:
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: customers array
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: List customers
+      tags:
+      - customers
+    post:
+      consumes:
+      - application/json
+      description: Creates a new customer record
+      parameters:
+      - description: Customer payload
+        in: body
+        name: customer
+        required: true
+        schema:
+          $ref: '#/definitions/go-barcode-webapp_internal_models.Customer'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/go-barcode-webapp_internal_models.Customer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Create a customer
+      tags:
+      - customers
+  /customers/{id}:
+    delete:
+      description: Deletes a customer by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Delete a customer
+      tags:
+      - customers
+    get:
+      description: Returns a single customer by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-barcode-webapp_internal_models.Customer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Get a customer
+      tags:
+      - customers
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing customer by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Customer update payload
+        in: body
+        name: customer
+        required: true
+        schema:
+          $ref: '#/definitions/go-barcode-webapp_internal_models.Customer'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-barcode-webapp_internal_models.Customer'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Update a customer
+      tags:
+      - customers
+  /devices:
+    get:
+      description: Returns a list of devices with optional filtering
+      parameters:
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Filter by status (free, in_use)
+        in: query
+        name: status
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/go-barcode-webapp_internal_models.Device'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: List devices
+      tags:
+      - devices
+  /devices/{id}:
+    get:
+      description: Returns a single device by ID or serial number
+      parameters:
+      - description: Device ID or serial number
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: device object
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Get a device
+      tags:
+      - devices
+  /devices/available:
+    get:
+      description: Returns all devices currently available for rental
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: devices array
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Get available devices
+      tags:
+      - devices
+  /devices/available/job/{jobId}:
+    get:
+      description: Returns devices available during the date range of the specified
+        job
+      parameters:
+      - description: Job ID
+        in: path
+        name: jobId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: devices array
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Get available devices for a job
+      tags:
+      - devices
+  /devices/tree/availability:
+    get:
+      description: Returns the full device tree grouped by category/product with optional
+        availability filtering by date range
+      parameters:
+      - description: Start date for availability check (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for availability check (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Job ID to exclude from availability conflicts
+        in: query
+        name: job_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Get device tree with availability
+      tags:
+      - devices
+  /financial/stats:
+    get:
+      description: Returns summary financial statistics (revenue, expenses, profit)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Get financial statistics
+      tags:
+      - financial
+  /financial/transactions:
+    get:
+      description: Returns a paginated list of financial transactions with optional
+        filtering
+      parameters:
+      - description: Filter by type (income, expense)
+        in: query
+        name: type
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by customer ID
+        in: query
+        name: customerid
+        type: integer
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 100)
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: List financial transactions
+      tags:
+      - financial
+  /jobs:
+    get:
+      description: Returns a paginated list of jobs with optional filtering
+      parameters:
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Filter by customer ID
+        in: query
+        name: customer_id
+        type: integer
+      - description: Filter by status ID
+        in: query
+        name: status_id
+        type: integer
+      - description: Filter by start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: Filter by end date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: jobs array
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: List jobs
+      tags:
+      - jobs
+    post:
+      consumes:
+      - application/json
+      description: Creates a new rental job
+      parameters:
+      - description: Job payload (customerid, statusid, description, startdate, enddate,
+          discount, revenue)
+        in: body
+        name: job
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/go-barcode-webapp_internal_models.Job'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Create a job
+      tags:
+      - jobs
+  /jobs/{id}:
+    delete:
+      description: Deletes a job by ID
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Delete a job
+      tags:
+      - jobs
+    get:
+      description: Returns a single job by ID
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-barcode-webapp_internal_models.Job'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Get a job
+      tags:
+      - jobs
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing job by ID
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Job update payload
+        in: body
+        name: job
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-barcode-webapp_internal_models.Job'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Update a job
+      tags:
+      - jobs
+  /products:
+    get:
+      description: Returns a list of all products with optional filtering
+      parameters:
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: products array
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: List products
+      tags:
+      - products
+  /products/{id}:
+    get:
+      description: Returns a single product by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: product object
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Get a product
+      tags:
+      - products
+  /rental-equipment:
+    get:
+      description: Returns rental equipment list (functionality moved to WarehouseCore)
+      produces:
+      - application/json
+      responses:
+        "410":
+          description: Feature moved to WarehouseCore
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: List rental equipment
+      tags:
+      - rental-equipment
+    post:
+      consumes:
+      - application/json
+      description: Creates rental equipment (functionality moved to WarehouseCore)
+      parameters:
+      - description: Rental equipment payload
+        in: body
+        name: equipment
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "410":
+          description: Feature moved to WarehouseCore
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionAuth: []
+      summary: Create rental equipment
+      tags:
+      - rental-equipment
+schemes:
+- http
+- https
+securityDefinitions:
+  SessionAuth:
+    description: Session cookie obtained after login
+    in: cookie
+    name: session_id
+    type: apiKey
+swagger: "2.0"
