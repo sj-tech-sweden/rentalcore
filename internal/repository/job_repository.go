@@ -365,6 +365,10 @@ func (r *JobRepository) GetJobDevices(jobID uint) ([]models.JobDevice, error) {
 func (r *JobRepository) AssignDevice(jobID uint, deviceID string, price float64) error {
 	jobRepoDebugLog("🚨 DEBUG: NEW AssignDevice called! jobID=%d, deviceID=%s\n", jobID, deviceID)
 
+	if strings.TrimSpace(deviceID) == "" {
+		return fmt.Errorf("invalid device ID provided")
+	}
+
 	// Get the job to check its date range
 	var job models.Job
 	err := r.db.First(&job, jobID).Error

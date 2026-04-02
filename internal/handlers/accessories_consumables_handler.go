@@ -10,6 +10,7 @@ import (
 	"go-barcode-webapp/internal/repository"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type AccessoriesConsumablesHandler struct {
@@ -18,6 +19,16 @@ type AccessoriesConsumablesHandler struct {
 
 func NewAccessoriesConsumablesHandler(repo *repository.AccessoriesConsumablesRepository) *AccessoriesConsumablesHandler {
 	return &AccessoriesConsumablesHandler{repo: repo}
+}
+
+// getParam returns the first non-empty URL param from the provided keys.
+func getParam(c *gin.Context, keys ...string) string {
+	for _, k := range keys {
+		if v := c.Param(k); v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // ============================================================================
@@ -40,7 +51,7 @@ func (h *AccessoriesConsumablesHandler) GetCountTypesAPI(c *gin.Context) {
 // ============================================================================
 
 func (h *AccessoriesConsumablesHandler) GetProductDependenciesAPI(c *gin.Context) {
-	productIDStr := c.Param("productid")
+	productIDStr := getParam(c, "id", "productid")
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
@@ -62,7 +73,7 @@ func (h *AccessoriesConsumablesHandler) GetProductDependenciesAPI(c *gin.Context
 // ============================================================================
 
 func (h *AccessoriesConsumablesHandler) GetProductAccessoriesAPI(c *gin.Context) {
-	productIDStr := c.Param("productid")
+	productIDStr := getParam(c, "id", "productid")
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
@@ -71,7 +82,12 @@ func (h *AccessoriesConsumablesHandler) GetProductAccessoriesAPI(c *gin.Context)
 
 	accessories, err := h.repo.GetProductAccessories(uint(productID))
 	if err != nil {
-		log.Printf("❌ Error fetching product accessories: %v", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Printf("ℹ️ No accessories found for product %d: %v", productID, err)
+			c.JSON(http.StatusOK, gin.H{"accessories": []models.ProductAccessoryView{}})
+			return
+		}
+		log.Printf("❌ Error fetching product accessories for product %d: %v", productID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch product accessories"})
 		return
 	}
@@ -97,7 +113,7 @@ func (h *AccessoriesConsumablesHandler) AddProductAccessoryAPI(c *gin.Context) {
 }
 
 func (h *AccessoriesConsumablesHandler) RemoveProductAccessoryAPI(c *gin.Context) {
-	productIDStr := c.Param("productid")
+	productIDStr := getParam(c, "id", "productid")
 	accessoryIDStr := c.Param("accessoryID")
 
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
@@ -137,7 +153,7 @@ func (h *AccessoriesConsumablesHandler) GetAccessoryProductsAPI(c *gin.Context) 
 // ============================================================================
 
 func (h *AccessoriesConsumablesHandler) GetProductConsumablesAPI(c *gin.Context) {
-	productIDStr := c.Param("productid")
+	productIDStr := getParam(c, "id", "productid")
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
@@ -146,7 +162,12 @@ func (h *AccessoriesConsumablesHandler) GetProductConsumablesAPI(c *gin.Context)
 
 	consumables, err := h.repo.GetProductConsumables(uint(productID))
 	if err != nil {
-		log.Printf("❌ Error fetching product consumables: %v", err)
+		if err == gorm.ErrRecordNotFound {
+			log.Printf("ℹ️ No consumables found for product %d: %v", productID, err)
+			c.JSON(http.StatusOK, gin.H{"consumables": []models.ProductConsumableView{}})
+			return
+		}
+		log.Printf("❌ Error fetching product consumables for product %d: %v", productID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch product consumables"})
 		return
 	}
@@ -172,7 +193,7 @@ func (h *AccessoriesConsumablesHandler) AddProductConsumableAPI(c *gin.Context) 
 }
 
 func (h *AccessoriesConsumablesHandler) RemoveProductConsumableAPI(c *gin.Context) {
-	productIDStr := c.Param("productid")
+	productIDStr := getParam(c, "id", "productid")
 	consumableIDStr := c.Param("consumableID")
 
 	productID, err := strconv.ParseUint(productIDStr, 10, 32)
@@ -212,7 +233,7 @@ func (h *AccessoriesConsumablesHandler) GetConsumableProductsAPI(c *gin.Context)
 // ============================================================================
 
 func (h *AccessoriesConsumablesHandler) GetJobAccessoriesAPI(c *gin.Context) {
-	jobIDStr := c.Param("jobid")
+	jobIDStr := getParam(c, "id", "jobid")
 	jobID, err := strconv.ParseUint(jobIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})

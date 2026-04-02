@@ -1587,6 +1587,20 @@ func setupRoutes(r *gin.Engine,
 				pdfAPI.GET("/pool-documents", pdfHandler.GetPoolDocumentsForOCR)
 			}
 
+			// Legacy product API redirects -> point to v1 equivalents for frontend compatibility
+			legacyAPI.GET("/products/:id/dependencies", func(c *gin.Context) {
+				id := c.Param("id")
+				c.Redirect(http.StatusTemporaryRedirect, "/api/v1/products/"+id+"/dependencies")
+			})
+			legacyAPI.GET("/products/:id/accessories", func(c *gin.Context) {
+				id := c.Param("id")
+				c.Redirect(http.StatusTemporaryRedirect, "/api/v1/products/"+id+"/accessories")
+			})
+			legacyAPI.GET("/products/:id/consumables", func(c *gin.Context) {
+				id := c.Param("id")
+				c.Redirect(http.StatusTemporaryRedirect, "/api/v1/products/"+id+"/consumables")
+			})
+
 			// Company settings API - NOW ACTIVE
 			legacyAPI.GET("/company-settings", companyHandler.GetCompanySettings)
 			legacyAPI.PUT("/company-settings", companyHandler.UpdateCompanySettings)

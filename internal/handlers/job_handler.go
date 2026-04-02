@@ -913,11 +913,22 @@ func (h *JobHandler) resolveProductSelections(job *models.Job, selections []JobP
 			return nil, err
 		}
 
+		// Debug: log availability details to help trace allocation issues
+		fmt.Printf("🔧 DEBUG GetProductAvailabilityForJob: product=%d rows=%d\n", productID, len(availability))
+		for _, av := range availability {
+			fmt.Printf("🔧 DEBUG Avail: DeviceID=%s Available=%v AssignedToJob=%v CaseID=%v Status=%s\n", av.DeviceID, av.Available, av.AssignedToJob, av.CaseID, av.Status)
+		}
+
 		caseGroups := make(map[uint][]repository.ProductDeviceAvailability)
 		caseOrder := make([]uint, 0)
 		loose := make([]repository.ProductDeviceAvailability, 0)
 
 		for _, device := range availability {
+			// Skip entries with empty DeviceID (can occur if DB scan failed)
+			if device.DeviceID == "" {
+				jobDebugLog("⚠️ Skipping availability entry with empty DeviceID for product %d\n", productID)
+				continue
+			}
 			if usedDevices[device.DeviceID] {
 				continue
 			}

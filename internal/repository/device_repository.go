@@ -643,8 +643,8 @@ func (r *DeviceRepository) GetAvailableDevicesForJob(jobID uint, startDate, endD
 
 func (r *DeviceRepository) GetProductAvailabilityForJob(productID uint, jobID *uint, startDate, endDate *time.Time) ([]ProductDeviceAvailability, error) {
 	rows := []struct {
-		DeviceID      string  `gorm:"column:deviceID"`
-		ProductID     uint    `gorm:"column:productID"`
+		DeviceID      string  `gorm:"column:deviceid"`
+		ProductID     uint    `gorm:"column:productid"`
 		Status        string  `gorm:"column:status"`
 		CaseID        *uint   `gorm:"column:case_id"`
 		CaseName      *string `gorm:"column:case_name"`
@@ -670,6 +670,11 @@ func (r *DeviceRepository) GetProductAvailabilityForJob(productID uint, jobID *u
 		return nil, err
 	}
 
+	// Debug: print scanned rows to help trace empty DeviceID issues
+	for _, r := range rows {
+		log.Printf("🔧 DEBUG scanned row: DeviceID='%s' ProductID=%d Status='%s' CaseID=%v AssignedToJob=%v\n", r.DeviceID, r.ProductID, r.Status, r.CaseID, r.AssignedToJob)
+	}
+
 	conflicts := make(map[string]bool)
 	if startDate != nil && endDate != nil {
 		start := *startDate
@@ -683,7 +688,7 @@ func (r *DeviceRepository) GetProductAvailabilityForJob(productID uint, jobID *u
 			Joins("JOIN jobs j ON jd.jobid = j.jobid").
 			Joins("JOIN status s ON s.statusid = j.statusid").
 			Where("s.status IN ?", []string{"open", "in_progress"}).
-			Where("NOT (COALESCE(j.enddate, j.startdate) < ? OR j.startdate > ?)", end, start)
+			Where("NOT (COALESCE(j.enddate, j.startdate) < ? OR j.startdate > ?)", start, end)
 
 		if jobIDVal != 0 {
 			conflictQuery = conflictQuery.Where("j.jobid != ?", jobIDVal)
