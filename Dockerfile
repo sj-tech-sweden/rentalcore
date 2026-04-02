@@ -4,16 +4,19 @@ FROM golang:1.25-alpine AS builder
 # Install build dependencies including GCC for CGO/SQLite
 RUN apk add --no-cache git python3 py3-pip gcc musl-dev sqlite-dev
 
-# Set working directory
+# Module mode build at module root
+ENV GO111MODULE=on
+# Prevent proxy lookups for non-domain module paths
+ENV GONOSUMDB=*
+ENV GOFLAGS=-mod=mod
+
+# Build at module root where go.mod lives
 WORKDIR /app
 
-# Copy go mod files
+# Copy go mod files and download dependencies before copying source
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
 
-# Copy source code
 COPY . .
 
 # Note: WASM decoder files are pre-built and included in the repo
@@ -26,7 +29,8 @@ RUN python3 -m venv /opt/ocr-venv && \
     chmod +x tools/ocr_parser/parser.py
 
 # Build the application with CGO enabled for SQLite
-RUN CGO_ENABLED=1 GOOS=linux go build -o server ./cmd/server
+# Output binary into /app so production stage can copy it from that path
+RUN CGO_ENABLED=1 GOOS=linux go build -o /app/server ./cmd/server
 
 # Production stage
 FROM alpine:latest
