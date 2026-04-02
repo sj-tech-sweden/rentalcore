@@ -314,6 +314,18 @@ func (Manufacturer) TableName() string {
 	return "manufacturer"
 }
 
+// AppSetting stores application-wide key-value settings shared with WarehouseCore.
+// Both applications read/write the same app_settings table.
+type AppSetting struct {
+	Key       string `gorm:"primaryKey;column:key;type:varchar(128)" json:"key"`
+	Value     string `gorm:"column:value;type:text" json:"value"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updatedAt"`
+}
+
+func (AppSetting) TableName() string {
+	return "app_settings"
+}
+
 // FilterParams represents parameters for filtering jobs and devices
 type FilterParams struct {
 	StartDate    *time.Time `form:"start_date"`

@@ -384,6 +384,7 @@ func main() {
 	// Initialize services
 	barcodeService := services.NewBarcodeService()
 	jobHistoryService := services.NewJobHistoryService(db.DB)
+	settingsService := services.NewSettingsService(db.DB)
 
 	// Auto-migration disabled - database schema managed manually
 	log.Printf("Database auto-migration disabled - using manual schema management")
@@ -439,6 +440,7 @@ func main() {
 
 	pdfHandler := handlers.NewPDFHandler(db.DB, "uploads", jobHandler, jobAttachmentRepo, packageAliasCache, documentHandler)
 	accessoriesConsumablesHandler := handlers.NewAccessoriesConsumablesHandler(accessoriesConsumablesRepo)
+	settingsHandler := handlers.NewSettingsHandler(settingsService)
 
 	// Initialize RBAC middleware for role-based access control
 	rbacMiddleware := middleware.NewRBACMiddleware(db.DB)
@@ -693,6 +695,9 @@ func main() {
 		"companyName": func() string {
 			return companyProvider.CompanyName()
 		},
+		"currencySymbol": func() string {
+			return settingsService.GetCurrencySymbol()
+		},
 	}
 	r.SetFuncMap(funcMap)
 	r.LoadHTMLGlob("web/templates/*")
@@ -700,6 +705,15 @@ func main() {
 	// Simple health check endpoint for Docker
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok", "service": "RentalCore"})
+	})
+
+	// Public application config – safe to expose without authentication.
+	// Returns runtime configuration that the frontend needs before login
+	// (e.g. currency symbol for price display).
+	r.GET("/api/v1/config", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"currencySymbol": settingsService.GetCurrencySymbol(),
+		})
 	})
 
 	// Add caching for static files
@@ -748,7 +762,7 @@ func main() {
 	if swaggerHost != "" {
 		docs.SwaggerInfo.Host = swaggerHost
 	}
-	setupRoutes(r, cfg, jobHandler, jobHistoryHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, infoHandler, barcodeHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, pdfHandler, accessoriesConsumablesHandler, rbacMiddleware, complianceMiddleware)
+	setupRoutes(r, cfg, jobHandler, jobHistoryHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, infoHandler, barcodeHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, pdfHandler, accessoriesConsumablesHandler, settingsHandler, settingsService, rbacMiddleware, complianceMiddleware)
 
 	// Add dedicated error route
 	r.GET("/error", func(c *gin.Context) {
@@ -834,6 +848,8 @@ func setupRoutes(r *gin.Engine,
 	jobAttachmentHandler *handlers.JobAttachmentHandler,
 	pdfHandler *handlers.PDFHandler,
 	accessoriesConsumablesHandler *handlers.AccessoriesConsumablesHandler,
+	settingsHandler *handlers.SettingsHandler,
+	settingsService *services.SettingsService,
 	rbacMiddleware *middleware.RBACMiddleware,
 	complianceMiddleware *compliance.ComplianceMiddleware) {
 
@@ -1311,6 +1327,14 @@ func setupRoutes(r *gin.Engine,
 		// API routes
 		api := protected.Group("/api/v1")
 		{
+			// Admin currency settings (admin only)
+			adminAPI := api.Group("/admin")
+			adminAPI.Use(rbacMiddleware.RequireAdmin())
+			{
+				adminAPI.GET("/currency", settingsHandler.GetCurrencySettings)
+				adminAPI.PUT("/currency", settingsHandler.UpdateCurrencySettings)
+			}
+
 			// Job API
 			apiJobs := api.Group("/jobs")
 			{

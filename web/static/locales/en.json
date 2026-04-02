@@ -933,5 +933,15 @@
   },
   "rental": {
     "label": "Rental product"
+  },
+  "currency": {
+    "title": "Currency Settings",
+    "description": "Set the currency symbol displayed across the application. This setting is shared with WarehouseCore — changing it here will also apply there.",
+    "symbol_label": "Currency Symbol",
+    "symbol_help": "Up to 8 characters, e.g. €, $, £, kr, CHF",
+    "preview_label": "Preview",
+    "save": "Save Currency",
+    "save_success": "Currency symbol saved successfully!",
+    "save_error": "Failed to save currency symbol."
   }
 }

@@ -193,6 +193,46 @@
                 <div id="email-status" class="rc-mt-lg" style="display: none;"></div>
             </div>
         </div>
+
+        <!-- Currency Settings -->
+        <div class="rc-card rc-mt-xl">
+            <div class="rc-card-header">
+                <h3 class="rc-card-title">
+                    <i class="bi bi-currency-exchange"></i> <span data-i18n="currency.title">Currency Settings</span>
+                </h3>
+            </div>
+            <div class="rc-card-body">
+                <p class="rc-text rc-mb-lg" data-i18n="currency.description">
+                    Set the currency symbol displayed across the application.
+                    This setting is shared with WarehouseCore — changing it here will also apply there.
+                </p>
+                <form id="currency-settings-form">
+                    <div class="rc-grid rc-grid-2 rc-mb-lg">
+                        <div class="rc-form-group">
+                            <label class="rc-label" for="currency_symbol" data-i18n="currency.symbol_label">Currency Symbol</label>
+                            <input type="text" class="rc-input" id="currency_symbol" name="currency_symbol"
+                                   maxlength="8" placeholder="€" value="{{currencySymbol}}" required>
+                            <small class="rc-text-sm" style="color: var(--text-muted);" data-i18n="currency.symbol_help">
+                                Up to 8 characters, e.g. €, $, £, kr, CHF
+                            </small>
+                        </div>
+                        <div class="rc-form-group">
+                            <label class="rc-label" data-i18n="currency.preview_label">Preview</label>
+                            <div class="rc-input" style="display:flex;align-items:center;gap:0.25rem;cursor:default;">
+                                <span id="currency-preview">{{currencySymbol}}</span>
+                                <span>1 234.56</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rc-flex rc-flex-end">
+                        <button type="submit" class="rc-btn rc-btn-primary" data-i18n="currency.save">
+                            <i class="bi bi-check-lg"></i> Save Currency
+                        </button>
+                    </div>
+                </form>
+                <div id="currency-status" class="rc-mt-lg" style="display: none;"></div>
+            </div>
+        </div>
     </main>
 
     <!-- Footer -->
@@ -331,6 +371,61 @@
                 setTimeout(() => {
                     statusDiv.style.display = 'none';
                 }, 5000);
+            }
+        }
+
+        // ── Currency settings ──────────────────────────────────────────
+        const currencyInput = document.getElementById('currency_symbol');
+        const currencyPreview = document.getElementById('currency-preview');
+
+        if (currencyInput && currencyPreview) {
+            currencyInput.addEventListener('input', function() {
+                currencyPreview.textContent = this.value || '€';
+            });
+
+            document.getElementById('currency-settings-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveCurrencySettings();
+            });
+        }
+
+        function saveCurrencySettings() {
+            const symbol = document.getElementById('currency_symbol').value.trim();
+            if (!symbol) {
+                showCurrencyStatus('Currency symbol cannot be empty.', 'error');
+                return;
+            }
+            // Use .length (UTF-16 code units) to match the HTML maxlength="8" attribute.
+            if (symbol.length > 8) {
+                showCurrencyStatus('Currency symbol must be at most 8 characters.', 'error');
+                return;
+            }
+
+            fetch('/api/v1/admin/currency', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currencySymbol: symbol })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    // Update APP_CONFIG so the rest of the page reflects the new symbol immediately.
+                    if (window.__APP_CONFIG__) window.__APP_CONFIG__.currencySymbol = symbol;
+                    showCurrencyStatus('Currency symbol saved successfully!', 'success');
+                } else {
+                    showCurrencyStatus(data.error || 'Failed to save currency symbol.', 'error');
+                }
+            })
+            .catch(() => showCurrencyStatus('Failed to save currency symbol.', 'error'));
+        }
+
+        function showCurrencyStatus(message, type) {
+            const statusDiv = document.getElementById('currency-status');
+            statusDiv.style.display = 'block';
+            statusDiv.className = `rc-alert rc-alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'}`;
+            statusDiv.textContent = message;
+            if (type !== 'error') {
+                setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
             }
         }
     });

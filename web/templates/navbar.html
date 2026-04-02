@@ -382,5 +382,11 @@
 })();
 </script>
 
+<!-- App Configuration – injected server-side so frontend JS can read runtime settings. -->
+<script>
+window.__APP_CONFIG__ = window.__APP_CONFIG__ || {};
+window.__APP_CONFIG__.currencySymbol = {{printf "%q" (currencySymbol)}};
+</script>
+
 <!-- i18n Translation System -->
 <script src="/static/js/i18n.js"></script>
