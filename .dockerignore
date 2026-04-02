@@ -36,7 +36,6 @@ tmp/
 Thumbs.db
 
 # Documentation
-docs/
 *.md
 
 # Scripts

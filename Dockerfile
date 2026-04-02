@@ -4,20 +4,19 @@ FROM golang:1.25-alpine AS builder
 # Install build dependencies including GCC for CGO/SQLite
 RUN apk add --no-cache git python3 py3-pip gcc musl-dev sqlite-dev
 
-# Ensure Go modules are enabled inside the build container and set GOPATH
+# Module mode build at module root
 ENV GO111MODULE=on
-ENV GOPATH=/go
+# Prevent proxy lookups for non-domain module paths
+ENV GONOSUMDB=*
+ENV GOFLAGS=-mod=mod
 
-# Set working directory to module path inside GOPATH
-WORKDIR /go/src/go-barcode-webapp
+# Build at module root where go.mod lives
+WORKDIR /app
 
-# Copy go mod files
+# Copy go mod files and download dependencies before copying source
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
 
-# Copy source code
 COPY . .
 
 # Note: WASM decoder files are pre-built and included in the repo
@@ -50,7 +49,7 @@ COPY --from=builder /app/server .
 
 # Copy python virtualenv and parser tool
 COPY --from=builder /opt/ocr-venv /opt/ocr-venv
-COPY --from=builder /go/src/go-barcode-webapp/tools/ocr_parser tools/ocr_parser
+COPY --from=builder /app/tools/ocr_parser tools/ocr_parser
 
 # Copy web assets
 COPY --chown=appuser:appgroup web/ web/
