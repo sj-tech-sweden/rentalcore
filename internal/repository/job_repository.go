@@ -262,7 +262,9 @@ func (r *JobRepository) SetJobProductRequirements(jobID uint, requirements []mod
 			return nil
 		}
 		for i := range requirements {
+			// Ensure new rows are inserted with fresh primary keys and the correct JobID.
 			requirements[i].JobID = int(jobID)
+			requirements[i].RequirementID = 0
 		}
 		return tx.Create(&requirements).Error
 	})
