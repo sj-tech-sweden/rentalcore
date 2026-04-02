@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"go-barcode-webapp/internal/services"
 
@@ -18,20 +19,31 @@ func NewSettingsHandler(settingsService *services.SettingsService) *SettingsHand
 	return &SettingsHandler{settingsService: settingsService}
 }
 
+// currencyResponse is the response body for currency endpoints.
+type currencyResponse struct {
+	Success        bool   `json:"success"`
+	CurrencySymbol string `json:"currencySymbol"`
+}
+
+// errorResponse is a generic error response body.
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
 // GetCurrencySettings returns the current currency symbol.
 //
 // @Summary     Get currency symbol
 // @Description Returns the application currency symbol stored in app_settings.
 // @Tags        admin
 // @Produce     json
-// @Success     200 {object} map[string]string
+// @Success     200 {object} currencyResponse
 // @Router      /admin/currency [get]
 // @Security    SessionCookie
 func (h *SettingsHandler) GetCurrencySettings(c *gin.Context) {
 	symbol := h.settingsService.GetCurrencySymbol()
-	c.JSON(http.StatusOK, gin.H{
-		"success":        true,
-		"currencySymbol": symbol,
+	c.JSON(http.StatusOK, currencyResponse{
+		Success:        true,
+		CurrencySymbol: symbol,
 	})
 }
 
@@ -43,9 +55,9 @@ func (h *SettingsHandler) GetCurrencySettings(c *gin.Context) {
 // @Accept      json
 // @Produce     json
 // @Param       body body map[string]string true "Currency payload"
-// @Success     200 {object} map[string]string
-// @Failure     400 {object} map[string]string
-// @Failure     500 {object} map[string]string
+// @Success     200 {object} currencyResponse
+// @Failure     400 {object} errorResponse
+// @Failure     500 {object} errorResponse
 // @Router      /admin/currency [put]
 // @Security    SessionCookie
 func (h *SettingsHandler) UpdateCurrencySettings(c *gin.Context) {
@@ -53,19 +65,24 @@ func (h *SettingsHandler) UpdateCurrencySettings(c *gin.Context) {
 		CurrencySymbol string `json:"currencySymbol" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "currencySymbol is required"})
+		c.JSON(http.StatusBadRequest, errorResponse{Error: "currencySymbol is required"})
 		return
 	}
-	if len([]rune(req.CurrencySymbol)) > 8 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "currency symbol must be at most 8 characters"})
+	symbol := strings.TrimSpace(req.CurrencySymbol)
+	if symbol == "" {
+		c.JSON(http.StatusBadRequest, errorResponse{Error: "currencySymbol must not be empty or whitespace"})
 		return
 	}
-	if err := h.settingsService.UpdateCurrencySymbol(req.CurrencySymbol); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save currency symbol"})
+	if len([]rune(symbol)) > 8 {
+		c.JSON(http.StatusBadRequest, errorResponse{Error: "currency symbol must be at most 8 characters"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success":        true,
-		"currencySymbol": req.CurrencySymbol,
+	if err := h.settingsService.UpdateCurrencySymbol(symbol); err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse{Error: "failed to save currency symbol"})
+		return
+	}
+	c.JSON(http.StatusOK, currencyResponse{
+		Success:        true,
+		CurrencySymbol: symbol,
 	})
 }

@@ -225,8 +225,8 @@
                         </div>
                     </div>
                     <div class="rc-flex rc-flex-end">
-                        <button type="submit" class="rc-btn rc-btn-primary" data-i18n="currency.save">
-                            <i class="bi bi-check-lg"></i> Save Currency
+                        <button type="submit" class="rc-btn rc-btn-primary">
+                            <i class="bi bi-check-lg"></i> <span data-i18n="currency.save">Save Currency</span>
                         </button>
                     </div>
                 </form>
@@ -378,6 +378,11 @@
         const currencyInput = document.getElementById('currency_symbol');
         const currencyPreview = document.getElementById('currency-preview');
 
+        // Helper: resolve a translation key with an English fallback.
+        function _ct(key, fallback) {
+            return window.t ? window.t(key) : fallback;
+        }
+
         if (currencyInput && currencyPreview) {
             currencyInput.addEventListener('input', function() {
                 currencyPreview.textContent = this.value || '€';
@@ -392,12 +397,12 @@
         function saveCurrencySettings() {
             const symbol = document.getElementById('currency_symbol').value.trim();
             if (!symbol) {
-                showCurrencyStatus('Currency symbol cannot be empty.', 'error');
+                showCurrencyStatus(_ct('currency.error_empty', 'Currency symbol cannot be empty.'), 'error');
                 return;
             }
             // Use .length (UTF-16 code units) to match the HTML maxlength="8" attribute.
             if (symbol.length > 8) {
-                showCurrencyStatus('Currency symbol must be at most 8 characters.', 'error');
+                showCurrencyStatus(_ct('currency.error_too_long', 'Currency symbol must be at most 8 characters.'), 'error');
                 return;
             }
 
@@ -411,12 +416,12 @@
                 if (data.success) {
                     // Update APP_CONFIG so the rest of the page reflects the new symbol immediately.
                     if (window.__APP_CONFIG__) window.__APP_CONFIG__.currencySymbol = symbol;
-                    showCurrencyStatus('Currency symbol saved successfully!', 'success');
+                    showCurrencyStatus(_ct('currency.save_success', 'Currency symbol saved successfully!'), 'success');
                 } else {
-                    showCurrencyStatus(data.error || 'Failed to save currency symbol.', 'error');
+                    showCurrencyStatus(data.error || _ct('currency.save_error', 'Failed to save currency symbol.'), 'error');
                 }
             })
-            .catch(() => showCurrencyStatus('Failed to save currency symbol.', 'error'));
+            .catch(() => showCurrencyStatus(_ct('currency.save_error', 'Failed to save currency symbol.'), 'error'));
         }
 
         function showCurrencyStatus(message, type) {

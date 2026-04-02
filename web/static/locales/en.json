@@ -942,6 +942,8 @@
     "preview_label": "Preview",
     "save": "Save Currency",
     "save_success": "Currency symbol saved successfully!",
-    "save_error": "Failed to save currency symbol."
+    "save_error": "Failed to save currency symbol.",
+    "error_empty": "Currency symbol cannot be empty.",
+    "error_too_long": "Currency symbol must be at most 8 characters."
   }
 }

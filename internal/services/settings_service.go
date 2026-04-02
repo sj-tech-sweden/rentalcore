@@ -1,7 +1,9 @@
 package services
 
 import (
+	"errors"
 	"go-barcode-webapp/internal/models"
+	"log"
 	"sync"
 	"time"
 
@@ -13,9 +15,9 @@ const (
 	// AppCurrencyKey is the key used in app_settings to store the currency symbol.
 	// This key is intentionally identical to the one used in WarehouseCore so that
 	// both applications share the same value when they point at the same database.
-	AppCurrencyKey            = "app.currency"
-	defaultCurrencySymbol     = "€"
-	currencyCacheTTL          = 5 * time.Minute
+	AppCurrencyKey        = "app.currency"
+	defaultCurrencySymbol = "€"
+	currencyCacheTTL      = 5 * time.Minute
 )
 
 // SettingsService reads and writes application-wide settings from/to the
@@ -34,7 +36,9 @@ func NewSettingsService(db *gorm.DB) *SettingsService {
 
 // GetCurrencySymbol returns the configured currency symbol.
 // It reads from an in-memory cache (TTL 5 min) and falls back to the database.
-// If no value is stored it returns the default "€".
+// On ErrRecordNotFound the default "€" is stored in the cache.
+// On any other DB error the previous cached value (if any) is preserved and
+// the default is returned without caching, to avoid masking transient errors.
 func (s *SettingsService) GetCurrencySymbol() string {
 	s.mu.RLock()
 	if s.cachedCurrency != "" && time.Now().Before(s.cacheExpiry) {
@@ -52,12 +56,23 @@ func (s *SettingsService) GetCurrencySymbol() string {
 	}
 
 	var setting models.AppSetting
-	if err := s.db.Where("key = ?", AppCurrencyKey).First(&setting).Error; err != nil {
-		s.cachedCurrency = defaultCurrencySymbol
-	} else {
+	err := s.db.Where("key = ?", AppCurrencyKey).First(&setting).Error
+	switch {
+	case err == nil:
 		s.cachedCurrency = setting.Value
+		s.cacheExpiry = time.Now().Add(currencyCacheTTL)
+	case errors.Is(err, gorm.ErrRecordNotFound):
+		// No row yet – use and cache the default.
+		s.cachedCurrency = defaultCurrencySymbol
+		s.cacheExpiry = time.Now().Add(currencyCacheTTL)
+	default:
+		// Transient DB error – do not overwrite a valid cached value.
+		log.Printf("SettingsService: failed to read %q: %v", AppCurrencyKey, err)
+		if s.cachedCurrency != "" {
+			return s.cachedCurrency
+		}
+		return defaultCurrencySymbol
 	}
-	s.cacheExpiry = time.Now().Add(currencyCacheTTL)
 	return s.cachedCurrency
 }
 
@@ -68,8 +83,11 @@ func (s *SettingsService) UpdateCurrencySymbol(symbol string) error {
 		Value: symbol,
 	}
 	if err := s.db.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "key"}},
-		DoUpdates: clause.AssignmentColumns([]string{"value", "updated_at"}),
+		Columns: []clause.Column{{Name: "key"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"value":      symbol,
+			"updated_at": time.Now(),
+		}),
 	}).Create(&setting).Error; err != nil {
 		return err
 	}

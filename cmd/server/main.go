@@ -762,7 +762,7 @@ func main() {
 	if swaggerHost != "" {
 		docs.SwaggerInfo.Host = swaggerHost
 	}
-	setupRoutes(r, cfg, jobHandler, jobHistoryHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, infoHandler, barcodeHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, pdfHandler, accessoriesConsumablesHandler, settingsHandler, settingsService, rbacMiddleware, complianceMiddleware)
+	setupRoutes(r, cfg, jobHandler, jobHistoryHandler, deviceHandler, customerHandler, statusHandler, productHandler, cableHandler, infoHandler, barcodeHandler, authHandler, webauthnHandler, homeHandler, profileHandler, caseHandler, analyticsHandler, searchHandler, pwaHandler, workflowHandler, equipmentPackageHandler, rentalEquipmentHandler, documentHandler, financialHandler, securityHandler, invoiceHandler, templateHandler, companyHandler, monitoringHandler, jobAttachmentHandler, pdfHandler, accessoriesConsumablesHandler, settingsHandler, rbacMiddleware, complianceMiddleware)
 
 	// Add dedicated error route
 	r.GET("/error", func(c *gin.Context) {
@@ -849,7 +849,6 @@ func setupRoutes(r *gin.Engine,
 	pdfHandler *handlers.PDFHandler,
 	accessoriesConsumablesHandler *handlers.AccessoriesConsumablesHandler,
 	settingsHandler *handlers.SettingsHandler,
-	settingsService *services.SettingsService,
 	rbacMiddleware *middleware.RBACMiddleware,
 	complianceMiddleware *compliance.ComplianceMiddleware) {
 

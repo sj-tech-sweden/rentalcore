@@ -952,6 +952,8 @@
     "preview_label": "Vorschau",
     "save": "Währung speichern",
     "save_success": "Währungssymbol erfolgreich gespeichert!",
-    "save_error": "Fehler beim Speichern des Währungssymbols."
+    "save_error": "Fehler beim Speichern des Währungssymbols.",
+    "error_empty": "Das Währungssymbol darf nicht leer sein.",
+    "error_too_long": "Das Währungssymbol darf höchstens 8 Zeichen lang sein."
   }
 }
