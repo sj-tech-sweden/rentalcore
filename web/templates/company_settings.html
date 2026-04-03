@@ -383,10 +383,13 @@
             return window.t ? window.t(key, fallback) : fallback;
         }
 
+        function getCurrencyPreviewFallback() {
+            return (window.__APP_CONFIG__ && window.__APP_CONFIG__.currencySymbol) || '{{currencySymbol}}';
+        }
+
         if (currencyInput && currencyPreview) {
-            const _initialSymbol = (window.__APP_CONFIG__ && window.__APP_CONFIG__.currencySymbol) || '{{currencySymbol}}';
             currencyInput.addEventListener('input', function() {
-                currencyPreview.textContent = this.value || _initialSymbol;
+                currencyPreview.textContent = this.value || getCurrencyPreviewFallback();
             });
 
             document.getElementById('currency-settings-form').addEventListener('submit', function(e) {
@@ -401,8 +404,8 @@
                 showCurrencyStatus(_ct('currency.error_empty', 'Currency symbol cannot be empty.'), 'error');
                 return;
             }
-            // Use .length (UTF-16 code units) to match the HTML maxlength="8" attribute.
-            if (symbol.length > 8) {
+            // Use spread to count Unicode code points, matching server-side len([]rune(symbol)).
+            if ([...symbol].length > 8) {
                 showCurrencyStatus(_ct('currency.error_too_long', 'Currency symbol must be at most 8 characters.'), 'error');
                 return;
             }

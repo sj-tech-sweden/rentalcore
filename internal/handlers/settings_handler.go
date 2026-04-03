@@ -68,7 +68,7 @@ func (h *SettingsHandler) GetCurrencySettings(c *gin.Context) {
 func (h *SettingsHandler) UpdateCurrencySettings(c *gin.Context) {
 	var req currencyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse{Error: "currencySymbol is required"})
+		c.JSON(http.StatusBadRequest, errorResponse{Error: "invalid request body: " + err.Error()})
 		return
 	}
 	symbol := strings.TrimSpace(req.CurrencySymbol)
