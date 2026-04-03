@@ -102,7 +102,7 @@
                                 <input type="password" class="rc-input" id="apiKey" name="apiKey"
                                     placeholder="{{if and .config .config.APIKey}}Enter a new key to replace the existing one{{else}}Enter your Twenty API key{{end}}"
                                     autocomplete="off">
-                                <button type="button" id="toggleApiKey"
+                                <button type="button" id="toggleApiKey" aria-label="Show API key" title="Show API key"
                                     style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--rc-text-muted);">
                                     <i class="bi bi-eye" id="toggleApiKeyIcon"></i>
                                 </button>
@@ -137,7 +137,7 @@
                                 <input type="password" class="rc-input" id="webhookSecret" name="webhookSecret"
                                     placeholder="{{if and .config .config.WebhookSecret}}Secret configured – leave blank to keep{{else}}Optional token for webhook verification{{end}}"
                                     autocomplete="off">
-                                <button type="button" id="toggleWebhookSecret"
+                                <button type="button" id="toggleWebhookSecret" aria-label="Show webhook secret" title="Show webhook secret"
                                     style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--rc-text-muted);">
                                     <i class="bi bi-eye" id="toggleWebhookSecretIcon"></i>
                                 </button>

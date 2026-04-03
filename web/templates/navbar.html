@@ -141,9 +141,9 @@
                     <span class="rc-nav-label" data-i18n="nav.companySettings">Company Settings</span>
                 </a>
                 {{if hasRole .user "admin"}}
-                <a href="/settings/integrations/twenty" class="rc-user-dropdown-item {{if eq .currentPage "integrations"}}active{{end}}">
+                <a href="/settings/integrations/twenty" class="rc-user-dropdown-item {{if eq .currentPage "integrations"}}active{{end}}" data-i18n="nav.integrations" data-i18n-attr="title">
                     <i class="bi bi-diagram-3"></i>
-                    <span class="rc-nav-label">Integrations</span>
+                    <span class="rc-nav-label" data-i18n="nav.integrations">Integrations</span>
                 </a>
                 {{end}}
                 {{if hasAnyRole .user "admin" "manager"}}

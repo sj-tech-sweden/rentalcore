@@ -1206,7 +1206,12 @@ func (h *JobHandler) CreateJobAPI(c *gin.Context) {
 	}
 
 	if h.twentyService != nil {
-		h.twentyService.SyncJobAsync(&job)
+		// Reload the job with associations (Status etc.) so the stage mapping is accurate.
+		if syncedJob, err := h.jobRepo.GetByID(job.JobID); err == nil {
+			h.twentyService.SyncJobAsync(syncedJob)
+		} else {
+			h.twentyService.SyncJobAsync(&job)
+		}
 	}
 
 	c.JSON(http.StatusCreated, job)
@@ -1413,7 +1418,12 @@ func (h *JobHandler) UpdateJobAPI(c *gin.Context) {
 	}
 
 	if h.twentyService != nil {
-		h.twentyService.SyncJobAsync(&job)
+		// Reload the job with associations (Status etc.) so the stage mapping is accurate.
+		if syncedJob, err := h.jobRepo.GetByID(job.JobID); err == nil {
+			h.twentyService.SyncJobAsync(syncedJob)
+		} else {
+			h.twentyService.SyncJobAsync(&job)
+		}
 	}
 
 	c.JSON(http.StatusOK, job)

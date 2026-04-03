@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -12,6 +14,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+// iso4217Re validates ISO 4217 currency codes: exactly 3 uppercase ASCII letters.
+var iso4217Re = regexp.MustCompile(`^[A-Z]{3}$`)
 
 // TwentyHandler handles the Twenty CRM integration settings pages and API.
 type TwentyHandler struct {
@@ -144,6 +149,8 @@ func (h *TwentyHandler) UpdateTwentySettings(c *gin.Context) {
 	req.APIURL = strings.TrimSpace(req.APIURL)
 	req.APIKey = strings.TrimSpace(req.APIKey)
 	req.WebhookSecret = strings.TrimSpace(req.WebhookSecret)
+	// Normalise currency code: strip whitespace and uppercase.
+	req.CurrencyCode = strings.ToUpper(strings.TrimSpace(req.CurrencyCode))
 
 	// Load existing config so we can preserve secrets that were not supplied.
 	existing := h.twentyService.GetConfig()
@@ -156,6 +163,12 @@ func (h *TwentyHandler) UpdateTwentySettings(c *gin.Context) {
 	}
 	if req.CurrencyCode == "" {
 		req.CurrencyCode = existing.CurrencyCode
+	}
+
+	// Validate ISO 4217 currency code (exactly 3 uppercase ASCII letters).
+	if !iso4217Re.MatchString(req.CurrencyCode) {
+		c.JSON(http.StatusBadRequest, errorResponse{Error: "currency code must be a 3-letter ISO 4217 code (e.g. EUR, USD, GBP)"})
+		return
 	}
 
 	if req.Enabled && req.APIURL == "" {
@@ -224,8 +237,14 @@ func (h *TwentyHandler) HandleTwentyWebhook(c *gin.Context) {
 
 	webhookToken := c.GetHeader("X-Twenty-Webhook-Token")
 	if err := h.twentyService.ApplyInboundWebhook(body, webhookToken); err != nil {
-		if strings.Contains(err.Error(), "invalid webhook token") {
+		if errors.Is(err, services.ErrInvalidWebhookToken) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid webhook token"})
+			return
+		}
+		// Client-side errors (bad payload, missing fields) → 400.
+		// Internal errors (DB failures) → 500.
+		if isWebhookClientError(err) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		log.Printf("HandleTwentyWebhook: error: %v", err)
@@ -234,4 +253,14 @@ func (h *TwentyHandler) HandleTwentyWebhook(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// isWebhookClientError returns true for errors that are caused by a bad request
+// payload rather than an internal server failure.
+func isWebhookClientError(err error) bool {
+	msg := err.Error()
+	return strings.HasPrefix(msg, "invalid webhook payload") ||
+		strings.HasPrefix(msg, "webhook record missing") ||
+		strings.HasPrefix(msg, "webhook record id") ||
+		msg == "webhook secret is not configured"
 }

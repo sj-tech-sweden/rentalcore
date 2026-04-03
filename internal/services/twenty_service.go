@@ -33,6 +33,10 @@ const (
 	syncSemSize = 20
 )
 
+// ErrInvalidWebhookToken is returned when the webhook token in the request
+// does not match the configured secret.
+var ErrInvalidWebhookToken = errors.New("invalid webhook token")
+
 // TwentyService manages synchronisation between RentalCore and a Twenty CRM instance.
 // Customer records are pushed to Twenty as Companies (company customers) or People
 // (individual customers). Jobs are pushed as Opportunities.
@@ -68,7 +72,9 @@ type TwentyConfig struct {
 func (s *TwentyService) GetConfig() TwentyConfig {
 	keys := []string{TwentyEnabledKey, TwentyAPIURLKey, TwentyAPIKeyKey, TwentyWebhookSecretKey, TwentyCurrencyCodeKey}
 	var settings []models.AppSetting
-	s.db.Where("key IN ?", keys).Find(&settings)
+	if result := s.db.Where("key IN ?", keys).Find(&settings); result.Error != nil {
+		log.Printf("TwentyService: failed to load configuration from app_settings: %v", result.Error)
+	}
 
 	cfg := TwentyConfig{
 		CurrencyCode: "EUR", // default
@@ -218,12 +224,21 @@ type TwentyWebhookPayload struct {
 // ApplyInboundWebhook processes an incoming Twenty CRM webhook and updates the
 // corresponding RentalCore customer record.
 // Only records that were originally synced FROM RentalCore are affected.
+// The webhook secret must be configured; requests without a valid token are rejected.
 func (s *TwentyService) ApplyInboundWebhook(body []byte, webhookToken string) error {
 	cfg := s.GetConfig()
 
-	// Verify token if a secret is configured.
-	if cfg.WebhookSecret != "" && webhookToken != cfg.WebhookSecret {
-		return errors.New("invalid webhook token")
+	// Reject if the integration is disabled.
+	if !cfg.Enabled {
+		return nil
+	}
+
+	// A webhook secret is required; reject unauthenticated requests.
+	if cfg.WebhookSecret == "" {
+		return errors.New("webhook secret is not configured")
+	}
+	if webhookToken != cfg.WebhookSecret {
+		return ErrInvalidWebhookToken
 	}
 
 	var payload TwentyWebhookPayload
@@ -297,6 +312,7 @@ func (s *TwentyService) reverseCustomerIDLookup(twentyID, objectType string) (ui
 }
 
 // applyCompanyWebhook maps Twenty company fields onto a RentalCore customer.
+// Only non-empty values are applied to avoid wiping existing customer data.
 func (s *TwentyService) applyCompanyWebhook(customer *models.Customer, record map[string]json.RawMessage) {
 	if raw, ok := record["name"]; ok {
 		var name string
@@ -313,16 +329,27 @@ func (s *TwentyService) applyCompanyWebhook(customer *models.Customer, record ma
 			Country  string `json:"addressCountry"`
 		}
 		if err := json.Unmarshal(raw, &addr); err == nil {
-			customer.Street = &addr.Street1
-			customer.City = &addr.City
-			customer.FederalState = &addr.State
-			customer.ZIP = &addr.Postcode
-			customer.Country = &addr.Country
+			if strings.TrimSpace(addr.Street1) != "" {
+				customer.Street = &addr.Street1
+			}
+			if strings.TrimSpace(addr.City) != "" {
+				customer.City = &addr.City
+			}
+			if strings.TrimSpace(addr.State) != "" {
+				customer.FederalState = &addr.State
+			}
+			if strings.TrimSpace(addr.Postcode) != "" {
+				customer.ZIP = &addr.Postcode
+			}
+			if strings.TrimSpace(addr.Country) != "" {
+				customer.Country = &addr.Country
+			}
 		}
 	}
 }
 
 // applyPersonWebhook maps Twenty person fields onto a RentalCore customer.
+// Only non-empty values are applied to avoid wiping existing customer data.
 func (s *TwentyService) applyPersonWebhook(customer *models.Customer, record map[string]json.RawMessage) {
 	if raw, ok := record["name"]; ok {
 		var name struct {
@@ -330,15 +357,19 @@ func (s *TwentyService) applyPersonWebhook(customer *models.Customer, record map
 			LastName  string `json:"lastName"`
 		}
 		if err := json.Unmarshal(raw, &name); err == nil {
-			customer.FirstName = &name.FirstName
-			customer.LastName = &name.LastName
+			if strings.TrimSpace(name.FirstName) != "" {
+				customer.FirstName = &name.FirstName
+			}
+			if strings.TrimSpace(name.LastName) != "" {
+				customer.LastName = &name.LastName
+			}
 		}
 	}
 	if raw, ok := record["emails"]; ok {
 		var emails struct {
 			PrimaryEmail string `json:"primaryEmail"`
 		}
-		if err := json.Unmarshal(raw, &emails); err == nil {
+		if err := json.Unmarshal(raw, &emails); err == nil && strings.TrimSpace(emails.PrimaryEmail) != "" {
 			customer.Email = &emails.PrimaryEmail
 		}
 	}
@@ -346,7 +377,7 @@ func (s *TwentyService) applyPersonWebhook(customer *models.Customer, record map
 		var phones struct {
 			PrimaryPhoneNumber string `json:"primaryPhoneNumber"`
 		}
-		if err := json.Unmarshal(raw, &phones); err == nil {
+		if err := json.Unmarshal(raw, &phones); err == nil && strings.TrimSpace(phones.PrimaryPhoneNumber) != "" {
 			customer.PhoneNumber = &phones.PrimaryPhoneNumber
 		}
 	}
