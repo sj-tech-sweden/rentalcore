@@ -1733,6 +1733,18 @@
             return stats;
         }
 
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
         function collectTreeStats(tree) {
             if (!Array.isArray(tree)) {
                 return { products: 0, available: 0, total: 0 };
@@ -1823,9 +1835,23 @@
 
             const searchInput = document.getElementById('productSearchInput');
             const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
-            const filteredData = searchTerm ? filterTreeData(treeData, searchTerm) : treeData;
+
+            // Compute filtered data and build a search-driven expansion set without
+            // permanently mutating the user's expansion state. The user's state is
+            // restored after rendering so that clearing the search returns to the
+            // pre-search expand/collapse positions.
+            const savedExpanded = productTreeExpanded;
+            let filteredData;
+            if (searchTerm) {
+                const { result, searchExpanded } = filterTreeData(treeData, searchTerm);
+                filteredData = result;
+                productTreeExpanded = new Set([...savedExpanded, ...searchExpanded]);
+            } else {
+                filteredData = treeData;
+            }
 
             if (filteredData.length === 0) {
+                productTreeExpanded = savedExpanded;
                 if (empty) {
                     empty.style.display = 'block';
                     empty.innerHTML = `<i class="bi bi-search"></i> ${window.t ? window.t('productTree.noSearchResults') : 'No products match your search.'}`;
@@ -1852,6 +1878,11 @@
                 root.appendChild(renderCategoryNode(category, 'cat-' + category.id));
             });
 
+            // Restore the user's expansion state; click handlers on the rendered nodes
+            // reference productTreeExpanded at fire time, so they will update the
+            // user's set (not the temporary merged one).
+            productTreeExpanded = savedExpanded;
+
             updateSelectedProductsSummary();
             updateHiddenProductInput();
             validateProductSelections();
@@ -1859,14 +1890,15 @@
 
         function filterTreeData(treeData, term) {
             const result = [];
+            const searchExpanded = new Set();
             treeData.forEach(category => {
                 const filteredProducts = (category.products || []).filter(p => p.name && p.name.toLowerCase().includes(term));
                 const filteredSubs = (category.subcategories || []).reduce((acc, sub) => {
                     const subProducts = (sub.products || []).filter(p => p.name && p.name.toLowerCase().includes(term));
-                    const filteredSubbiers = (sub.subbiercategories || []).reduce((acc2, sb) => {
-                        const sbProducts = (sb.products || []).filter(p => p.name && p.name.toLowerCase().includes(term));
-                        if (sbProducts.length > 0) {
-                            acc2.push(Object.assign({}, sb, { products: sbProducts }));
+                    const filteredSubbiers = (sub.subbiercategories || []).reduce((acc2, subbier) => {
+                        const subbierProducts = (subbier.products || []).filter(p => p.name && p.name.toLowerCase().includes(term));
+                        if (subbierProducts.length > 0) {
+                            acc2.push(Object.assign({}, subbier, { products: subbierProducts }));
                         }
                         return acc2;
                     }, []);
@@ -1877,19 +1909,19 @@
                 }, []);
                 if (filteredProducts.length > 0 || filteredSubs.length > 0) {
                     const nodeId = 'cat-' + category.id;
-                    productTreeExpanded.add(nodeId);
+                    searchExpanded.add(nodeId);
                     filteredSubs.forEach(sub => {
-                        productTreeExpanded.add('sub-' + sub.id);
-                        if (sub.products && sub.products.length > 0) productTreeExpanded.add(`sub-${sub.id}-products`);
-                        (sub.subbiercategories || []).forEach(sb => {
-                            if (sb.products && sb.products.length > 0) productTreeExpanded.add('subbier-' + sb.id);
+                        searchExpanded.add('sub-' + sub.id);
+                        if (sub.products && sub.products.length > 0) searchExpanded.add(`sub-${sub.id}-products`);
+                        (sub.subbiercategories || []).forEach(subbier => {
+                            if (subbier.products && subbier.products.length > 0) searchExpanded.add('subbier-' + subbier.id);
                         });
                     });
-                    if (filteredProducts.length > 0) productTreeExpanded.add(`cat-${category.id}-products`);
+                    if (filteredProducts.length > 0) searchExpanded.add(`cat-${category.id}-products`);
                     result.push(Object.assign({}, category, { products: filteredProducts, subcategories: filteredSubs }));
                 }
             });
-            return result;
+            return { result, searchExpanded };
         }
 
         function renderCategoryNode(category, nodeId) {
@@ -2564,11 +2596,12 @@
                 }
                 const searchInput = document.getElementById('productSearchInput');
                 if (searchInput) {
-                    searchInput.addEventListener('input', () => {
+                    const debouncedSearch = debounce(() => {
                         if (productTreeData && productTreeData.length > 0) {
                             renderProductTree(productTreeData);
                         }
-                    });
+                    }, 200);
+                    searchInput.addEventListener('input', debouncedSearch);
                 }
                 productTreeControlsBound = true;
             }
