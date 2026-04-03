@@ -49,15 +49,26 @@ func TestGetCurrencySymbol_CacheHit_EmptyString(t *testing.T) {
 	}
 }
 
-// TestGetCurrencySymbol_CacheExpiry verifies that an expired cache entry is
-// detected as stale (i.e., time.Now() is after cacheExpiry).
+// TestGetCurrencySymbol_CacheExpiry verifies that an expired cache entry is not
+// considered valid. After expiry the service would re-query the DB; here we confirm
+// the TTL guard condition (i.e., the expiry is in the past) is properly detectable.
 func TestGetCurrencySymbol_CacheExpiry(t *testing.T) {
 	expiry := time.Now().Add(-1 * time.Second) // already expired
 	s := newCachedSettingsService("£", true, expiry)
 
-	// Verify the cache is considered expired so GetCurrencySymbol would re-query the DB.
+	// The cache should be considered stale: time.Now() is after cacheExpiry.
 	if time.Now().Before(s.cacheExpiry) {
 		t.Error("expected cache to be expired, but cacheExpiry is still in the future")
+	}
+
+	// Confirm the live-cache check inside GetCurrencySymbol would also see this as
+	// expired by testing the same condition it evaluates.
+	s.mu.RLock()
+	cacheStillValid := s.cacheValid && time.Now().Before(s.cacheExpiry)
+	s.mu.RUnlock()
+
+	if cacheStillValid {
+		t.Error("expected expired cache to be treated as invalid, but the validity check returned true")
 	}
 }
 

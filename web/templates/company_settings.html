@@ -405,6 +405,8 @@
                 return;
             }
             // Use spread to count Unicode code points, matching server-side len([]rune(symbol)).
+            // Note: the HTML maxlength="8" attribute counts UTF-16 code units; for all
+            // practical currency symbols (BMP characters) both counts are identical.
             if ([...symbol].length > 8) {
                 showCurrencyStatus(_ct('currency.error_too_long', 'Currency symbol must be at most 8 characters.'), 'error');
                 return;
