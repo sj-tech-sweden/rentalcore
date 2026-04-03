@@ -938,7 +938,7 @@
                                         </div>
                                     </div>
                                     <div style="padding: var(--space-sm) var(--space-md);">
-                                        <input type="text" id="editProductSearchInput" class="rc-input rc-input-sm" placeholder="Search products…" style="width: 100%;" autocomplete="off">
+                                        <input type="text" id="editProductSearchInput" class="rc-input rc-input-sm" data-i18n-attr="placeholder:productTree.searchPlaceholder" placeholder="Search products…" style="width: 100%;" autocomplete="off">
                                     </div>
                                     <div class="rc-flex rc-flex-center rc-py-lg" id="editProductTreeLoading">
                                         <i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i>
@@ -1025,7 +1025,9 @@
                 const searchInput = document.getElementById('editProductSearchInput');
                 if (searchInput) {
                     searchInput.addEventListener('input', () => {
-                        renderEditProductTree(editProductTreeData);
+                        if (editProductTreeData && editProductTreeData.length > 0) {
+                            renderEditProductTree(editProductTreeData);
+                        }
                     });
                 }
                 editProductTreeControlsBound = true;
@@ -1804,7 +1806,6 @@
 
     // Warehouse-style renderers for edit modal
     function renderEditProductTree(treeData) {
-        console.log('🎨 renderEditProductTree called with', treeData?.length || 0, 'categories');
         const loading = document.getElementById('editProductTreeLoading');
         const root = document.getElementById('editProductTreeRoot');
         const empty = document.getElementById('editProductTreeEmpty');
@@ -1815,12 +1816,11 @@
             return;
         }
 
-        root.innerHTML = '';
-        if (loading) loading.style.display = 'none';
-
+        // If tree hasn't been loaded yet, don't disturb the loading state
         if (!Array.isArray(treeData) || treeData.length === 0) {
-            console.warn('⚠️ No tree data to render');
-
+            if (loading && loading.style.display !== 'none') return;
+            root.innerHTML = '';
+            if (loading) loading.style.display = 'none';
             if (empty) empty.style.display = 'block';
             root.style.display = 'none';
             if (summary) summary.textContent = 'No products found for the selected dates.';
@@ -1831,6 +1831,9 @@
             return;
         }
 
+        root.innerHTML = '';
+        if (loading) loading.style.display = 'none';
+
         const searchInput = document.getElementById('editProductSearchInput');
         const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
         const filteredData = searchTerm ? filterEditTreeData(treeData, searchTerm) : treeData;
@@ -1838,10 +1841,11 @@
         if (filteredData.length === 0) {
             if (empty) {
                 empty.style.display = 'block';
-                empty.innerHTML = '<i class="bi bi-search"></i> No products match your search.';
+                empty.innerHTML = `<i class="bi bi-search"></i> ${window.t ? window.t('productTree.noSearchResults') : 'No products match your search.'}`;
             }
             root.style.display = 'none';
-            updateEditProductTreeSummary({ products: 0, available: 0, total: 0 }, 0);
+            const unfiltered = editCollectTreeStats(treeData);
+            updateEditProductTreeSummary(unfiltered, treeData.length);
             updateEditSelectedProductsSummary();
             updateEditHiddenProductInput();
             validateEditProductSelections();
@@ -1889,6 +1893,9 @@
                 filteredSubs.forEach(sub => {
                     editProductTreeExpanded.add('edit-sub-' + sub.id);
                     if (sub.products && sub.products.length > 0) editProductTreeExpanded.add(`edit-sub-${sub.id}-products`);
+                    (sub.subbiercategories || []).forEach(subbier => {
+                        if (subbier.products && subbier.products.length > 0) editProductTreeExpanded.add('edit-subbier-' + subbier.id);
+                    });
                 });
                 if (filteredProducts.length > 0) editProductTreeExpanded.add(`edit-cat-${category.id}-products`);
                 result.push(Object.assign({}, category, { products: filteredProducts, subcategories: filteredSubs }));

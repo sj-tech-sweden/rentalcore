@@ -24,6 +24,10 @@ type DeviceCache struct {
 	mutex     sync.RWMutex
 }
 
+// uncategorizedCategoryID is a sentinel ID used for the virtual "Uncategorized" category
+// in the product tree. It must not collide with any real category ID (which starts at 1).
+const uncategorizedCategoryID uint = 0
+
 // Tree cache for optimized tree data
 type TreeCache struct {
 	data      []TreeCategory
@@ -1340,7 +1344,7 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 			return strings.ToLower(uncategorizedProducts[i].Name) < strings.ToLower(uncategorizedProducts[j].Name)
 		})
 		treeCategories = append(treeCategories, TreeCategory{
-			ID:             0,
+			ID:             uncategorizedCategoryID,
 			Name:           "Uncategorized",
 			DeviceCount:    uncategorizedDeviceCount,
 			AvailableCount: uncategorizedAvailableCount,

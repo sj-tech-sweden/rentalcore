@@ -318,7 +318,7 @@
                                         </div>
                                     </div>
                                     <div style="padding: var(--space-sm) var(--space-md);">
-                                        <input type="text" id="productSearchInput" class="rc-input rc-input-sm" placeholder="Search products…" style="width: 100%;" autocomplete="off">
+                                        <input type="text" id="productSearchInput" class="rc-input rc-input-sm" data-i18n-attr="placeholder:productTree.searchPlaceholder" placeholder="Search products…" style="width: 100%;" autocomplete="off">
                                     </div>
                                     <div class="rc-flex rc-flex-center rc-py-lg" id="productTreeLoading">
                                         <i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i>
@@ -1803,10 +1803,11 @@
 
             if (!root) return;
 
-            root.innerHTML = '';
-            if (loading) loading.style.display = 'none';
-
-                if (!Array.isArray(treeData) || treeData.length === 0) {
+            // If tree hasn't been loaded yet, don't disturb the loading state
+            if (!Array.isArray(treeData) || treeData.length === 0) {
+                if (loading && loading.style.display !== 'none') return;
+                root.innerHTML = '';
+                if (loading) loading.style.display = 'none';
                 if (empty) empty.style.display = 'block';
                 root.style.display = 'none';
                 if (summary) summary.textContent = (window.t ? window.t('productTree.empty') : 'No products found.');
@@ -1817,6 +1818,9 @@
                 return;
             }
 
+            root.innerHTML = '';
+            if (loading) loading.style.display = 'none';
+
             const searchInput = document.getElementById('productSearchInput');
             const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
             const filteredData = searchTerm ? filterTreeData(treeData, searchTerm) : treeData;
@@ -1824,10 +1828,11 @@
             if (filteredData.length === 0) {
                 if (empty) {
                     empty.style.display = 'block';
-                    empty.innerHTML = '<i class="bi bi-search"></i> No products match your search.';
+                    empty.innerHTML = `<i class="bi bi-search"></i> ${window.t ? window.t('productTree.noSearchResults') : 'No products match your search.'}`;
                 }
                 root.style.display = 'none';
-                updateProductTreeSummary({ products: 0, available: 0, total: 0 }, 0);
+                const unfiltered = collectTreeStats(treeData);
+                updateProductTreeSummary(unfiltered, treeData.length);
                 updateSelectedProductsSummary();
                 updateHiddenProductInput();
                 validateProductSelections();
@@ -1836,7 +1841,7 @@
 
             if (empty) {
                 empty.style.display = 'none';
-                empty.innerHTML = '<i class="bi bi-info-circle"></i> No products found.';
+                empty.innerHTML = `<i class="bi bi-info-circle"></i> ${window.t ? window.t('productTree.empty') : 'No products found.'}`;
             }
             root.style.display = 'flex';
 
@@ -2560,7 +2565,9 @@
                 const searchInput = document.getElementById('productSearchInput');
                 if (searchInput) {
                     searchInput.addEventListener('input', () => {
-                        renderProductTree(productTreeData);
+                        if (productTreeData && productTreeData.length > 0) {
+                            renderProductTree(productTreeData);
+                        }
                     });
                 }
                 productTreeControlsBound = true;
