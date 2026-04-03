@@ -23,6 +23,80 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/currency": {
+            "get": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    }
+                ],
+                "description": "Returns the application currency symbol stored in app_settings.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get currency symbol",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.currencyResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    }
+                ],
+                "description": "Updates the application currency symbol. Must be non-empty and at most 8 characters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update currency symbol",
+                "parameters": [
+                    {
+                        "description": "Currency payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.currencyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.currencyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handlers.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/customers": {
             "get": {
                 "security": [
@@ -818,6 +892,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/jobs/{id}/product-requirements": {
+            "get": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    }
+                ],
+                "description": "Returns the list of product quantity requirements for a job. These are the products requested for the job; specific devices are assigned later in warehousecore.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "Get job product requirements",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Product requirements",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/go-barcode-webapp_internal_models.JobProductRequirement"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/products": {
             "get": {
                 "security": [
@@ -1202,6 +1331,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/go-barcode-webapp_internal_models.JobPackage"
                     }
                 },
+                "job_product_requirements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/go-barcode-webapp_internal_models.JobProductRequirement"
+                    }
+                },
                 "jobcategoryID": {
                     "type": "integer"
                 },
@@ -1357,6 +1492,26 @@ const docTemplate = `{
                 },
                 "reserved_at": {
                     "type": "string"
+                }
+            }
+        },
+        "go-barcode-webapp_internal_models.JobProductRequirement": {
+            "type": "object",
+            "properties": {
+                "job_id": {
+                    "type": "integer"
+                },
+                "product": {
+                    "$ref": "#/definitions/go-barcode-webapp_internal_models.Product"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "requirement_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -1590,6 +1745,36 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handlers.currencyRequest": {
+            "type": "object",
+            "required": [
+                "currencySymbol"
+            ],
+            "properties": {
+                "currencySymbol": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handlers.currencyResponse": {
+            "type": "object",
+            "properties": {
+                "currencySymbol": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "internal_handlers.errorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
                     "type": "string"
                 }
             }

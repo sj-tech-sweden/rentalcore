@@ -153,6 +153,10 @@ definitions:
         items:
           $ref: '#/definitions/go-barcode-webapp_internal_models.JobPackage'
         type: array
+      job_product_requirements:
+        items:
+          $ref: '#/definitions/go-barcode-webapp_internal_models.JobProductRequirement'
+        type: array
       jobID:
         type: integer
       jobcategoryID:
@@ -255,6 +259,19 @@ definitions:
         type: string
       reserved_at:
         type: string
+    type: object
+  go-barcode-webapp_internal_models.JobProductRequirement:
+    properties:
+      job_id:
+        type: integer
+      product:
+        $ref: '#/definitions/go-barcode-webapp_internal_models.Product'
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+      requirement_id:
+        type: integer
     type: object
   go-barcode-webapp_internal_models.Manufacturer:
     properties:
@@ -409,6 +426,25 @@ definitions:
       username:
         type: string
     type: object
+  internal_handlers.currencyRequest:
+    properties:
+      currencySymbol:
+        type: string
+    required:
+    - currencySymbol
+    type: object
+  internal_handlers.currencyResponse:
+    properties:
+      currencySymbol:
+        type: string
+      success:
+        type: boolean
+    type: object
+  internal_handlers.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
   sql.NullFloat64:
     properties:
       float64:
@@ -445,6 +481,53 @@ info:
   title: RentalCore API
   version: "1.0"
 paths:
+  /admin/currency:
+    get:
+      description: Returns the application currency symbol stored in app_settings.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.currencyResponse'
+      security:
+      - SessionCookie: []
+      summary: Get currency symbol
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Updates the application currency symbol. Must be non-empty and
+        at most 8 characters.
+      parameters:
+      - description: Currency payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.currencyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.currencyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.errorResponse'
+      security:
+      - SessionCookie: []
+      summary: Update currency symbol
+      tags:
+      - admin
   /customers:
     get:
       description: Returns a paginated list of customers
@@ -952,6 +1035,43 @@ paths:
       security:
       - SessionCookie: []
       summary: Update a job
+      tags:
+      - jobs
+  /jobs/{id}/product-requirements:
+    get:
+      description: Returns the list of product quantity requirements for a job. These
+        are the products requested for the job; specific devices are assigned later
+        in warehousecore.
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product requirements
+          schema:
+            items:
+              $ref: '#/definitions/go-barcode-webapp_internal_models.JobProductRequirement'
+            type: array
+        "400":
+          description: Invalid ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - SessionCookie: []
+      summary: Get job product requirements
       tags:
       - jobs
   /products:

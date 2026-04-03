@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -81,6 +82,7 @@ func (h *SettingsHandler) UpdateCurrencySettings(c *gin.Context) {
 		return
 	}
 	if err := h.settingsService.UpdateCurrencySymbol(symbol); err != nil {
+		log.Printf("UpdateCurrencySettings: failed to save currency symbol: %v", err)
 		c.JSON(http.StatusInternalServerError, errorResponse{Error: "failed to save currency symbol"})
 		return
 	}

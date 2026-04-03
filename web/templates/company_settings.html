@@ -194,7 +194,8 @@
             </div>
         </div>
 
-        <!-- Currency Settings -->
+        <!-- Currency Settings (admin only) -->
+        {{if hasRole .user "admin"}}
         <div class="rc-card rc-mt-xl">
             <div class="rc-card-header">
                 <h3 class="rc-card-title">
@@ -233,6 +234,7 @@
                 <div id="currency-status" class="rc-mt-lg" style="display: none;"></div>
             </div>
         </div>
+        {{end}}
     </main>
 
     <!-- Footer -->

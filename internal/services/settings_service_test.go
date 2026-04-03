@@ -3,6 +3,11 @@ package services
 import (
 	"testing"
 	"time"
+
+	"go-barcode-webapp/internal/models"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 // newCachedSettingsService returns a SettingsService with pre-populated cache fields,
@@ -15,6 +20,25 @@ func newCachedSettingsService(symbol string, valid bool, expiry time.Time) *Sett
 		cacheExpiry:    expiry,
 	}
 }
+
+// newTestDB creates a transient in-memory SQLite database and auto-migrates the
+// AppSetting table.  Each call produces an independent database so tests are
+// fully isolated.
+func newTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("failed to open in-memory sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(&models.AppSetting{}); err != nil {
+		t.Fatalf("AutoMigrate failed: %v", err)
+	}
+	return db
+}
+
+// ---------------------------------------------------------------------------
+// Cache-hit tests (no DB required)
+// ---------------------------------------------------------------------------
 
 // TestGetCurrencySymbol_CacheHit verifies that a valid, unexpired cache entry is
 // returned without touching the database.
@@ -78,5 +102,179 @@ func TestGetCurrencySymbol_NoCacheEntry(t *testing.T) {
 	s := &SettingsService{db: nil}
 	if s.cacheValid {
 		t.Error("expected cacheValid=false for a newly created SettingsService")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// DB-backed tests (sqlite in-memory)
+// ---------------------------------------------------------------------------
+
+// TestGetCurrencySymbol_DBRecord verifies that GetCurrencySymbol reads the value
+// from the DB when the cache is cold and returns the stored symbol.
+func TestGetCurrencySymbol_DBRecord(t *testing.T) {
+	db := newTestDB(t)
+	db.Create(&models.AppSetting{Key: AppCurrencyKey, Value: "$"})
+
+	s := NewSettingsService(db)
+	got := s.GetCurrencySymbol()
+	if got != "$" {
+		t.Errorf("GetCurrencySymbol() = %q, want %q", got, "$")
+	}
+	// Cache should now be populated.
+	if !s.cacheValid {
+		t.Error("expected cacheValid=true after successful DB read")
+	}
+}
+
+// TestGetCurrencySymbol_ErrRecordNotFound verifies that the default symbol is
+// returned (and cached) when no row exists in the DB.
+func TestGetCurrencySymbol_ErrRecordNotFound(t *testing.T) {
+	db := newTestDB(t)
+
+	s := NewSettingsService(db)
+	got := s.GetCurrencySymbol()
+	if got != defaultCurrencySymbol {
+		t.Errorf("GetCurrencySymbol() = %q, want default %q", got, defaultCurrencySymbol)
+	}
+	if !s.cacheValid {
+		t.Error("expected cacheValid=true after ErrRecordNotFound (default is cached)")
+	}
+	if s.cachedCurrency != defaultCurrencySymbol {
+		t.Errorf("cachedCurrency = %q, want %q", s.cachedCurrency, defaultCurrencySymbol)
+	}
+}
+
+// TestGetCurrencySymbol_TransientError verifies that when the DB returns an
+// unexpected error (not ErrRecordNotFound) the previous cached value is preserved
+// and returned rather than falling back to the default.
+func TestGetCurrencySymbol_TransientError(t *testing.T) {
+	db := newTestDB(t)
+
+	// Seed a value and warm the cache.
+	db.Create(&models.AppSetting{Key: AppCurrencyKey, Value: "£"})
+	s := NewSettingsService(db)
+	_ = s.GetCurrencySymbol() // warm the cache
+
+	// Close the underlying sql.DB to make any subsequent query fail.
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("db.DB() = %v", err)
+	}
+	sqlDB.Close()
+
+	// Expire the cache so GetCurrencySymbol tries to re-query.
+	s.mu.Lock()
+	s.cacheExpiry = time.Now().Add(-1 * time.Second)
+	s.mu.Unlock()
+
+	got := s.GetCurrencySymbol()
+	// The stale cached value should be returned (not the default "€").
+	if got != "£" {
+		t.Errorf("GetCurrencySymbol() on transient error = %q, want stale cached %q", got, "£")
+	}
+}
+
+// TestUpdateCurrencySymbol_Upsert verifies that UpdateCurrencySymbol inserts a row
+// when none exists and that a subsequent Get returns the new value.
+func TestUpdateCurrencySymbol_Upsert_Insert(t *testing.T) {
+	db := newTestDB(t)
+	s := NewSettingsService(db)
+
+	if err := s.UpdateCurrencySymbol("kr"); err != nil {
+		t.Fatalf("UpdateCurrencySymbol() error = %v", err)
+	}
+	got := s.GetCurrencySymbol()
+	if got != "kr" {
+		t.Errorf("GetCurrencySymbol() after update = %q, want %q", got, "kr")
+	}
+}
+
+// TestUpdateCurrencySymbol_Upsert_Update verifies that UpdateCurrencySymbol
+// updates an existing row without creating duplicates.
+func TestUpdateCurrencySymbol_Upsert_Update(t *testing.T) {
+	db := newTestDB(t)
+	db.Create(&models.AppSetting{Key: AppCurrencyKey, Value: "€"})
+	s := NewSettingsService(db)
+
+	if err := s.UpdateCurrencySymbol("CHF"); err != nil {
+		t.Fatalf("UpdateCurrencySymbol() error = %v", err)
+	}
+
+	var row models.AppSetting
+	if err := db.Where("key = ?", AppCurrencyKey).First(&row).Error; err != nil {
+		t.Fatalf("DB read after upsert: %v", err)
+	}
+	if row.Value != "CHF" {
+		t.Errorf("DB row value = %q, want %q", row.Value, "CHF")
+	}
+
+	// Confirm only one row exists.
+	var count int64
+	db.Model(&models.AppSetting{}).Where("key = ?", AppCurrencyKey).Count(&count)
+	if count != 1 {
+		t.Errorf("row count = %d, want 1 (no duplicates)", count)
+	}
+}
+
+// TestUpdateCurrencySymbol_CacheRefresh verifies that the in-memory cache is
+// updated immediately after a successful UpdateCurrencySymbol call.
+func TestUpdateCurrencySymbol_CacheRefresh(t *testing.T) {
+	db := newTestDB(t)
+	s := NewSettingsService(db)
+
+	if err := s.UpdateCurrencySymbol("£"); err != nil {
+		t.Fatalf("UpdateCurrencySymbol() error = %v", err)
+	}
+
+	// Inspect internal cache state directly (same package, no need to re-query DB).
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if !s.cacheValid {
+		t.Error("expected cacheValid=true after UpdateCurrencySymbol")
+	}
+	if s.cachedCurrency != "£" {
+		t.Errorf("cachedCurrency = %q, want %q", s.cachedCurrency, "£")
+	}
+	if time.Now().After(s.cacheExpiry) {
+		t.Error("expected cacheExpiry to be in the future after UpdateCurrencySymbol")
+	}
+}
+
+// TestGetCurrencySymbol_CacheRefreshedAfterExpiry verifies that an expired cache is
+// refreshed from the DB when GetCurrencySymbol is called again.
+func TestGetCurrencySymbol_CacheRefreshedAfterExpiry(t *testing.T) {
+	db := newTestDB(t)
+	db.Create(&models.AppSetting{Key: AppCurrencyKey, Value: "zł"})
+
+	// Create service and pre-populate with an expired cache entry for a different symbol.
+	s := &SettingsService{
+		db:             db,
+		cachedCurrency: "£",
+		cacheValid:     true,
+		cacheExpiry:    time.Now().Add(-1 * time.Second), // expired
+	}
+
+	got := s.GetCurrencySymbol()
+	if got != "zł" {
+		t.Errorf("GetCurrencySymbol() after cache expiry = %q, want DB value %q", got, "zł")
+	}
+}
+
+// TestGetCurrencySymbol_TransientError_NoPreviousCache verifies that when there is
+// no previous cached value and the DB fails, the default symbol is returned.
+func TestGetCurrencySymbol_TransientError_NoPreviousCache(t *testing.T) {
+	db := newTestDB(t)
+
+	// Close the DB immediately to provoke failures on every query.
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("db.DB() = %v", err)
+	}
+	sqlDB.Close()
+
+	s := NewSettingsService(db)
+	got := s.GetCurrencySymbol()
+	if got != defaultCurrencySymbol {
+		t.Errorf("GetCurrencySymbol() with closed DB and no cache = %q, want default %q", got, defaultCurrencySymbol)
 	}
 }
