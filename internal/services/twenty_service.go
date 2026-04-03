@@ -28,6 +28,8 @@ const (
 	TwentyCurrencyCodeKey  = "twenty.currency_code"
 
 	// syncSemSize caps the number of concurrent outbound sync goroutines.
+	// 20 was chosen to allow a reasonable level of parallelism for bulk saves
+	// while bounding memory growth and outbound HTTP connections to the Twenty API.
 	syncSemSize = 20
 )
 
@@ -389,7 +391,10 @@ func (s *TwentyService) execGQL(cfg TwentyConfig, query string, variables map[st
 
 	// Check HTTP status before attempting to decode as JSON.
 	if resp.StatusCode >= 400 {
-		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		snippet, readErr := io.ReadAll(io.LimitReader(resp.Body, 512))
+		if readErr != nil {
+			return nil, fmt.Errorf("Twenty API HTTP %d (could not read body: %v)", resp.StatusCode, readErr)
+		}
 		return nil, fmt.Errorf("Twenty API HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(snippet)))
 	}
 

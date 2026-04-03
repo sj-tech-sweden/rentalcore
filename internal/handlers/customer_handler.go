@@ -100,8 +100,6 @@ func (h *CustomerHandler) CreateCustomer(c *gin.Context) {
 	customerType := c.PostForm("customer_type")
 	notes := c.PostForm("notes")
 
-	// Debug logging removed
-
 	customer := models.Customer{
 		CompanyName:  &companyName,
 		FirstName:    &firstName,
