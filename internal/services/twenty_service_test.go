@@ -112,211 +112,210 @@ func TestTwentyService_SaveConfig_TrailingSlash(t *testing.T) {
 	}
 }
 
-
 // ---------------------------------------------------------------------------
 // Webhook inbound / bidirectional sync tests
 // ---------------------------------------------------------------------------
 
 // helperEnableWebhook enables the Twenty integration and sets a webhook secret.
 func helperEnableWebhook(t *testing.T, db *gorm.DB, secret string) {
-t.Helper()
-db.Create(&models.AppSetting{Key: TwentyEnabledKey, Value: "true"})
-db.Create(&models.AppSetting{Key: TwentyAPIURLKey, Value: "https://twenty.example.com"})
-db.Create(&models.AppSetting{Key: TwentyAPIKeyKey, Value: "test-key"})
-db.Create(&models.AppSetting{Key: TwentyWebhookSecretKey, Value: secret})
+	t.Helper()
+	db.Create(&models.AppSetting{Key: TwentyEnabledKey, Value: "true"})
+	db.Create(&models.AppSetting{Key: TwentyAPIURLKey, Value: "https://twenty.example.com"})
+	db.Create(&models.AppSetting{Key: TwentyAPIKeyKey, Value: "test-key"})
+	db.Create(&models.AppSetting{Key: TwentyWebhookSecretKey, Value: secret})
 }
 
 func TestTwentyService_ApplyInboundWebhook_InvalidToken(t *testing.T) {
-db := newTestDB(t)
-svc := NewTwentyService(db)
-helperEnableWebhook(t, db, "correct-secret")
+	db := newTestDB(t)
+	svc := NewTwentyService(db)
+	helperEnableWebhook(t, db, "correct-secret")
 
-payload := []byte(`{"type":"company.updated","record":{"id":"abc"}}`)
-err := svc.ApplyInboundWebhook(payload, "wrong-token")
-if !errors.Is(err, ErrInvalidWebhookToken) {
-t.Errorf("expected ErrInvalidWebhookToken, got %v", err)
-}
+	payload := []byte(`{"type":"company.updated","record":{"id":"abc"}}`)
+	err := svc.ApplyInboundWebhook(payload, "wrong-token")
+	if !errors.Is(err, ErrInvalidWebhookToken) {
+		t.Errorf("expected ErrInvalidWebhookToken, got %v", err)
+	}
 }
 
 func TestTwentyService_ApplyInboundWebhook_DisabledSkipped(t *testing.T) {
-db := newTestDB(t)
-svc := NewTwentyService(db)
-// No config rows → integration is disabled; should return nil silently.
-payload := []byte(`{"type":"company.updated","record":{"id":"abc"}}`)
-if err := svc.ApplyInboundWebhook(payload, "anything"); err != nil {
-t.Errorf("expected nil when disabled, got %v", err)
-}
+	db := newTestDB(t)
+	svc := NewTwentyService(db)
+	// No config rows -> integration is disabled; should return nil silently.
+	payload := []byte(`{"type":"company.updated","record":{"id":"abc"}}`)
+	if err := svc.ApplyInboundWebhook(payload, "anything"); err != nil {
+		t.Errorf("expected nil when disabled, got %v", err)
+	}
 }
 
 func TestTwentyService_ApplyInboundWebhook_NoSecretConfigured(t *testing.T) {
-db := newTestDB(t)
-svc := NewTwentyService(db)
-// Enable without a webhook secret.
-db.Create(&models.AppSetting{Key: TwentyEnabledKey, Value: "true"})
-db.Create(&models.AppSetting{Key: TwentyAPIURLKey, Value: "https://twenty.example.com"})
-db.Create(&models.AppSetting{Key: TwentyAPIKeyKey, Value: "test-key"})
+	db := newTestDB(t)
+	svc := NewTwentyService(db)
+	// Enable without a webhook secret.
+	db.Create(&models.AppSetting{Key: TwentyEnabledKey, Value: "true"})
+	db.Create(&models.AppSetting{Key: TwentyAPIURLKey, Value: "https://twenty.example.com"})
+	db.Create(&models.AppSetting{Key: TwentyAPIKeyKey, Value: "test-key"})
 
-payload := []byte(`{"type":"company.updated","record":{"id":"abc"}}`)
-err := svc.ApplyInboundWebhook(payload, "")
-if err == nil || err.Error() != "webhook secret is not configured" {
-t.Errorf("expected 'webhook secret is not configured', got %v", err)
-}
+	payload := []byte(`{"type":"company.updated","record":{"id":"abc"}}`)
+	err := svc.ApplyInboundWebhook(payload, "")
+	if err == nil || err.Error() != "webhook secret is not configured" {
+		t.Errorf("expected 'webhook secret is not configured', got %v", err)
+	}
 }
 
 func TestTwentyService_ApplyInboundWebhook_NoMappingIgnored(t *testing.T) {
-db := newTestDB(t)
-svc := NewTwentyService(db)
-helperEnableWebhook(t, db, "test-secret")
+	db := newTestDB(t)
+	svc := NewTwentyService(db)
+	helperEnableWebhook(t, db, "test-secret")
 
-payload := []byte(`{"type":"company.updated","record":{"id":"unknown-id","name":"Acme"}}`)
-if err := svc.ApplyInboundWebhook(payload, "test-secret"); err != nil {
-t.Errorf("expected no error for unmapped record, got %v", err)
-}
+	payload := []byte(`{"type":"company.updated","record":{"id":"unknown-id","name":"Acme"}}`)
+	if err := svc.ApplyInboundWebhook(payload, "test-secret"); err != nil {
+		t.Errorf("expected no error for unmapped record, got %v", err)
+	}
 }
 
 func TestTwentyService_ApplyInboundWebhook_UpdatesCompany(t *testing.T) {
-db := newTestDB(t)
-db.AutoMigrate(&models.Customer{})
-svc := NewTwentyService(db)
-helperEnableWebhook(t, db, "test-secret")
+	db := newTestDB(t)
+	db.AutoMigrate(&models.Customer{})
+	svc := NewTwentyService(db)
+	helperEnableWebhook(t, db, "test-secret")
 
-companyName := "Old Name"
-city := "Old City"
-customer := models.Customer{CompanyName: &companyName, City: &city}
-db.Create(&customer)
+	companyName := "Old Name"
+	city := "Old City"
+	customer := models.Customer{CompanyName: &companyName, City: &city}
+	db.Create(&customer)
 
-twentyID := "twenty-company-001"
-mappingKey := fmt.Sprintf("twenty.company.%d", customer.CustomerID)
-db.Create(&models.AppSetting{Key: mappingKey, Value: twentyID})
+	twentyID := "twenty-company-001"
+	mappingKey := fmt.Sprintf("twenty.company.%d", customer.CustomerID)
+	db.Create(&models.AppSetting{Key: mappingKey, Value: twentyID})
 
-addr, _ := json.Marshal(map[string]string{
-"addressStreet1": "New St 1",
-"addressCity":    "New City",
-"addressCountry": "SE",
-})
-record := map[string]json.RawMessage{
-"id":      []byte(`"` + twentyID + `"`),
-"name":    []byte(`"New Name"`),
-"address": addr,
-}
-body, _ := json.Marshal(map[string]interface{}{
-"type":   "company.updated",
-"record": record,
-})
+	addr, _ := json.Marshal(map[string]string{
+		"addressStreet1": "New St 1",
+		"addressCity":    "New City",
+		"addressCountry": "SE",
+	})
+	record := map[string]json.RawMessage{
+		"id":      []byte(`"` + twentyID + `"`),
+		"name":    []byte(`"New Name"`),
+		"address": addr,
+	}
+	body, _ := json.Marshal(map[string]interface{}{
+		"type":   "company.updated",
+		"record": record,
+	})
 
-if err := svc.ApplyInboundWebhook(body, "test-secret"); err != nil {
-t.Fatalf("ApplyInboundWebhook: %v", err)
-}
+	if err := svc.ApplyInboundWebhook(body, "test-secret"); err != nil {
+		t.Fatalf("ApplyInboundWebhook: %v", err)
+	}
 
-var updated models.Customer
-db.First(&updated, customer.CustomerID)
+	var updated models.Customer
+	db.First(&updated, customer.CustomerID)
 
-if updated.CompanyName == nil || *updated.CompanyName != "New Name" {
-t.Errorf("CompanyName: got %v, want %q", updated.CompanyName, "New Name")
-}
-if updated.City == nil || *updated.City != "New City" {
-t.Errorf("City: got %v, want %q", updated.City, "New City")
-}
+	if updated.CompanyName == nil || *updated.CompanyName != "New Name" {
+		t.Errorf("CompanyName: got %v, want %q", updated.CompanyName, "New Name")
+	}
+	if updated.City == nil || *updated.City != "New City" {
+		t.Errorf("City: got %v, want %q", updated.City, "New City")
+	}
 }
 
 func TestTwentyService_ApplyInboundWebhook_EmptyFieldsNotOverwritten(t *testing.T) {
-db := newTestDB(t)
-db.AutoMigrate(&models.Customer{})
-svc := NewTwentyService(db)
-helperEnableWebhook(t, db, "test-secret")
+	db := newTestDB(t)
+	db.AutoMigrate(&models.Customer{})
+	svc := NewTwentyService(db)
+	helperEnableWebhook(t, db, "test-secret")
 
-companyName := "Original Name"
-city := "Original City"
-customer := models.Customer{CompanyName: &companyName, City: &city}
-db.Create(&customer)
+	companyName := "Original Name"
+	city := "Original City"
+	customer := models.Customer{CompanyName: &companyName, City: &city}
+	db.Create(&customer)
 
-twentyID := "twenty-company-002"
-mappingKey := fmt.Sprintf("twenty.company.%d", customer.CustomerID)
-db.Create(&models.AppSetting{Key: mappingKey, Value: twentyID})
+	twentyID := "twenty-company-002"
+	mappingKey := fmt.Sprintf("twenty.company.%d", customer.CustomerID)
+	db.Create(&models.AppSetting{Key: mappingKey, Value: twentyID})
 
-// Empty address fields must NOT overwrite existing customer data.
-addr, _ := json.Marshal(map[string]string{
-"addressStreet1": "",
-"addressCity":    "",
-})
-record := map[string]json.RawMessage{
-"id":      []byte(`"` + twentyID + `"`),
-"name":    []byte(`"Updated Name"`),
-"address": addr,
-}
-body, _ := json.Marshal(map[string]interface{}{
-"type":   "company.updated",
-"record": record,
-})
+	// Empty address fields must NOT overwrite existing customer data.
+	addr, _ := json.Marshal(map[string]string{
+		"addressStreet1": "",
+		"addressCity":    "",
+	})
+	record := map[string]json.RawMessage{
+		"id":      []byte(`"` + twentyID + `"`),
+		"name":    []byte(`"Updated Name"`),
+		"address": addr,
+	}
+	body, _ := json.Marshal(map[string]interface{}{
+		"type":   "company.updated",
+		"record": record,
+	})
 
-if err := svc.ApplyInboundWebhook(body, "test-secret"); err != nil {
-t.Fatalf("ApplyInboundWebhook: %v", err)
-}
+	if err := svc.ApplyInboundWebhook(body, "test-secret"); err != nil {
+		t.Fatalf("ApplyInboundWebhook: %v", err)
+	}
 
-var updated models.Customer
-db.First(&updated, customer.CustomerID)
+	var updated models.Customer
+	db.First(&updated, customer.CustomerID)
 
-if updated.CompanyName == nil || *updated.CompanyName != "Updated Name" {
-t.Errorf("CompanyName: got %v, want %q", updated.CompanyName, "Updated Name")
-}
-if updated.City == nil || *updated.City != "Original City" {
-t.Errorf("City should not be overwritten: got %v, want %q", updated.City, "Original City")
-}
+	if updated.CompanyName == nil || *updated.CompanyName != "Updated Name" {
+		t.Errorf("CompanyName: got %v, want %q", updated.CompanyName, "Updated Name")
+	}
+	if updated.City == nil || *updated.City != "Original City" {
+		t.Errorf("City should not be overwritten: got %v, want %q", updated.City, "Original City")
+	}
 }
 
 func TestTwentyService_ApplyInboundWebhook_UpdatesPerson(t *testing.T) {
-db := newTestDB(t)
-db.AutoMigrate(&models.Customer{})
-svc := NewTwentyService(db)
-helperEnableWebhook(t, db, "test-secret")
+	db := newTestDB(t)
+	db.AutoMigrate(&models.Customer{})
+	svc := NewTwentyService(db)
+	helperEnableWebhook(t, db, "test-secret")
 
-firstName := "Alice"
-lastName := "Smith"
-customer := models.Customer{FirstName: &firstName, LastName: &lastName}
-db.Create(&customer)
+	firstName := "Alice"
+	lastName := "Smith"
+	customer := models.Customer{FirstName: &firstName, LastName: &lastName}
+	db.Create(&customer)
 
-twentyID := "twenty-person-001"
-mappingKey := fmt.Sprintf("twenty.person.%d", customer.CustomerID)
-db.Create(&models.AppSetting{Key: mappingKey, Value: twentyID})
+	twentyID := "twenty-person-001"
+	mappingKey := fmt.Sprintf("twenty.person.%d", customer.CustomerID)
+	db.Create(&models.AppSetting{Key: mappingKey, Value: twentyID})
 
-emailsJSON, _ := json.Marshal(map[string]string{"primaryEmail": "alice@example.com"})
-phonesJSON, _ := json.Marshal(map[string]string{"primaryPhoneNumber": "+46701234567"})
-nameJSON, _ := json.Marshal(map[string]string{"firstName": "Alice", "lastName": "Updated"})
-record := map[string]json.RawMessage{
-"id":     []byte(`"` + twentyID + `"`),
-"name":   nameJSON,
-"emails": emailsJSON,
-"phones": phonesJSON,
-}
-body, _ := json.Marshal(map[string]interface{}{
-"type":   "person.updated",
-"record": record,
-})
+	emailsJSON, _ := json.Marshal(map[string]string{"primaryEmail": "alice@example.com"})
+	phonesJSON, _ := json.Marshal(map[string]string{"primaryPhoneNumber": "+46701234567"})
+	nameJSON, _ := json.Marshal(map[string]string{"firstName": "Alice", "lastName": "Updated"})
+	record := map[string]json.RawMessage{
+		"id":     []byte(`"` + twentyID + `"`),
+		"name":   nameJSON,
+		"emails": emailsJSON,
+		"phones": phonesJSON,
+	}
+	body, _ := json.Marshal(map[string]interface{}{
+		"type":   "person.updated",
+		"record": record,
+	})
 
-if err := svc.ApplyInboundWebhook(body, "test-secret"); err != nil {
-t.Fatalf("ApplyInboundWebhook: %v", err)
-}
+	if err := svc.ApplyInboundWebhook(body, "test-secret"); err != nil {
+		t.Fatalf("ApplyInboundWebhook: %v", err)
+	}
 
-var updated models.Customer
-db.First(&updated, customer.CustomerID)
+	var updated models.Customer
+	db.First(&updated, customer.CustomerID)
 
-if updated.LastName == nil || *updated.LastName != "Updated" {
-t.Errorf("LastName: got %v, want %q", updated.LastName, "Updated")
-}
-if updated.Email == nil || *updated.Email != "alice@example.com" {
-t.Errorf("Email: got %v, want %q", updated.Email, "alice@example.com")
-}
+	if updated.LastName == nil || *updated.LastName != "Updated" {
+		t.Errorf("LastName: got %v, want %q", updated.LastName, "Updated")
+	}
+	if updated.Email == nil || *updated.Email != "alice@example.com" {
+		t.Errorf("Email: got %v, want %q", updated.Email, "alice@example.com")
+	}
 }
 
 func TestTwentyService_ApplyInboundWebhook_UnknownType(t *testing.T) {
-db := newTestDB(t)
-svc := NewTwentyService(db)
-helperEnableWebhook(t, db, "test-secret")
+	db := newTestDB(t)
+	svc := NewTwentyService(db)
+	helperEnableWebhook(t, db, "test-secret")
 
-payload := []byte(`{"type":"opportunity.updated","record":{"id":"abc"}}`)
-if err := svc.ApplyInboundWebhook(payload, "test-secret"); err != nil {
-t.Errorf("expected no error for unsupported type, got %v", err)
-}
+	payload := []byte(`{"type":"opportunity.updated","record":{"id":"abc"}}`)
+	if err := svc.ApplyInboundWebhook(payload, "test-secret"); err != nil {
+		t.Errorf("expected no error for unsupported type, got %v", err)
+	}
 }
 
 // ---------------------------------------------------------------------------
