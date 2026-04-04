@@ -156,7 +156,8 @@
                             <input type="text" class="rc-input" id="webhookUrl" readonly
                                 style="font-family:var(--rc-font-mono,monospace);font-size:0.85rem;"
                                 value="">
-                            <button type="button" id="copyWebhookUrl" class="rc-btn rc-btn-secondary rc-btn-sm">
+                            <button type="button" id="copyWebhookUrl" class="rc-btn rc-btn-secondary rc-btn-sm"
+                                aria-label="Copy inbound webhook URL" title="Copy inbound webhook URL">
                                 <i class="bi bi-clipboard"></i>
                             </button>
                         </div>
@@ -248,21 +249,30 @@
         });
 
         // Toggle API key visibility.
-        setupPasswordToggle('apiKey', 'toggleApiKey', 'toggleApiKeyIcon');
-        setupPasswordToggle('webhookSecret', 'toggleWebhookSecret', 'toggleWebhookSecretIcon');
+        setupPasswordToggle('apiKey', 'toggleApiKey', 'toggleApiKeyIcon', 'API key');
+        setupPasswordToggle('webhookSecret', 'toggleWebhookSecret', 'toggleWebhookSecretIcon', 'webhook secret');
 
-        function setupPasswordToggle(inputId, btnId, iconId) {
+        function setupPasswordToggle(inputId, btnId, iconId, label) {
             var input = document.getElementById(inputId);
             var btn = document.getElementById(btnId);
             var icon = document.getElementById(iconId);
             if (!input || !btn) return;
+            btn.setAttribute('aria-pressed', 'false');
+            btn.setAttribute('aria-label', 'Show ' + label);
+            btn.setAttribute('title', 'Show ' + label);
             btn.addEventListener('click', function () {
                 if (input.type === 'password') {
                     input.type = 'text';
                     icon.className = 'bi bi-eye-slash';
+                    btn.setAttribute('aria-label', 'Hide ' + label);
+                    btn.setAttribute('title', 'Hide ' + label);
+                    btn.setAttribute('aria-pressed', 'true');
                 } else {
                     input.type = 'password';
                     icon.className = 'bi bi-eye';
+                    btn.setAttribute('aria-label', 'Show ' + label);
+                    btn.setAttribute('title', 'Show ' + label);
+                    btn.setAttribute('aria-pressed', 'false');
                 }
             });
         }
