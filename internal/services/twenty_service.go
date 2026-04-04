@@ -306,7 +306,6 @@ func (s *TwentyService) reverseCustomerIDLookup(twentyID, objectType string) (ui
 	var setting models.AppSetting
 	result := s.db.
 		Where("key LIKE ? AND value = ?", prefix+"%", twentyID).
-		Order("key ASC").
 		Limit(1).
 		Find(&setting)
 	if result.Error != nil {
