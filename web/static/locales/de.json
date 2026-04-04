@@ -81,51 +81,6 @@
     }
   },
   "jobs": {
-    "title": "Jobs",
-    "subtitle": "Manage your rental jobs",
-    "searchTitle": "Search Jobs",
-    "searchPlaceholder": "Search jobs...",
-    "table": {
-      "job": "Job",
-      "customer": "Customer",
-      "start": "Start",
-      "end": "End",
-      "status": "Status",
-      "devices": "Devices",
-      "revenue": "Revenue",
-      "actions": "Actions",
-      "product": "Product",
-      "quantity": "Quantity",
-      "available": "Available"
-    },
-    "noCategory": "No category",
-    "devicesLabel": "devices",
-    "emptyHelp": "Create your first job to get started.",
-    "jobId": "Job ID",
-    "jobCode": "Job Code",
-    "customer": "Customer",
-    "status": "Status",
-    "startDate": "Start Date",
-    "endDate": "End Date",
-    "devices": "Devices",
-    "price": "Price",
-    "createJob": "New Job",
-    "editJob": "Edit Job",
-    "deleteJob": "Delete Job",
-    "noJobs": "No jobs found",
-    "statuses": {
-      "pending": "Pending",
-      "confirmed": "Confirmed",
-      "in_progress": "In Progress",
-      "completed": "Completed",
-      "cancelled": "Cancelled"
-    }
-    ,
-    "selectedProducts": "Selected Products",
-    "noProductsSelected": "No products selected yet.",
-    "saveChanges": "Save Changes"
-  },
-  "jobs": {
     "filterCustomerPlaceholder": "Filter by customer...",
     "filterAllStatuses": "All Statuses",
     "filterAllCategories": "All Categories",
@@ -175,7 +130,6 @@
     "createUser": "Create User",
     "confirmPassword": "Confirm Password"
   },
-  
   "customers": {
     "title": "Customers",
     "subtitle": "Manage your customer data",
@@ -216,7 +170,6 @@
     "delete_error_prefix": "Error deleting customer: ",
     "error_saving": "Error saving customer: ",
     "error_creating": "Error creating customer: ",
-    "customerId": "Customer ID",
     "type_label": "Type",
     "contact_person": "Contact Person",
     "street": "Street",
@@ -340,25 +293,22 @@
     "forgotPassword": "Forgot Password?",
     "loginError": "Login failed",
     "loginSuccess": "Successfully signed in"
-  }
-  ,
+  },
   "navbar": {
     "brand_rental": "Rental",
     "brand_core": "Core",
     "tools": "Tools",
     "financial": "Finanzen",
     "file_pool": "Dateipool"
-  }
-
-  ,"login": {
+  },
+  "login": {
     "tagline": "The future of rental management",
     "secure_footer": "Secure login with encrypted passwords & passkeys",
     "signing_in": "Signing in...",
     "passkey_not_supported": "Passkeys are not supported in this browser",
     "auth_failed_prefix": "Authentication failed: "
-  }
-
-  ,"zones": {
+  },
+  "zones": {
     "title": "Storage Zones",
     "subtitle": "Organize your warehouse",
     "zoneId": "Zone ID",
@@ -446,8 +396,7 @@
     "productsSubtitle": "Manage product definitions and rental metadata.",
     "cablesTitle": "Cable Catalog",
     "cablesSubtitle": "Maintain cable types and assignments."
-  }
-,
+  },
   "documents": {
     "title": "Documents",
     "upload": "Upload Document",
@@ -537,8 +486,7 @@
     },
     "delete_error_prefix": "Error: ",
     "delete_failed": "Failed to delete document"
-    }
-,
+  },
   "financial": {
     "title": "Finanzberichte",
     "subtitle": "Umfassende Finanzanalyse und Berichtswesen",
@@ -613,7 +561,6 @@
     "expenseTracking": "Ausgabenverfolgung",
     "expenseTrackingDesc": "Geschäftsausgabenanalyse",
     "view": "Anzeigen",
-    "export": "Exportieren",
     "exportFormat": "Exportformat",
     "exportRange": "Zeitraum",
     "exportFormats": {
@@ -724,8 +671,7 @@
         "detailedReport": "Detaillierter Bericht"
       }
     }
-  }
-  ,
+  },
   "invoice": {
     "settings": {
       "title": "Invoice Settings",
@@ -820,8 +766,7 @@
       "job_reference": "Job Reference:",
       "payment_terms": "Payment Terms:"
     }
-    }
-  ,
+  },
   "user": {
     "menu": {
       "personal": "Personal",
@@ -842,8 +787,7 @@
     "time": "Time:",
     "confirm_auto_retry": "Would you like to automatically retry loading the page?",
     "page_title": "Error {{code}} - RentalCore"
-  }
-  ,
+  },
   "invoice_detail": {
     "modals": {
       "update_status": {
@@ -885,8 +829,7 @@
   },
   "footer": {
     "copyright": "© 2025 RentalCore. All rights reserved."
-  }
-  ,
+  },
   "invoice_templates": {
     "title": "Invoice Templates",
     "new": "New Template",
@@ -930,12 +873,13 @@
     "save_personal": "Save Personal Information",
     "add_passkey": "Add New Passkey",
     "save_preferences": "Save Preferences"
-  }
-,
+  },
   "productTree": {
     "loading": "Products are loading…",
     "empty": "No products found.",
-    "noProductsAvailable": "No products available for this timeframe."
+    "noProductsAvailable": "No products available for this timeframe.",
+    "searchPlaceholder": "Produkte suchen…",
+    "noSearchResults": "Keine Produkte entsprechen Ihrer Suche."
   },
   "product": {
     "missing_id": "Product ID missing, selection unavailable",

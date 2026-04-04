@@ -317,6 +317,9 @@
                                             </button>
                                         </div>
                                     </div>
+                                    <div style="padding: var(--space-sm) var(--space-md);">
+                                        <input type="text" id="productSearchInput" class="rc-input rc-input-sm" data-i18n-attr="placeholder:productTree.searchPlaceholder" placeholder="Search products…" style="width: 100%;" autocomplete="off">
+                                    </div>
                                     <div class="rc-flex rc-flex-center rc-py-lg" id="productTreeLoading">
                                         <i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite; margin-right: var(--space-sm);"></i>
                                         Loading products...
@@ -1730,6 +1733,18 @@
             return stats;
         }
 
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
         function collectTreeStats(tree) {
             if (!Array.isArray(tree)) {
                 return { products: 0, available: 0, total: 0 };
@@ -1800,10 +1815,11 @@
 
             if (!root) return;
 
-            root.innerHTML = '';
-            if (loading) loading.style.display = 'none';
-
-                if (!Array.isArray(treeData) || treeData.length === 0) {
+            // If tree hasn't been loaded yet, don't disturb the loading state
+            if (!Array.isArray(treeData) || treeData.length === 0) {
+                if (loading && loading.style.display !== 'none') return;
+                root.innerHTML = '';
+                if (loading) loading.style.display = 'none';
                 if (empty) empty.style.display = 'block';
                 root.style.display = 'none';
                 if (summary) summary.textContent = (window.t ? window.t('productTree.empty') : 'No products found.');
@@ -1814,19 +1830,98 @@
                 return;
             }
 
-            if (empty) empty.style.display = 'none';
+            root.innerHTML = '';
+            if (loading) loading.style.display = 'none';
+
+            const searchInput = document.getElementById('productSearchInput');
+            const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+            // Compute filtered data and build a search-driven expansion set without
+            // permanently mutating the user's expansion state. The user's state is
+            // restored after rendering so that clearing the search returns to the
+            // pre-search expand/collapse positions.
+            const savedExpanded = productTreeExpanded;
+            let filteredData;
+            if (searchTerm) {
+                const { result, searchExpanded } = filterTreeData(treeData, searchTerm);
+                filteredData = result;
+                productTreeExpanded = new Set([...savedExpanded, ...searchExpanded]);
+            } else {
+                filteredData = treeData;
+            }
+
+            if (filteredData.length === 0) {
+                productTreeExpanded = savedExpanded;
+                if (empty) {
+                    empty.style.display = 'block';
+                    empty.innerHTML = `<i class="bi bi-search"></i> ${window.t ? window.t('productTree.noSearchResults') : 'No products match your search.'}`;
+                }
+                root.style.display = 'none';
+                const unfiltered = collectTreeStats(treeData);
+                updateProductTreeSummary(unfiltered, treeData.length);
+                updateSelectedProductsSummary();
+                updateHiddenProductInput();
+                validateProductSelections();
+                return;
+            }
+
+            if (empty) {
+                empty.style.display = 'none';
+                empty.innerHTML = `<i class="bi bi-info-circle"></i> ${window.t ? window.t('productTree.empty') : 'No products found.'}`;
+            }
             root.style.display = 'flex';
 
-            const totals = collectTreeStats(treeData);
-            updateProductTreeSummary(totals, treeData.length);
+            const totals = collectTreeStats(filteredData);
+            updateProductTreeSummary(totals, filteredData.length);
 
-            treeData.forEach(category => {
+            filteredData.forEach(category => {
                 root.appendChild(renderCategoryNode(category, 'cat-' + category.id));
             });
+
+            // Restore the user's expansion state; click handlers on the rendered nodes
+            // reference productTreeExpanded at fire time, so they will update the
+            // user's set (not the temporary merged one).
+            productTreeExpanded = savedExpanded;
 
             updateSelectedProductsSummary();
             updateHiddenProductInput();
             validateProductSelections();
+        }
+
+        function filterTreeData(treeData, term) {
+            const result = [];
+            const searchExpanded = new Set();
+            treeData.forEach(category => {
+                const filteredProducts = (category.products || []).filter(p => p.name && p.name.toLowerCase().includes(term));
+                const filteredSubs = (category.subcategories || []).reduce((acc, sub) => {
+                    const subProducts = (sub.products || []).filter(p => p.name && p.name.toLowerCase().includes(term));
+                    const filteredSubbiers = (sub.subbiercategories || []).reduce((acc2, subbier) => {
+                        const subbierProducts = (subbier.products || []).filter(p => p.name && p.name.toLowerCase().includes(term));
+                        if (subbierProducts.length > 0) {
+                            acc2.push(Object.assign({}, subbier, { products: subbierProducts }));
+                        }
+                        return acc2;
+                    }, []);
+                    if (subProducts.length > 0 || filteredSubbiers.length > 0) {
+                        acc.push(Object.assign({}, sub, { products: subProducts, subbiercategories: filteredSubbiers }));
+                    }
+                    return acc;
+                }, []);
+                if (filteredProducts.length > 0 || filteredSubs.length > 0) {
+                    const nodeId = 'cat-' + category.id;
+                    searchExpanded.add(nodeId);
+                    filteredSubs.forEach(sub => {
+                        searchExpanded.add('sub-' + sub.id);
+                        if (sub.products && sub.products.length > 0) searchExpanded.add(`sub-${sub.id}-products`);
+                        (sub.subbiercategories || []).forEach(subbier => {
+                            if (subbier.products && subbier.products.length > 0) searchExpanded.add('subbier-' + subbier.id);
+                        });
+                    });
+                    if (filteredProducts.length > 0) searchExpanded.add(`cat-${category.id}-products`);
+                    result.push(Object.assign({}, category, { products: filteredProducts, subcategories: filteredSubs }));
+                }
+            });
+            return { result, searchExpanded };
         }
 
         function renderCategoryNode(category, nodeId) {
@@ -2498,6 +2593,15 @@
                 }
                 if (collapseButton) {
                     collapseButton.addEventListener('click', () => toggleProductTreeNodes(false));
+                }
+                const searchInput = document.getElementById('productSearchInput');
+                if (searchInput) {
+                    const debouncedSearch = debounce(() => {
+                        if (productTreeData && productTreeData.length > 0) {
+                            renderProductTree(productTreeData);
+                        }
+                    }, 200);
+                    searchInput.addEventListener('input', debouncedSearch);
                 }
                 productTreeControlsBound = true;
             }

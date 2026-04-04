@@ -24,6 +24,10 @@ type DeviceCache struct {
 	mutex     sync.RWMutex
 }
 
+// uncategorizedCategoryID is a sentinel ID used for the virtual "Uncategorized" category
+// in the product tree. It must not collide with any real category ID (which starts at 1).
+const uncategorizedCategoryID uint = 0
+
 // Tree cache for optimized tree data
 type TreeCache struct {
 	data      []TreeCategory
@@ -1166,6 +1170,9 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 	}
 
 	// 4. Distribute Products
+	var uncategorizedProducts []TreeProduct
+	var uncategorizedDeviceCount, uncategorizedAvailableCount int
+
 	for _, p := range products {
 		// Calculate stats
 		stats := availability[p.ProductID]
@@ -1205,24 +1212,33 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 		}
 
 		// Attach to parent
+		attached := false
 		if p.SubbiercategoryID != nil && *p.SubbiercategoryID != "" {
 			if parent, ok := subbiercategoryMap[*p.SubbiercategoryID]; ok {
 				parent.Products = append(parent.Products, tp)
 				parent.DeviceCount += deviceCount
 				parent.AvailableCount += availableCount
+				attached = true
 			}
 		} else if p.SubcategoryID != nil && *p.SubcategoryID != "" {
 			if parent, ok := subcategoryMap[*p.SubcategoryID]; ok {
 				parent.Products = append(parent.Products, tp)
 				parent.DeviceCount += deviceCount
 				parent.AvailableCount += availableCount
+				attached = true
 			}
 		} else if p.CategoryID != nil {
 			if parent, ok := categoryMap[*p.CategoryID]; ok {
 				parent.Products = append(parent.Products, tp)
 				parent.DeviceCount += deviceCount
 				parent.AvailableCount += availableCount
+				attached = true
 			}
+		}
+		if !attached {
+			uncategorizedProducts = append(uncategorizedProducts, tp)
+			uncategorizedDeviceCount += deviceCount
+			uncategorizedAvailableCount += availableCount
 		}
 	}
 
@@ -1321,6 +1337,22 @@ func (h *DeviceHandler) buildProductTreeData(startDate, endDate *time.Time, excl
 	sort.Slice(treeCategories, func(i, j int) bool {
 		return strings.ToLower(treeCategories[i].Name) < strings.ToLower(treeCategories[j].Name)
 	})
+
+	// Append uncategorized products as a virtual category at the end
+	if len(uncategorizedProducts) > 0 {
+		sort.Slice(uncategorizedProducts, func(i, j int) bool {
+			return strings.ToLower(uncategorizedProducts[i].Name) < strings.ToLower(uncategorizedProducts[j].Name)
+		})
+		treeCategories = append(treeCategories, TreeCategory{
+			ID:             uncategorizedCategoryID,
+			Name:           "Uncategorized",
+			DeviceCount:    uncategorizedDeviceCount,
+			AvailableCount: uncategorizedAvailableCount,
+			DirectDevices:  []TreeDevice{},
+			Products:       uncategorizedProducts,
+			Subcategories:  []TreeSubcategory{},
+		})
+	}
 
 	fmt.Printf("🌳 Returning %d tree categories\n", len(treeCategories))
 	for i, tc := range treeCategories {
