@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"go-barcode-webapp/internal/models"
@@ -44,7 +43,6 @@ var ErrInvalidWebhookToken = errors.New("invalid webhook token")
 // All remote calls are fire-and-forget (goroutine) so they never block the request path.
 type TwentyService struct {
 	db         *gorm.DB
-	mu         sync.RWMutex
 	httpClient *http.Client
 	syncSem    chan struct{} // bounded semaphore for outbound sync goroutines
 }
