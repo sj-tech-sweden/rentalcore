@@ -951,6 +951,18 @@
     },
     "save_settings": "Save Settings",
     "test_connection": "Test Connection",
-    "how_it_works": "How It Works"
+    "how_it_works": "How It Works",
+    "btn": {
+      "saving": "Saving\u2026",
+      "testing": "Testing\u2026"
+    },
+    "alert": {
+      "save_success": "Settings saved successfully!",
+      "save_failed": "Failed to save settings.",
+      "test_success": "Connection successful!",
+      "test_failed": "Connection failed",
+      "network_error": "Network error",
+      "unknown_error": "Unknown error"
+    }
   }
 }

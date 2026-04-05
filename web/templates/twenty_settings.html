@@ -135,7 +135,7 @@
                             <label class="rc-label" for="webhookSecret" data-i18n="twenty.field.webhook_secret">Webhook Secret Token</label>
                             <div style="position:relative;">
                                 <input type="password" class="rc-input" id="webhookSecret" name="webhookSecret"
-                                    placeholder="{{if and .config .config.WebhookSecret}}Secret configured – leave blank to keep{{else}}Optional token for webhook verification{{end}}"
+                                    placeholder="{{if and .config .config.WebhookSecret}}Secret configured – leave blank to keep{{else}}Required when integration is enabled{{end}}"
                                     autocomplete="off">
                                 <button type="button" id="toggleWebhookSecret" aria-label="Show webhook secret" title="Show webhook secret"
                                     style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--rc-text-muted);">
@@ -143,7 +143,7 @@
                                 </button>
                             </div>
                             <small class="rc-text-muted">
-                                Set a secret token here and configure the same token as
+                                Required when the integration is enabled. Set a secret token here and configure the same token as
                                 <em>X-Twenty-Webhook-Token</em> header in your Twenty webhook settings.
                                 Leave blank to keep the existing secret.
                             </small>
@@ -293,8 +293,9 @@
         document.getElementById('twentySettingsForm').addEventListener('submit', function (e) {
             e.preventDefault();
             var saveBtn = document.getElementById('saveBtn');
+            var saveBtnHTML = saveBtn.innerHTML;
             saveBtn.disabled = true;
-            saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+            saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + window.t('twenty.btn.saving', 'Saving\u2026');
 
             var payload = {
                 enabled:       document.getElementById('enabledToggle').checked,
@@ -309,47 +310,58 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                var status = r.status;
+                return r.text().then(function (text) {
+                    try { return JSON.parse(text); } catch (_) { throw new Error('HTTP ' + status); }
+                });
+            })
             .then(function (data) {
                 if (data.success) {
-                    showAlert('Settings saved successfully!', 'success');
+                    showAlert(window.t('twenty.alert.save_success', 'Settings saved successfully!'), 'success');
                 } else {
-                    showAlert(data.error || 'Failed to save settings.', 'danger');
+                    showAlert(data.error || window.t('twenty.alert.save_failed', 'Failed to save settings.'), 'danger');
                 }
             })
             .catch(function (err) {
-                showAlert('Network error: ' + err.message, 'danger');
+                showAlert(window.t('twenty.alert.network_error', 'Network error') + ': ' + err.message, 'danger');
             })
             .finally(function () {
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = '<i class="bi bi-floppy"></i> Save Settings';
+                saveBtn.innerHTML = saveBtnHTML;
             });
         });
 
         // Test connection.
         document.getElementById('testBtn').addEventListener('click', function () {
             var testBtn = document.getElementById('testBtn');
+            var testBtnHTML = testBtn.innerHTML;
             testBtn.disabled = true;
-            testBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Testing...';
+            testBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + window.t('twenty.btn.testing', 'Testing\u2026');
 
             fetch('/api/v1/admin/integrations/twenty/test', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             })
-            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                var status = r.status;
+                return r.text().then(function (text) {
+                    try { return JSON.parse(text); } catch (_) { throw new Error('HTTP ' + status); }
+                });
+            })
             .then(function (data) {
                 if (data.success) {
-                    showAlert(data.message || 'Connection successful!', 'success');
+                    showAlert(data.message || window.t('twenty.alert.test_success', 'Connection successful!'), 'success');
                 } else {
-                    showAlert('Connection failed: ' + (data.error || 'Unknown error'), 'danger');
+                    showAlert(window.t('twenty.alert.test_failed', 'Connection failed') + ': ' + (data.error || window.t('twenty.alert.unknown_error', 'Unknown error')), 'danger');
                 }
             })
             .catch(function (err) {
-                showAlert('Network error: ' + err.message, 'danger');
+                showAlert(window.t('twenty.alert.network_error', 'Network error') + ': ' + err.message, 'danger');
             })
             .finally(function () {
                 testBtn.disabled = false;
-                testBtn.innerHTML = '<i class="bi bi-lightning-charge"></i> Test Connection';
+                testBtn.innerHTML = testBtnHTML;
             });
         });
     })();

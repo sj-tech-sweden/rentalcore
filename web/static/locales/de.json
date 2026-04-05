@@ -914,6 +914,18 @@
     },
     "save_settings": "Einstellungen speichern",
     "test_connection": "Verbindung testen",
-    "how_it_works": "So funktioniert es"
+    "how_it_works": "So funktioniert es",
+    "btn": {
+      "saving": "Wird gespeichert\u2026",
+      "testing": "Wird getestet\u2026"
+    },
+    "alert": {
+      "save_success": "Einstellungen erfolgreich gespeichert!",
+      "save_failed": "Einstellungen konnten nicht gespeichert werden.",
+      "test_success": "Verbindung erfolgreich!",
+      "test_failed": "Verbindung fehlgeschlagen",
+      "network_error": "Netzwerkfehler",
+      "unknown_error": "Unbekannter Fehler"
+    }
   }
 }

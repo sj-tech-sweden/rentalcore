@@ -183,6 +183,10 @@ func (h *TwentyHandler) UpdateTwentySettings(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse{Error: "API key is required when enabling the Twenty integration"})
 		return
 	}
+	if req.Enabled && req.WebhookSecret == "" {
+		c.JSON(http.StatusBadRequest, errorResponse{Error: "webhook secret is required when enabling the Twenty integration"})
+		return
+	}
 
 	cfg := services.TwentyConfig{
 		Enabled:       req.Enabled,
