@@ -315,6 +315,8 @@
     }
 
     const appCurrencySymbol = (window.__APP_CONFIG__ && window.__APP_CONFIG__.currencySymbol) || '{{currencySymbol}}';
+    // Pre-escape the currency symbol for safe insertion into innerHTML strings.
+    const appCurrencySymbolHtml = appCurrencySymbol.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
     function toLocalDateStr(d) {
         if (!d) return '';
@@ -382,7 +384,7 @@
                         </div>
                         <div class="rc-form-group">
                             <label class="rc-label">${_t ? _t('jobs.revenue') : 'Revenue'}</label>
-                            <div class="rc-text-lg">${appCurrencySymbol}${(jobData.revenue || 0).toFixed(2)}</div>
+                            <div class="rc-text-lg">${appCurrencySymbolHtml}${(jobData.revenue || 0).toFixed(2)}</div>
                         </div>
                         <div class="rc-form-group">
                             <label class="rc-label">${_t ? _t('jobs.devices_label') : 'Devices'}</label>
@@ -394,8 +396,8 @@
                         </div>
                         ${jobData.startDate ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.startDate') : 'Start Date') + '</label><div><i class="bi bi-calendar"></i> ' + toLocalDateStr(jobData.startDate) + '</div></div>' : ''}
                         ${jobData.endDate ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.endDate') : 'End Date') + '</label><div><i class="bi bi-calendar"></i> ' + toLocalDateStr(jobData.endDate) + '</div></div>' : ''}
-                        ${jobData.discount > 0 ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.discount') : 'Discount') + '</label><div>' + jobData.discount + ' ' + (jobData.discount_type === 'percent' ? '%' : appCurrencySymbol) + '</div></div>' : ''}
-                        ${jobData.finalRevenue ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.finalRevenue') : 'Final Revenue') + '</label><div class="rc-text-lg">' + appCurrencySymbol + jobData.finalRevenue.toFixed(2) + '</div></div>' : ''}
+                        ${jobData.discount > 0 ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.discount') : 'Discount') + '</label><div>' + jobData.discount + ' ' + (jobData.discount_type === 'percent' ? '%' : appCurrencySymbolHtml) + '</div></div>' : ''}
+                        ${jobData.finalRevenue ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.finalRevenue') : 'Final Revenue') + '</label><div class="rc-text-lg">' + appCurrencySymbolHtml + jobData.finalRevenue.toFixed(2) + '</div></div>' : ''}
                     </div>
 
                     <!-- Job History Section -->
@@ -724,7 +726,7 @@
                             <br><small class="rc-text-muted">${escapeHtml(deviceId || 'Unknown ID')}</small>
                         </div>
                         <div class="rc-text-sm rc-text-secondary" title="${customPrice ? 'Custom price set for this device' : 'Price from product'}">
-                            ${appCurrencySymbol}${priceLabel}${priceNote}
+                            ${appCurrencySymbolHtml}${priceLabel}${priceNote}
                         </div>
                     </div>
                 `;
@@ -852,7 +854,7 @@
                             </select>
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label">Revenue (${appCurrencySymbol})</label>
+                            <label class="rc-label">Revenue (${appCurrencySymbolHtml})</label>
                             <input type="number" class="rc-input" name="revenue" value="${job.revenue || ''}" step="0.01" min="0">
                         </div>
                         <div class="rc-form-group">
@@ -870,7 +872,7 @@
                         <div class="rc-form-group">
                             <label class="rc-label">Discount Type</label>
                             <select class="rc-select" name="discount_type">
-                                <option value="amount" ${job.discount_type === 'amount' ? 'selected' : ''}>Amount (${appCurrencySymbol})</option>
+                                <option value="amount" ${job.discount_type === 'amount' ? 'selected' : ''}>Amount (${appCurrencySymbolHtml})</option>
                                 <option value="percent" ${job.discount_type === 'percent' ? 'selected' : ''}>Percentage (%)</option>
                             </select>
                         </div>
@@ -2794,7 +2796,7 @@
                                        step="0.01"
                                        onchange="updateDevicePrice(${jobID}, '${deviceID}', this.value)"
                                        placeholder="${price.toFixed(2)}">
-                                <span class="rc-text-xs">${appCurrencySymbol}/day</span>
+                                <span class="rc-text-xs">${appCurrencySymbolHtml}/day</span>
                                 <button type="button" onclick="removeDeviceFromEditJob(${jobID}, '${deviceID}')"
                                         class="rc-btn rc-btn-outline rc-btn-sm"
                                         style="padding: 2px 6px;"
@@ -3074,7 +3076,7 @@
                                        step="0.01"
                                        onchange="updateDevicePrice(${jobID}, '${device.device?.deviceID}', this.value)"
                                        placeholder="0.00">
-                                <span class="rc-text-sm">${appCurrencySymbol}</span>
+                                <span class="rc-text-sm">${appCurrencySymbolHtml}</span>
                             </div>
                         </div>
                     `;
@@ -3153,7 +3155,7 @@
                     const revenueCell = jobRow.querySelector('td:nth-child(8)'); // Revenue column
                     if (revenueCell) {
                         const newRevenue = data.finalRevenue || data.revenue || 0;
-                        revenueCell.innerHTML = `<span class="rc-text-mono">${appCurrencySymbol}${newRevenue.toFixed(2)}</span>`;
+                        revenueCell.innerHTML = `<span class="rc-text-mono">${appCurrencySymbolHtml}${newRevenue.toFixed(2)}</span>`;
                     }
                 }
                 

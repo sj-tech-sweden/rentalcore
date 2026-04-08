@@ -123,7 +123,7 @@ func TestGetCurrencySymbol_NoCacheEntry(t *testing.T) {
 // from the DB when the cache is cold and returns the stored symbol.
 func TestGetCurrencySymbol_DBRecord(t *testing.T) {
 	db := newTestDB(t)
-	db.Create(&models.AppSetting{Key: AppCurrencyKey, Value: "$"})
+	db.Create(&models.AppSetting{Scope: "global", Key: AppCurrencyKey, Value: "$"})
 
 	s := NewSettingsService(db)
 	got := s.GetCurrencySymbol()
@@ -161,7 +161,7 @@ func TestGetCurrencySymbol_TransientError(t *testing.T) {
 	db := newTestDB(t)
 
 	// Seed a value and warm the cache.
-	db.Create(&models.AppSetting{Key: AppCurrencyKey, Value: "£"})
+	db.Create(&models.AppSetting{Scope: "global", Key: AppCurrencyKey, Value: "£"})
 	s := NewSettingsService(db)
 	_ = s.GetCurrencySymbol() // warm the cache
 
@@ -203,7 +203,7 @@ func TestUpdateCurrencySymbol_Upsert_Insert(t *testing.T) {
 // updates an existing row without creating duplicates.
 func TestUpdateCurrencySymbol_Upsert_Update(t *testing.T) {
 	db := newTestDB(t)
-	db.Create(&models.AppSetting{Key: AppCurrencyKey, Value: "€"})
+	db.Create(&models.AppSetting{Scope: "global", Key: AppCurrencyKey, Value: "€"})
 	s := NewSettingsService(db)
 
 	if err := s.UpdateCurrencySymbol("CHF"); err != nil {
@@ -211,7 +211,7 @@ func TestUpdateCurrencySymbol_Upsert_Update(t *testing.T) {
 	}
 
 	var row models.AppSetting
-	if err := db.Where("key = ?", AppCurrencyKey).First(&row).Error; err != nil {
+	if err := db.Where("scope = ? AND key = ?", "global", AppCurrencyKey).First(&row).Error; err != nil {
 		t.Fatalf("DB read after upsert: %v", err)
 	}
 	// Value is stored as JSON {"symbol":"..."} by UpdateCurrencySymbol.
@@ -222,7 +222,7 @@ func TestUpdateCurrencySymbol_Upsert_Update(t *testing.T) {
 
 	// Confirm only one row exists.
 	var count int64
-	db.Model(&models.AppSetting{}).Where("key = ?", AppCurrencyKey).Count(&count)
+	db.Model(&models.AppSetting{}).Where("scope = ? AND key = ?", "global", AppCurrencyKey).Count(&count)
 	if count != 1 {
 		t.Errorf("row count = %d, want 1 (no duplicates)", count)
 	}
@@ -256,7 +256,7 @@ func TestUpdateCurrencySymbol_CacheRefresh(t *testing.T) {
 // refreshed from the DB when GetCurrencySymbol is called again.
 func TestGetCurrencySymbol_CacheRefreshedAfterExpiry(t *testing.T) {
 	db := newTestDB(t)
-	db.Create(&models.AppSetting{Key: AppCurrencyKey, Value: "zł"})
+	db.Create(&models.AppSetting{Scope: "global", Key: AppCurrencyKey, Value: "zł"})
 
 	// Create service and pre-populate with an expired cache entry for a different symbol.
 	s := &SettingsService{

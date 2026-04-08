@@ -89,7 +89,7 @@ type TwentyConfig struct {
 func (s *TwentyService) GetConfig() TwentyConfig {
 	keys := []string{TwentyEnabledKey, TwentyAPIURLKey, TwentyAPIKeyKey, TwentyWebhookSecretKey, TwentyCurrencyCodeKey}
 	var settings []models.AppSetting
-	if result := s.db.Where("key IN ?", keys).Find(&settings); result.Error != nil {
+	if result := s.db.Where("scope = ? AND key IN ?", "global", keys).Find(&settings); result.Error != nil {
 		log.Printf("TwentyService: failed to load configuration from app_settings: %v", result.Error)
 	}
 
@@ -340,7 +340,7 @@ func (s *TwentyService) reverseCustomerIDLookup(twentyID, objectType string) (ui
 	prefix := "twenty." + objectType + "."
 	var setting models.AppSetting
 	result := s.db.
-		Where("key LIKE ? AND value = ?", prefix+"%", twentyID).
+		Where("scope = ? AND key LIKE ? AND value = ?", "global", prefix+"%", twentyID).
 		Limit(1).
 		Find(&setting)
 	if result.Error != nil {
@@ -498,7 +498,7 @@ func (s *TwentyService) execGQL(cfg TwentyConfig, query string, variables map[st
 // It returns ("", nil) when no mapping exists yet, and ("", err) on unexpected DB errors.
 func (s *TwentyService) storedID(settingsKey string) (string, error) {
 	var setting models.AppSetting
-	if err := s.db.Where("key = ?", settingsKey).First(&setting).Error; err != nil {
+	if err := s.db.Where("scope = ? AND key = ?", "global", settingsKey).First(&setting).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", nil
 		}
@@ -509,9 +509,9 @@ func (s *TwentyService) storedID(settingsKey string) (string, error) {
 
 // storeID persists a Twenty object ID mapping.
 func (s *TwentyService) storeID(settingsKey, twentyID string) {
-	row := models.AppSetting{Key: settingsKey, Value: twentyID}
+	row := models.AppSetting{Scope: "global", Key: settingsKey, Value: twentyID}
 	if err := s.db.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "key"}},
+		Columns:   []clause.Column{{Name: "scope"}, {Name: "key"}},
 		DoUpdates: clause.Assignments(map[string]interface{}{"value": twentyID, "updated_at": time.Now()}),
 	}).Create(&row).Error; err != nil {
 		log.Printf("TwentyService: failed to store ID mapping %q: %v", settingsKey, err)

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -104,6 +105,7 @@ func (s *SettingsService) readCurrencyFromDB() (string, bool) {
 // UpdateCurrencySymbol persists a new currency symbol and invalidates the cache.
 // The value is written to scope='global' in the JSON format {"symbol":"..."} so
 // that WarehouseCore can also read it via the same shared table.
+// Uses a single atomic upsert to avoid races under concurrent writes.
 func (s *SettingsService) UpdateCurrencySymbol(symbol string) error {
 	jsonBytes, err := json.Marshal(map[string]string{"symbol": symbol})
 	if err != nil {
@@ -111,25 +113,15 @@ func (s *SettingsService) UpdateCurrencySymbol(symbol string) error {
 	}
 	jsonValue := string(jsonBytes)
 
-	err = s.db.Transaction(func(tx *gorm.DB) error {
-		var setting models.AppSetting
-		err := tx.Where("scope = ? AND key = ?", "global", AppCurrencyKey).First(&setting).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			setting = models.AppSetting{
-				Scope: "global",
-				Key:   AppCurrencyKey,
-				Value: jsonValue,
-			}
-			return tx.Create(&setting).Error
-		} else if err != nil {
-			return fmt.Errorf("failed to look up currency symbol: %w", err)
-		}
-		return tx.Model(&setting).Updates(map[string]interface{}{
-			"value":      jsonValue,
-			"updated_at": time.Now(),
-		}).Error
-	})
-	if err != nil {
+	setting := models.AppSetting{
+		Scope: "global",
+		Key:   AppCurrencyKey,
+		Value: jsonValue,
+	}
+	if err := s.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "scope"}, {Name: "key"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{"value": jsonValue, "updated_at": time.Now()}),
+	}).Create(&setting).Error; err != nil {
 		return fmt.Errorf("failed to save currency symbol: %w", err)
 	}
 

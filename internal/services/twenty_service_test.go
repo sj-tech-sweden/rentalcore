@@ -93,7 +93,7 @@ func TestTwentyService_SaveConfig_Upsert(t *testing.T) {
 	}
 
 	var count int64
-	db.Model(&models.AppSetting{}).Where("key = ?", TwentyEnabledKey).Count(&count)
+	db.Model(&models.AppSetting{}).Where("scope = ? AND key = ?", "global", TwentyEnabledKey).Count(&count)
 	if count != 1 {
 		t.Errorf("expected 1 row for %q, got %d", TwentyEnabledKey, count)
 	}
@@ -119,10 +119,10 @@ func TestTwentyService_SaveConfig_TrailingSlash(t *testing.T) {
 // helperEnableWebhook enables the Twenty integration and sets a webhook secret.
 func helperEnableWebhook(t *testing.T, db *gorm.DB, secret string) {
 	t.Helper()
-	db.Create(&models.AppSetting{Key: TwentyEnabledKey, Value: "true"})
-	db.Create(&models.AppSetting{Key: TwentyAPIURLKey, Value: "https://twenty.example.com"})
-	db.Create(&models.AppSetting{Key: TwentyAPIKeyKey, Value: "test-key"})
-	db.Create(&models.AppSetting{Key: TwentyWebhookSecretKey, Value: secret})
+	db.Create(&models.AppSetting{Scope: "global", Key: TwentyEnabledKey, Value: "true"})
+	db.Create(&models.AppSetting{Scope: "global", Key: TwentyAPIURLKey, Value: "https://twenty.example.com"})
+	db.Create(&models.AppSetting{Scope: "global", Key: TwentyAPIKeyKey, Value: "test-key"})
+	db.Create(&models.AppSetting{Scope: "global", Key: TwentyWebhookSecretKey, Value: secret})
 }
 
 func TestTwentyService_ApplyInboundWebhook_InvalidToken(t *testing.T) {
@@ -151,9 +151,9 @@ func TestTwentyService_ApplyInboundWebhook_NoSecretConfigured(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewTwentyService(db)
 	// Enable without a webhook secret.
-	db.Create(&models.AppSetting{Key: TwentyEnabledKey, Value: "true"})
-	db.Create(&models.AppSetting{Key: TwentyAPIURLKey, Value: "https://twenty.example.com"})
-	db.Create(&models.AppSetting{Key: TwentyAPIKeyKey, Value: "test-key"})
+	db.Create(&models.AppSetting{Scope: "global", Key: TwentyEnabledKey, Value: "true"})
+	db.Create(&models.AppSetting{Scope: "global", Key: TwentyAPIURLKey, Value: "https://twenty.example.com"})
+	db.Create(&models.AppSetting{Scope: "global", Key: TwentyAPIKeyKey, Value: "test-key"})
 
 	payload := []byte(`{"type":"company.updated","record":{"id":"abc"}}`)
 	err := svc.ApplyInboundWebhook(payload, "")
@@ -186,7 +186,7 @@ func TestTwentyService_ApplyInboundWebhook_UpdatesCompany(t *testing.T) {
 
 	twentyID := "twenty-company-001"
 	mappingKey := fmt.Sprintf("twenty.company.%d", customer.CustomerID)
-	db.Create(&models.AppSetting{Key: mappingKey, Value: twentyID})
+	db.Create(&models.AppSetting{Scope: "global", Key: mappingKey, Value: twentyID})
 
 	addr, _ := json.Marshal(map[string]string{
 		"addressStreet1": "New St 1",
@@ -231,7 +231,7 @@ func TestTwentyService_ApplyInboundWebhook_EmptyFieldsNotOverwritten(t *testing.
 
 	twentyID := "twenty-company-002"
 	mappingKey := fmt.Sprintf("twenty.company.%d", customer.CustomerID)
-	db.Create(&models.AppSetting{Key: mappingKey, Value: twentyID})
+	db.Create(&models.AppSetting{Scope: "global", Key: mappingKey, Value: twentyID})
 
 	// Empty address fields must NOT overwrite existing customer data.
 	addr, _ := json.Marshal(map[string]string{
@@ -276,7 +276,7 @@ func TestTwentyService_ApplyInboundWebhook_UpdatesPerson(t *testing.T) {
 
 	twentyID := "twenty-person-001"
 	mappingKey := fmt.Sprintf("twenty.person.%d", customer.CustomerID)
-	db.Create(&models.AppSetting{Key: mappingKey, Value: twentyID})
+	db.Create(&models.AppSetting{Scope: "global", Key: mappingKey, Value: twentyID})
 
 	emailsJSON, _ := json.Marshal(map[string]string{"primaryEmail": "alice@example.com"})
 	phonesJSON, _ := json.Marshal(map[string]string{"primaryPhoneNumber": "+46701234567"})
@@ -360,7 +360,7 @@ func TestReverseCustomerIDLookup(t *testing.T) {
 	db := newTestDB(t)
 	svc := NewTwentyService(db)
 
-	db.Create(&models.AppSetting{Key: "twenty.company.42", Value: "twenty-abc"})
+	db.Create(&models.AppSetting{Scope: "global", Key: "twenty.company.42", Value: "twenty-abc"})
 
 	id, err := svc.reverseCustomerIDLookup("twenty-abc", "company")
 	if err != nil {

@@ -318,8 +318,8 @@ func (Manufacturer) TableName() string {
 // Both applications read/write the same app_settings table.
 type AppSetting struct {
 	ID        int       `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
-	Scope     string    `gorm:"column:scope;type:varchar(50);default:global;uniqueIndex:idx_app_settings_scope_key" json:"scope"`
-	Key       string    `gorm:"column:key;type:varchar(128);uniqueIndex:idx_app_settings_scope_key" json:"key"`
+	Scope     string    `gorm:"column:scope;type:varchar(50);not null;default:global;uniqueIndex:idx_app_settings_scope_key" json:"scope"`
+	Key       string    `gorm:"column:key;type:varchar(128);not null;uniqueIndex:idx_app_settings_scope_key" json:"key"`
 	Value     string    `gorm:"column:value;type:text" json:"value"`
 	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updatedAt"`
 }
