@@ -127,7 +127,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Transaction Date</label>
                                 <div class="form-control-plaintext">
-                                    {{.transaction.TransactionDate.Format "January 2, 2006 at 3:04 PM"}}
+                                    {{.transaction.TransactionDate.Format "2006-01-02 15:04"}}
                                 </div>
                             </div>
 
@@ -135,7 +135,7 @@
                                 <label class="form-label fw-bold">Due Date</label>
                                 <div class="form-control-plaintext">
                                     {{if .transaction.DueDate}}
-                                        {{.transaction.DueDate.Format "January 2, 2006"}}
+                                        {{.transaction.DueDate.Format "2006-01-02"}}
                                         {{if .transaction.DueDate.Before now}}
                                             <span class="badge bg-danger ms-2">Overdue</span>
                                         {{end}}
@@ -225,7 +225,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Last Updated</label>
                                 <div class="form-control-plaintext">
-                                    {{.transaction.UpdatedAt.Format "January 2, 2006 at 3:04 PM"}}
+                                    {{.transaction.UpdatedAt.Format "2006-01-02 15:04"}}
                                 </div>
                             </div>
                         </div>
@@ -246,7 +246,7 @@
                                 <div class="timeline-content">
                                     <h6 class="timeline-title">Transaction Created</h6>
                                     <p class="timeline-text">Transaction was created with status: pending</p>
-                                    <small class="text-muted">{{.transaction.CreatedAt.Format "January 2, 2006 at 3:04 PM"}}</small>
+                                    <small class="text-muted">{{.transaction.CreatedAt.Format "2006-01-02 15:04"}}</small>
                                 </div>
                             </div>
                             {{if ne .transaction.Status "pending"}}
@@ -255,7 +255,7 @@
                                 <div class="timeline-content">
                                     <h6 class="timeline-title">Status Updated</h6>
                                     <p class="timeline-text">Transaction status changed to: {{.transaction.Status}}</p>
-                                    <small class="text-muted">{{.transaction.UpdatedAt.Format "January 2, 2006 at 3:04 PM"}}</small>
+                                    <small class="text-muted">{{.transaction.UpdatedAt.Format "2006-01-02 15:04"}}</small>
                                 </div>
                             </div>
                             {{end}}

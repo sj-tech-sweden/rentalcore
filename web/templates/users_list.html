@@ -729,12 +729,12 @@
                             </div>
                             <div class="user-meta-item">
                                 <i class="bi bi-calendar-plus"></i>
-                                <span>Created {{.CreatedAt.Format "Jan 2, 2006"}}</span>
+                                <span>Created {{.CreatedAt.Format "2006-01-02"}}</span>
                             </div>
                             <div class="user-meta-item">
                                 <i class="bi bi-clock"></i>
                                 {{if .LastLogin}}
-                                    <span>Last login {{.LastLogin.Format "Jan 2, 2006"}}</span>
+                                    <span>Last login {{.LastLogin.Format "2006-01-02"}}</span>
                                 {{else}}
                                     <span>Never logged in</span>
                                 {{end}}

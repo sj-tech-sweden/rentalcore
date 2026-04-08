@@ -174,7 +174,7 @@
                         
                         <div class="mb-3">
                             <small class="text-muted d-block">Uploaded</small>
-                            <span>{{.document.UploadedAt.Format "Jan 2, 2006 15:04"}}</span>
+                            <span>{{.document.UploadedAt.Format "2006-01-02 15:04"}}</span>
                         </div>
                         
                         {{if .document.Description}}
@@ -209,7 +209,7 @@
                             <div>
                                 <div class="fw-bold">{{.SignerName}}</div>
                                 <small class="text-muted">{{.SignerRole}}</small>
-                                <div class="small text-muted">{{.SignedAt.Format "Jan 2, 2006 15:04"}}</div>
+                                <div class="small text-muted">{{.SignedAt.Format "2006-01-02 15:04"}}</div>
                                 {{if .IsVerified}}
                                 <span class="badge bg-success small">Verified</span>
                                 {{else}}

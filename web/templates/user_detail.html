@@ -245,17 +245,17 @@
                                 </div>
                                 <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-sm) 0; border-bottom: 1px solid var(--surface-3);">
                                     <span style="font-weight: 500; color: var(--text-secondary);">Created:</span>
-                                    <span style="font-family: var(--font-mono); color: var(--text-primary); font-size: 0.875rem;">{{.viewUser.CreatedAt.Format "Jan 2, 2006 15:04"}}</span>
+                                    <span style="font-family: var(--font-mono); color: var(--text-primary); font-size: 0.875rem;">{{.viewUser.CreatedAt.Format "2006-01-02 15:04"}}</span>
                                 </div>
                                 <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-sm) 0; border-bottom: 1px solid var(--surface-3);">
                                     <span style="font-weight: 500; color: var(--text-secondary);">Updated:</span>
-                                    <span style="font-family: var(--font-mono); color: var(--text-primary); font-size: 0.875rem;">{{.viewUser.UpdatedAt.Format "Jan 2, 2006 15:04"}}</span>
+                                    <span style="font-family: var(--font-mono); color: var(--text-primary); font-size: 0.875rem;">{{.viewUser.UpdatedAt.Format "2006-01-02 15:04"}}</span>
                                 </div>
                                 <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-sm) 0;">
                                     <span style="font-weight: 500; color: var(--text-secondary);">Last Login:</span>
                                     <span style="font-family: var(--font-mono); color: var(--text-primary); font-size: 0.875rem;">
                                         {{if .viewUser.LastLogin}}
-                                            {{.viewUser.LastLogin.Format "Jan 2, 2006 15:04"}}
+                                            {{.viewUser.LastLogin.Format "2006-01-02 15:04"}}
                                         {{else}}
                                             <span style="color: var(--text-muted); font-style: italic;">Never logged in</span>
                                         {{end}}

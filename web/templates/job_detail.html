@@ -186,11 +186,11 @@
                             {{end}}
                             <div class="info-item">
                                 <label>Start Date</label>
-                                <span>{{if .job.StartDate}}{{.job.StartDate.Format "02.01.2006"}}{{else}}-{{end}}</span>
+                                <span>{{if .job.StartDate}}{{.job.StartDate.Format "2006-01-02"}}{{else}}-{{end}}</span>
                             </div>
                             <div class="info-item">
                                 <label>End Date</label>
-                                <span>{{if .job.EndDate}}{{.job.EndDate.Format "02.01.2006"}}{{else}}-{{end}}</span>
+                                <span>{{if .job.EndDate}}{{.job.EndDate.Format "2006-01-02"}}{{else}}-{{end}}</span>
                             </div>
                             <div class="info-item">
                                 <label>Revenue</label>
@@ -218,7 +218,7 @@
                                 {{if .job.CreatedAt}}
                                 <div class="rc-mb-xs">
                                     <span class="rc-text-secondary">Created:</span>
-                                    <span id="created-info">{{.job.CreatedAt.Format "02.01.2006 15:04"}}
+                                    <span id="created-info">{{.job.CreatedAt.Format "2006-01-02 15:04"}}
                                         {{if .job.Creator}}
                                             by {{.job.Creator.GetDisplayName}}
                                         {{end}}
@@ -228,7 +228,7 @@
                                 {{if .job.UpdatedAt}}
                                 <div>
                                     <span class="rc-text-secondary">Last edited:</span>
-                                    <span id="updated-info">{{.job.UpdatedAt.Format "02.01.2006 15:04"}}</span>
+                                    <span id="updated-info">{{.job.UpdatedAt.Format "2006-01-02 15:04"}}</span>
                                 </div>
                                 {{end}}
                             </div>

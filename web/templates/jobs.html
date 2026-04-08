@@ -140,8 +140,8 @@
                                             <div class="rc-table-wc-title">{{.CustomerName}}</div>
                                             <div class="rc-table-wc-sub">{{if .CategoryName}}{{.CategoryName}}{{else}}<span data-i18n="jobs.noCategory">No category</span>{{end}}</div>
                                         </td>
-                                        <td><span class="rc-table-wc-sub">{{if .StartDate}}{{.StartDate.Format "02.01.2006"}}{{else}}-{{end}}</span></td>
-                                        <td><span class="rc-table-wc-sub">{{if .EndDate}}{{.EndDate.Format "02.01.2006"}}{{else}}-{{end}}</span></td>
+                                        <td><span class="rc-table-wc-sub">{{if .StartDate}}{{.StartDate.Format "2006-01-02"}}{{else}}-{{end}}</span></td>
+                                        <td><span class="rc-table-wc-sub">{{if .EndDate}}{{.EndDate.Format "2006-01-02"}}{{else}}-{{end}}</span></td>
                                         <td><span class="rc-badge rc-badge-secondary">{{.StatusName}}</span></td>
                                         <td><span class="rc-table-wc-sub">{{.DeviceCount}} <span data-i18n="jobs.devicesLabel">devices</span></span></td>
                                         <td style="text-align: right;"><span class="rc-table-wc-title">€{{printf "%.2f" .TotalRevenue}}</span></td>
