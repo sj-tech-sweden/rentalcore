@@ -6137,8 +6137,11 @@ function showToast(message, type) {
 
             history.forEach((entry, index) => {
                 const changeDate = new Date(entry.changed_at);
-                const formattedDate = toLocalDateStr(changeDate);
-                const formattedTime = String(changeDate.getHours()).padStart(2, '0') + ':' + String(changeDate.getMinutes()).padStart(2, '0');
+                const isValidDate = entry.changed_at && !isNaN(changeDate.getTime());
+                const formattedDate = isValidDate ? toLocalDateStr(changeDate) : '';
+                const formattedTime = isValidDate
+                    ? String(changeDate.getHours()).padStart(2, '0') + ':' + String(changeDate.getMinutes()).padStart(2, '0')
+                    : '';
 
                 const typeInfo = getHistoryChangeTypeInfo(entry.change_type);
 

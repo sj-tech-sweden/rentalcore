@@ -14,6 +14,9 @@ ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS id INTEGER;
 CREATE SEQUENCE IF NOT EXISTS app_settings_id_seq;
 UPDATE app_settings SET id = nextval('app_settings_id_seq') WHERE id IS NULL;
 
+-- Step 3a: Advance the sequence to MAX(id) so future inserts never conflict with backfilled values
+SELECT setval('app_settings_id_seq', COALESCE((SELECT MAX(id) FROM app_settings), 1), true);
+
 -- Step 4: Attach the sequence as the default for future inserts and enforce NOT NULL
 ALTER TABLE app_settings ALTER COLUMN id SET DEFAULT nextval('app_settings_id_seq');
 ALTER TABLE app_settings ALTER COLUMN id SET NOT NULL;
