@@ -317,7 +317,9 @@ func (Manufacturer) TableName() string {
 // AppSetting stores application-wide key-value settings shared with WarehouseCore.
 // Both applications read/write the same app_settings table.
 type AppSetting struct {
-	Key       string    `gorm:"primaryKey;column:key;type:varchar(128)" json:"key"`
+	ID        int       `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
+	Scope     string    `gorm:"column:scope;type:varchar(50);default:global" json:"scope"`
+	Key       string    `gorm:"column:key;type:varchar(128)" json:"key"`
 	Value     string    `gorm:"column:value;type:text" json:"value"`
 	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updatedAt"`
 }

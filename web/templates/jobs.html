@@ -144,7 +144,7 @@
                                         <td><span class="rc-table-wc-sub">{{if .EndDate}}{{.EndDate.Format "2006-01-02"}}{{else}}-{{end}}</span></td>
                                         <td><span class="rc-badge rc-badge-secondary">{{.StatusName}}</span></td>
                                         <td><span class="rc-table-wc-sub">{{.DeviceCount}} <span data-i18n="jobs.devicesLabel">devices</span></span></td>
-                                        <td style="text-align: right;"><span class="rc-table-wc-title">€{{printf "%.2f" .TotalRevenue}}</span></td>
+                                        <td style="text-align: right;"><span class="rc-table-wc-title">{{currencySymbol}}{{printf "%.2f" .TotalRevenue}}</span></td>
                                         <td style="text-align: right;" onclick="event.stopPropagation()">
                                             <div class="rc-flex rc-flex-gap-xs" style="justify-content: flex-end;">
                                                 <button type="button" class="rc-icon-btn" data-i18n-attr="title:jobs.view" onclick="showJobDetails({{.JobID}})">
@@ -314,6 +314,8 @@
         }
     }
 
+    const appCurrencySymbol = '{{currencySymbol}}' || '€';
+
     // Job Details Modal
     function showJobDetails(jobID) {
         const modal = document.getElementById('jobDetailsModal');
@@ -358,7 +360,7 @@
                         </div>
                         <div class="rc-form-group">
                             <label class="rc-label">${_t ? _t('jobs.revenue') : 'Revenue'}</label>
-                            <div class="rc-text-lg">€${(jobData.revenue || 0).toFixed(2)}</div>
+                            <div class="rc-text-lg">${appCurrencySymbol}${(jobData.revenue || 0).toFixed(2)}</div>
                         </div>
                         <div class="rc-form-group">
                             <label class="rc-label">${_t ? _t('jobs.devices_label') : 'Devices'}</label>
@@ -370,8 +372,8 @@
                         </div>
                         ${jobData.startDate ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.startDate') : 'Start Date') + '</label><div><i class="bi bi-calendar"></i> ' + new Date(jobData.startDate).toISOString().slice(0, 10) + '</div></div>' : ''}
                         ${jobData.endDate ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.endDate') : 'End Date') + '</label><div><i class="bi bi-calendar"></i> ' + new Date(jobData.endDate).toISOString().slice(0, 10) + '</div></div>' : ''}
-                        ${jobData.discount > 0 ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.discount') : 'Discount') + '</label><div>' + jobData.discount + ' ' + (jobData.discount_type === 'percent' ? '%' : '€') + '</div></div>' : ''}
-                        ${jobData.finalRevenue ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.finalRevenue') : 'Final Revenue') + '</label><div class="rc-text-lg">€' + jobData.finalRevenue.toFixed(2) + '</div></div>' : ''}
+                        ${jobData.discount > 0 ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.discount') : 'Discount') + '</label><div>' + jobData.discount + ' ' + (jobData.discount_type === 'percent' ? '%' : appCurrencySymbol) + '</div></div>' : ''}
+                        ${jobData.finalRevenue ? '<div class="rc-form-group"><label class="rc-label">' + (_t ? _t('jobs.finalRevenue') : 'Final Revenue') + '</label><div class="rc-text-lg">' + appCurrencySymbol + jobData.finalRevenue.toFixed(2) + '</div></div>' : ''}
                     </div>
 
                     <!-- Job History Section -->
@@ -700,7 +702,7 @@
                             <br><small class="rc-text-muted">${escapeHtml(deviceId || 'Unknown ID')}</small>
                         </div>
                         <div class="rc-text-sm rc-text-secondary" title="${customPrice ? 'Custom price set for this device' : 'Price from product'}">
-                            €${priceLabel}${priceNote}
+                            ${appCurrencySymbol}${priceLabel}${priceNote}
                         </div>
                     </div>
                 `;
@@ -828,7 +830,7 @@
                             </select>
                         </div>
                         <div class="rc-form-group">
-                            <label class="rc-label">Revenue (€)</label>
+                            <label class="rc-label">Revenue (${appCurrencySymbol})</label>
                             <input type="number" class="rc-input" name="revenue" value="${job.revenue || ''}" step="0.01" min="0">
                         </div>
                         <div class="rc-form-group">
@@ -846,7 +848,7 @@
                         <div class="rc-form-group">
                             <label class="rc-label">Discount Type</label>
                             <select class="rc-select" name="discount_type">
-                                <option value="amount" ${job.discount_type === 'amount' ? 'selected' : ''}>Amount (€)</option>
+                                <option value="amount" ${job.discount_type === 'amount' ? 'selected' : ''}>Amount (${appCurrencySymbol})</option>
                                 <option value="percent" ${job.discount_type === 'percent' ? 'selected' : ''}>Percentage (%)</option>
                             </select>
                         </div>
@@ -2770,7 +2772,7 @@
                                        step="0.01"
                                        onchange="updateDevicePrice(${jobID}, '${deviceID}', this.value)"
                                        placeholder="${price.toFixed(2)}">
-                                <span class="rc-text-xs">€/day</span>
+                                <span class="rc-text-xs">${appCurrencySymbol}/day</span>
                                 <button type="button" onclick="removeDeviceFromEditJob(${jobID}, '${deviceID}')"
                                         class="rc-btn rc-btn-outline rc-btn-sm"
                                         style="padding: 2px 6px;"
@@ -3050,7 +3052,7 @@
                                        step="0.01"
                                        onchange="updateDevicePrice(${jobID}, '${device.device?.deviceID}', this.value)"
                                        placeholder="0.00">
-                                <span class="rc-text-sm">€</span>
+                                <span class="rc-text-sm">${appCurrencySymbol}</span>
                             </div>
                         </div>
                     `;
@@ -3129,7 +3131,7 @@
                     const revenueCell = jobRow.querySelector('td:nth-child(8)'); // Revenue column
                     if (revenueCell) {
                         const newRevenue = data.finalRevenue || data.revenue || 0;
-                        revenueCell.innerHTML = `<span class="rc-text-mono">€${newRevenue.toFixed(2)}</span>`;
+                        revenueCell.innerHTML = `<span class="rc-text-mono">${appCurrencySymbol}${newRevenue.toFixed(2)}</span>`;
                     }
                 }
                 
@@ -3137,9 +3139,9 @@
                 const currentModalJobID = document.getElementById('jobDetailsModal').getAttribute('data-current-job-id');
                 if (currentModalJobID == jobID) {
                     const modalRevenue = document.querySelector('#jobDetailsContent .rc-text-lg');
-                    if (modalRevenue && modalRevenue.textContent.startsWith('€')) {
+                    if (modalRevenue && modalRevenue.textContent.startsWith(appCurrencySymbol)) {
                         const newRevenue = data.finalRevenue || data.revenue || 0;
-                        modalRevenue.textContent = `€${newRevenue.toFixed(2)}`;
+                        modalRevenue.textContent = `${appCurrencySymbol}${newRevenue.toFixed(2)}`;
                     }
                 }
             })
