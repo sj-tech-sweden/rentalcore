@@ -4,8 +4,12 @@
 --              settings under different scopes while sharing the same table.
 --              A unique constraint on (scope, key) replaces the old key-only PK.
 
--- Step 1: Add scope column (default 'global' so existing rows are migrated automatically)
-ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS scope VARCHAR(50) NOT NULL DEFAULT 'global';
+-- Step 1: Add scope column without NOT NULL so it can be added to existing tables with data,
+--         then backfill any NULLs and enforce NOT NULL afterwards.
+ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS scope VARCHAR(50) DEFAULT 'global';
+UPDATE app_settings SET scope = 'global' WHERE scope IS NULL;
+ALTER TABLE app_settings ALTER COLUMN scope SET DEFAULT 'global';
+ALTER TABLE app_settings ALTER COLUMN scope SET NOT NULL;
 
 -- Step 2: Add id column as a nullable integer initially (must backfill before enforcing NOT NULL / PK)
 ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS id INTEGER;
@@ -31,5 +35,8 @@ ALTER TABLE app_settings DROP CONSTRAINT IF EXISTS app_settings_pkey;
 ALTER TABLE app_settings ADD PRIMARY KEY (id);
 
 -- Step 8: Add unique constraint on (scope, key) to prevent duplicates and support ON CONFLICT upserts
+--         Drop both the constraint and the index (GORM AutoMigrate creates an index, not a named constraint)
+--         to ensure the ADD CONSTRAINT succeeds regardless of how the unique relation was previously created.
 ALTER TABLE app_settings DROP CONSTRAINT IF EXISTS idx_app_settings_scope_key;
+DROP INDEX IF EXISTS idx_app_settings_scope_key;
 ALTER TABLE app_settings ADD CONSTRAINT idx_app_settings_scope_key UNIQUE (scope, key);

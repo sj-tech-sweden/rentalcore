@@ -290,3 +290,69 @@ func TestGetCurrencySymbol_TransientError_NoPreviousCache(t *testing.T) {
 		t.Errorf("GetCurrencySymbol() with closed DB and no cache = %q, want default %q", got, defaultCurrencySymbol)
 	}
 }
+
+// TestGetCurrencySymbol_JSONEncodedValue verifies that GetCurrencySymbol correctly
+// parses the shared JSON format {"symbol":"..."} used by both RentalCore and WarehouseCore.
+func TestGetCurrencySymbol_JSONEncodedValue(t *testing.T) {
+	db := newTestDB(t)
+	db.Create(&models.AppSetting{Scope: "global", Key: AppCurrencyKey, Value: `{"symbol":"kr"}`})
+
+	s := NewSettingsService(db)
+	got := s.GetCurrencySymbol()
+	if got != "kr" {
+		t.Errorf("GetCurrencySymbol() with JSON value = %q, want %q", got, "kr")
+	}
+	if !s.cacheValid {
+		t.Error("expected cacheValid=true after successful JSON parse")
+	}
+}
+
+// TestGetCurrencySymbol_WarehousecoreFallback verifies that when no 'global' row exists
+// the service falls back to the 'warehousecore' scope and parses its JSON value.
+func TestGetCurrencySymbol_WarehousecoreFallback(t *testing.T) {
+	db := newTestDB(t)
+	// Only insert a 'warehousecore' row — no 'global' row.
+	db.Create(&models.AppSetting{Scope: "warehousecore", Key: AppCurrencyKey, Value: `{"symbol":"SEK"}`})
+
+	s := NewSettingsService(db)
+	got := s.GetCurrencySymbol()
+	if got != "SEK" {
+		t.Errorf("GetCurrencySymbol() warehousecore fallback = %q, want %q", got, "SEK")
+	}
+	if !s.cacheValid {
+		t.Error("expected cacheValid=true after successful warehousecore fallback read")
+	}
+}
+
+// TestGetCurrencySymbol_GlobalTakesPrecedenceOverWarehousecore verifies that the
+// 'global' scope row takes precedence when both scopes are present.
+func TestGetCurrencySymbol_GlobalTakesPrecedenceOverWarehousecore(t *testing.T) {
+	db := newTestDB(t)
+	db.Create(&models.AppSetting{Scope: "global", Key: AppCurrencyKey, Value: `{"symbol":"€"}`})
+	db.Create(&models.AppSetting{Scope: "warehousecore", Key: AppCurrencyKey, Value: `{"symbol":"kr"}`})
+
+	s := NewSettingsService(db)
+	got := s.GetCurrencySymbol()
+	if got != "€" {
+		t.Errorf("GetCurrencySymbol() = %q, want global scope %q to take precedence", got, "€")
+	}
+}
+
+// TestGetCurrencySymbol_JSONAfterCacheExpiry verifies that an expired cache entry is
+// refreshed from the DB and the JSON value is correctly parsed.
+func TestGetCurrencySymbol_JSONAfterCacheExpiry(t *testing.T) {
+	db := newTestDB(t)
+	db.Create(&models.AppSetting{Scope: "global", Key: AppCurrencyKey, Value: `{"symbol":"CHF"}`})
+
+	s := &SettingsService{
+		db:             db,
+		cachedCurrency: "£",
+		cacheValid:     true,
+		cacheExpiry:    time.Now().Add(-1 * time.Second), // expired
+	}
+
+	got := s.GetCurrencySymbol()
+	if got != "CHF" {
+		t.Errorf("GetCurrencySymbol() after cache expiry = %q, want DB JSON value %q", got, "CHF")
+	}
+}
