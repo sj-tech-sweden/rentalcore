@@ -857,8 +857,19 @@ func setupRoutes(r *gin.Engine,
 	rbacMiddleware *middleware.RBACMiddleware,
 	complianceMiddleware *compliance.ComplianceMiddleware) {
 
-	// Swagger / OpenAPI UI route (accessible at /docs)
-	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	// Swagger / OpenAPI UI routes (accessible at /docs)
+	docsHandler := ginSwagger.WrapHandler(swaggerfiles.Handler)
+	r.GET("/docs", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/docs/index.html")
+	})
+	r.GET("/docs/*any", func(c *gin.Context) {
+		// Redirect bare /docs/ to the index page
+		if c.Param("any") == "/" {
+			c.Redirect(http.StatusMovedPermanently, "/docs/index.html")
+			return
+		}
+		docsHandler(c)
+	})
 
 	// Root route - redirect to dashboard if authenticated, login if not
 	r.GET("/", func(c *gin.Context) {
