@@ -194,7 +194,7 @@ func TestDocsRouteRedirects(t *testing.T) {
 		{"/docs/index.html", http.StatusOK, ""},
 		// /swagger backward-compat redirects
 		{"/swagger", http.StatusMovedPermanently, "/docs/index.html"},
-		{"/swagger/", http.StatusMovedPermanently, "/docs/"},
+		{"/swagger/", http.StatusMovedPermanently, "/docs/index.html"},
 		{"/swagger/index.html", http.StatusMovedPermanently, "/docs/index.html"},
 		{"/swagger?url=custom.json", http.StatusMovedPermanently, "/docs/index.html?url=custom.json"},
 	}

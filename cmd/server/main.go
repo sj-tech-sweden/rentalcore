@@ -844,6 +844,11 @@ func registerDocsRoutes(r *gin.Engine, docsFileHandler gin.HandlerFunc) {
 	// Backward-compatible redirect: /swagger/* → /docs/*
 	r.GET("/swagger", docsIndexRedirect)
 	r.GET("/swagger/*any", func(c *gin.Context) {
+		// Redirect /swagger/ straight to /docs/index.html to avoid a redirect chain.
+		if c.Param("any") == "/" {
+			docsIndexRedirect(c)
+			return
+		}
 		target := "/docs" + c.Param("any")
 		if c.Request.URL.RawQuery != "" {
 			target += "?" + c.Request.URL.RawQuery
