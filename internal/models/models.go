@@ -79,9 +79,11 @@ type Job struct {
 	StartDate              *time.Time              `json:"startDate" gorm:"column:startdate;type:date"`
 	EndDate                *time.Time              `json:"endDate" gorm:"column:enddate;type:date"`
 	JobDevices             []JobDevice             `json:"job_devices,omitempty" gorm:"foreignKey:JobID"`
+	JobCables              []JobCable              `json:"job_cables,omitempty" gorm:"foreignKey:JobID"`
 	JobPackages            []JobPackage            `json:"job_packages,omitempty" gorm:"foreignKey:JobID;references:JobID"`
 	JobProductRequirements []JobProductRequirement `json:"job_product_requirements,omitempty" gorm:"foreignKey:JobID;references:JobID"`
 	DeviceCount            int                     `json:"device_count" gorm:"-:all"`
+	CableCount             int                     `json:"cable_count" gorm:"-:all"`
 }
 
 func (Job) TableName() string {
@@ -216,6 +218,18 @@ func (JobDevice) TableName() string {
 	return "job_devices"
 }
 
+// JobCable represents a cable assigned to a job
+type JobCable struct {
+	JobID   int   `json:"jobID" gorm:"primaryKey;column:jobid"`
+	CableID int   `json:"cableID" gorm:"primaryKey;column:cableID"`
+	Job     Job   `json:"job,omitempty" gorm:"foreignKey:JobID"`
+	Cable   Cable `json:"cable,omitempty" gorm:"foreignKey:CableID"`
+}
+
+func (JobCable) TableName() string {
+	return "job_cables"
+}
+
 // JobProductRequirement stores the required quantity of a product for a job.
 // Specific device assignment is deferred to warehousecore (e.g. when scanning).
 type JobProductRequirement struct {
@@ -246,6 +260,7 @@ type JobWithDetails struct {
 	StatusName    string     `json:"status_name" gorm:"column:status_name"`
 	CategoryName  *string    `json:"category_name" gorm:"column:category_name"`
 	DeviceCount   int        `json:"device_count" gorm:"column:device_count"`
+	CableCount    int        `json:"cable_count" gorm:"column:cable_count"`
 	TotalRevenue  float64    `json:"total_revenue" gorm:"column:total_revenue"`
 }
 

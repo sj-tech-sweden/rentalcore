@@ -1407,6 +1407,11 @@ func setupRoutes(r *gin.Engine,
 				apiJobs.GET("/:id/history", jobHistoryHandler.GetJobHistory)
 				apiJobs.GET("/:id/cable-planning", jobHandler.GetJobCablePlanning)
 
+				// Job cable routes
+				apiJobs.GET("/:id/cables", jobHandler.GetJobCablesAPI)
+				apiJobs.POST("/:id/cables", jobHandler.AssignCableToJobAPI)
+				apiJobs.DELETE("/:id/cables/:cableId", jobHandler.RemoveCableFromJobAPI)
+
 				// Job package routes
 				apiJobs.GET("/:id/packages", jobHandler.GetJobPackages)
 				apiJobs.POST("/:id/packages", jobHandler.AssignPackageToJob)

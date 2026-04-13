@@ -2103,6 +2103,74 @@ func (h *JobHandler) GetJobPackageReservations(c *gin.Context) {
 	})
 }
 
+// GetJobCablesAPI handles GET /api/v1/jobs/:id/cables
+func (h *JobHandler) GetJobCablesAPI(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
+		return
+	}
+
+	jobCables, err := h.jobRepo.GetJobCables(uint(id))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"cables": jobCables})
+}
+
+// AssignCableToJobAPI handles POST /api/v1/jobs/:id/cables
+func (h *JobHandler) AssignCableToJobAPI(c *gin.Context) {
+	jobID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
+		return
+	}
+
+	var req struct {
+		CableID int `json:"cable_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	if req.CableID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cable ID"})
+		return
+	}
+
+	if err := h.jobRepo.AssignCable(uint(jobID), req.CableID); err != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Cable assigned successfully"})
+}
+
+// RemoveCableFromJobAPI handles DELETE /api/v1/jobs/:id/cables/:cableId
+func (h *JobHandler) RemoveCableFromJobAPI(c *gin.Context) {
+	jobID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid job ID"})
+		return
+	}
+
+	cableID, err := strconv.Atoi(c.Param("cableId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cable ID"})
+		return
+	}
+
+	if err := h.jobRepo.RemoveCable(uint(jobID), cableID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Cable removed successfully"})
+}
+
 // CablePlanningResponse represents the cable planning data for a job
 type CablePlanningResponse struct {
 	JobID             uint               `json:"job_id"`

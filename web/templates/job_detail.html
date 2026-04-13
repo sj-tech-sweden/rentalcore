@@ -312,6 +312,27 @@
                     </div>
                 </div>
 
+                <!-- Job Cables -->
+                <div class="rc-card rc-mt-lg">
+                    <div class="rc-card-header">
+                        <h3 class="rc-card-title"><i class="bi bi-ethernet"></i> Cables</h3>
+                        <div class="rc-flex rc-flex-gap-sm">
+                            <input type="number" id="addCableIdInput" class="rc-form-input" placeholder="Cable ID" style="width: 100px;" min="1">
+                            <button class="rc-btn rc-btn-primary rc-btn-sm" onclick="addCableToJob()">
+                                <i class="bi bi-plus-lg"></i> Add Cable
+                            </button>
+                        </div>
+                    </div>
+                    <div class="rc-card-body">
+                        <div id="cables-list">
+                            <div class="rc-text-center rc-p-lg">
+                                <i class="bi bi-arrow-clockwise" style="animation: spin 1s linear infinite;"></i>
+                                Loading cables...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Job Attachments -->
                 <div class="rc-card rc-mt-lg">
                     <div class="rc-card-header">
@@ -714,6 +735,121 @@
         };
 
         return fieldNames[fieldName] || fieldName;
+    }
+
+    // ===== CABLE FUNCTIONS =====
+
+    // Load cables when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadJobCables();
+    });
+
+    async function loadJobCables() {
+        const jobID = {{.job.JobID}};
+        try {
+            const response = await fetch(`/api/v1/jobs/${jobID}/cables`);
+            const data = await response.json();
+            const cables = data.cables || [];
+            displayJobCables(cables);
+        } catch (error) {
+            console.error('Error loading cables:', error);
+            document.getElementById('cables-list').innerHTML = `
+                <div class="rc-text-center rc-p-lg rc-text-secondary">Failed to load cables</div>
+            `;
+        }
+    }
+
+    function displayJobCables(cables) {
+        const container = document.getElementById('cables-list');
+
+        if (!cables || cables.length === 0) {
+            container.innerHTML = `
+                <div class="rc-text-center rc-p-xl">
+                    <i class="bi bi-ethernet" style="font-size: 3rem; color: var(--text-muted);"></i>
+                    <h4 class="rc-text-muted">No Cables Assigned</h4>
+                    <p class="rc-text-secondary">Add cables to this job using the cable ID input above.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="cable-items">';
+        cables.forEach(jc => {
+            const cable = jc.cable || {};
+            const typeName = cable.type_info ? cable.type_info.name : 'Unknown Type';
+            const c1Name = cable.connector1_info ? cable.connector1_info.name : '?';
+            const c2Name = cable.connector2_info ? cable.connector2_info.name : '?';
+            const lengthStr = cable.length ? cable.length + 'm' : '';
+            const mm2Str = cable.mm2 ? cable.mm2.toFixed(2) + ' mm²' : '';
+            const nameStr = cable.name || ('Cable #' + cable.cableID);
+
+            html += `
+                <div class="rc-flex rc-flex-between rc-p-md rc-border-bottom" style="align-items: center;">
+                    <div>
+                        <strong>${escapeHtml(nameStr)}</strong>
+                        <div class="rc-text-sm rc-text-secondary">
+                            ${escapeHtml(typeName)} • ${escapeHtml(c1Name)} → ${escapeHtml(c2Name)}
+                            ${lengthStr ? ' • ' + lengthStr : ''}${mm2Str ? ' • ' + mm2Str : ''}
+                        </div>
+                    </div>
+                    <button class="rc-btn rc-btn-outline rc-btn-sm" onclick="removeCableFromJob(${cable.cableID})" title="Remove">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function addCableToJob() {
+        const input = document.getElementById('addCableIdInput');
+        const cableID = parseInt(input.value, 10);
+        if (!cableID || cableID <= 0) {
+            alert('Please enter a valid cable ID.');
+            return;
+        }
+
+        const jobID = {{.job.JobID}};
+        fetch(`/api/v1/jobs/${jobID}/cables`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cable_id: cableID })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                input.value = '';
+                loadJobCables();
+                showNotification('Cable added successfully!', 'success');
+            }
+        })
+        .catch(error => {
+            alert('Failed to add cable: ' + error.message);
+        });
+    }
+
+    function removeCableFromJob(cableID) {
+        if (!confirm('Remove this cable from the job?')) return;
+
+        const jobID = {{.job.JobID}};
+        fetch(`/api/v1/jobs/${jobID}/cables/${cableID}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                loadJobCables();
+                showNotification('Cable removed successfully!', 'success');
+            }
+        })
+        .catch(error => {
+            alert('Failed to remove cable: ' + error.message);
+        });
     }
 
     // ===== FILE ATTACHMENT FUNCTIONS =====

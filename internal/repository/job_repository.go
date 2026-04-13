@@ -152,6 +152,13 @@ func (r *JobRepository) GetByID(id uint) (*models.Job, error) {
 	}
 	job.DeviceCount = int(deviceCount)
 
+	// Add cable count
+	var cableCount int64
+	if err := r.db.DB.Table("job_cables").Where("jobid = ?", job.JobID).Count(&cableCount).Error; err != nil {
+		cableCount = 0
+	}
+	job.CableCount = int(cableCount)
+
 	// Manually load products for each device
 	r.loadProductsForJobDevices(job.JobDevices)
 
@@ -283,6 +290,12 @@ func (r *JobRepository) Delete(id uint) error {
 		return fmt.Errorf("failed to remove devices from job: %v", err)
 	}
 
+	// Remove all cables from the job
+	if err := tx.Where("jobid = ?", id).Delete(&models.JobCable{}).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to remove cables from job: %v", err)
+	}
+
 	// Second, remove all employee-job assignments
 	if err := tx.Exec("DELETE FROM employeejob WHERE jobID = ?", id).Error; err != nil {
 		tx.Rollback()
@@ -312,12 +325,14 @@ func (r *JobRepository) List(params *models.FilterParams) ([]models.JobWithDetai
 			s.status as status_name,
 			jc.name as category_name,
 			COUNT(DISTINCT jd.deviceid) as device_count,
+			COUNT(DISTINCT jcb.cableID) as cable_count,
 			COALESCE(j.final_revenue, j.revenue) as total_revenue
 		FROM jobs j
 		LEFT JOIN customers c ON j.customerid = c.customerid
 		LEFT JOIN status s ON j.statusid = s.statusid
 		LEFT JOIN jobCategory jc ON j.jobcategoryid = jc.jobcategoryid
-		LEFT JOIN job_devices jd ON j.jobid = jd.jobid`
+		LEFT JOIN job_devices jd ON j.jobid = jd.jobid
+		LEFT JOIN job_cables jcb ON j.jobid = jcb.jobid`
 
 	// Build WHERE conditions
 	var conditions []string
@@ -504,6 +519,42 @@ func (r *JobRepository) UnassignDevice(jobID uint, deviceID string) error {
 
 	// Recalculate and update job revenue
 	return r.CalculateAndUpdateRevenue(jobID)
+}
+
+func (r *JobRepository) GetJobCables(jobID uint) ([]models.JobCable, error) {
+	var jobCables []models.JobCable
+	err := r.db.Where("jobid = ?", jobID).
+		Preload("Cable.Connector1Info").
+		Preload("Cable.Connector2Info").
+		Preload("Cable.TypeInfo").
+		Find(&jobCables).Error
+	return jobCables, err
+}
+
+func (r *JobRepository) AssignCable(jobID uint, cableID int) error {
+	// Check that the cable exists
+	var cable models.Cable
+	if err := r.db.First(&cable, cableID).Error; err != nil {
+		return fmt.Errorf("cable not found")
+	}
+
+	// Check if cable is already assigned to this job
+	var existing models.JobCable
+	err := r.db.Where("jobid = ? AND cableID = ?", jobID, cableID).First(&existing).Error
+	if err == nil {
+		return fmt.Errorf("cable is already assigned to this job")
+	}
+
+	jobCable := &models.JobCable{
+		JobID:   int(jobID),
+		CableID: cableID,
+	}
+	return r.db.Create(jobCable).Error
+}
+
+func (r *JobRepository) RemoveCable(jobID uint, cableID int) error {
+	return r.db.Where("jobid = ? AND cableID = ?", jobID, cableID).
+		Delete(&models.JobCable{}).Error
 }
 
 func (r *JobRepository) BulkAssignDevices(jobID uint, deviceIDs []string, price float64) ([]models.ScanResult, error) {
