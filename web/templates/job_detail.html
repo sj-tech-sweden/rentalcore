@@ -828,11 +828,11 @@
             body: JSON.stringify({ cable_id: cableID })
         })
         .then(async response => {
-            const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.error || `Request failed with status ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(errorText || `Request failed with status ${response.status}`);
             }
-            return data;
+            return response.json();
         })
         .then(data => {
             input.value = '';
@@ -852,11 +852,11 @@
             method: 'DELETE'
         })
         .then(async response => {
-            const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.error || `Request failed with status ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(errorText || `Request failed with status ${response.status}`);
             }
-            return data;
+            return response.json();
         })
         .then(data => {
             loadJobCables();
