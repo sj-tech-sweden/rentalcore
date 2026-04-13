@@ -325,7 +325,7 @@ func (r *JobRepository) List(params *models.FilterParams) ([]models.JobWithDetai
 			s.status as status_name,
 			jc.name as category_name,
 			COUNT(DISTINCT jd.deviceid) as device_count,
-			COUNT(DISTINCT jcb.cableID) as cable_count,
+			COUNT(DISTINCT jcb."cableID") as cable_count,
 			COALESCE(j.final_revenue, j.revenue) as total_revenue
 		FROM jobs j
 		LEFT JOIN customers c ON j.customerid = c.customerid
@@ -535,14 +535,20 @@ func (r *JobRepository) AssignCable(jobID uint, cableID int) error {
 	// Check that the cable exists
 	var cable models.Cable
 	if err := r.db.First(&cable, cableID).Error; err != nil {
-		return fmt.Errorf("cable not found")
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("cable not found")
+		}
+		return fmt.Errorf("error checking cable: %v", err)
 	}
 
 	// Check if cable is already assigned to this job
 	var existing models.JobCable
-	err := r.db.Where("jobid = ? AND cableID = ?", jobID, cableID).First(&existing).Error
+	err := r.db.Where("jobid = ? AND \"cableID\" = ?", jobID, cableID).First(&existing).Error
 	if err == nil {
 		return fmt.Errorf("cable is already assigned to this job")
+	}
+	if err != gorm.ErrRecordNotFound {
+		return fmt.Errorf("error checking cable assignment: %v", err)
 	}
 
 	jobCable := &models.JobCable{
@@ -553,7 +559,7 @@ func (r *JobRepository) AssignCable(jobID uint, cableID int) error {
 }
 
 func (r *JobRepository) RemoveCable(jobID uint, cableID int) error {
-	return r.db.Where("jobid = ? AND cableID = ?", jobID, cableID).
+	return r.db.Where("jobid = ? AND \"cableID\" = ?", jobID, cableID).
 		Delete(&models.JobCable{}).Error
 }
 

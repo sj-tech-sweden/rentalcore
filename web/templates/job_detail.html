@@ -748,6 +748,17 @@
         const jobID = {{.job.JobID}};
         try {
             const response = await fetch(`/api/v1/jobs/${jobID}/cables`);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || `Request failed with status ${response.status}`);
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                throw new Error(`Expected JSON response but received ${contentType || 'unknown content type'}`);
+            }
+
             const data = await response.json();
             const cables = data.cables || [];
             displayJobCables(cables);
@@ -816,15 +827,17 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cable_id: cableID })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert('Error: ' + data.error);
-            } else {
-                input.value = '';
-                loadJobCables();
-                showNotification('Cable added successfully!', 'success');
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || `Request failed with status ${response.status}`);
             }
+            return data;
+        })
+        .then(data => {
+            input.value = '';
+            loadJobCables();
+            showNotification('Cable added successfully!', 'success');
         })
         .catch(error => {
             alert('Failed to add cable: ' + error.message);
@@ -838,14 +851,16 @@
         fetch(`/api/v1/jobs/${jobID}/cables/${cableID}`, {
             method: 'DELETE'
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert('Error: ' + data.error);
-            } else {
-                loadJobCables();
-                showNotification('Cable removed successfully!', 'success');
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || `Request failed with status ${response.status}`);
             }
+            return data;
+        })
+        .then(data => {
+            loadJobCables();
+            showNotification('Cable removed successfully!', 'success');
         })
         .catch(error => {
             alert('Failed to remove cable: ' + error.message);

@@ -688,9 +688,10 @@
                 content.innerHTML = `
                     <div class="rc-alert rc-alert-error">
                         <i class="bi bi-exclamation-triangle"></i>
-                        Error loading cables: ${error.message}
+                        <span class="job-cables-error-message"></span>
                     </div>
                 `;
+                content.querySelector('.job-cables-error-message').textContent = 'Error loading cables: ' + error.message;
             });
     }
 
@@ -775,19 +776,14 @@
             return;
         }
 
-        fetch('/api/v1/jobs/' + currentJobID + '/cables', {
+        fetchJSON('/api/v1/jobs/' + currentJobID + '/cables', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cable_id: cableID })
         })
-        .then(response => response.json())
         .then(data => {
-            if (data.error) {
-                alert('Error: ' + data.error);
-            } else {
-                input.value = '';
-                loadJobCables(currentJobID);
-            }
+            input.value = '';
+            loadJobCables(currentJobID);
         })
         .catch(error => {
             alert('Failed to add cable: ' + error.message);
@@ -797,16 +793,11 @@
     function removeCableFromJob(jobID, cableID) {
         if (!confirm('Remove this cable from the job?')) return;
 
-        fetch('/api/v1/jobs/' + jobID + '/cables/' + cableID, {
+        fetchJSON('/api/v1/jobs/' + jobID + '/cables/' + cableID, {
             method: 'DELETE'
         })
-        .then(response => response.json())
         .then(data => {
-            if (data.error) {
-                alert('Error: ' + data.error);
-            } else {
-                loadJobCables(jobID);
-            }
+            loadJobCables(jobID);
         })
         .catch(error => {
             alert('Failed to remove cable: ' + error.message);
@@ -3129,20 +3120,21 @@
 
     // Functions for managing assigned cables in edit modal
     function loadEditAssignedCables(jobID) {
-        fetch('/api/v1/jobs/' + jobID + '/cables')
-            .then(response => response.json())
+        fetchJSON('/api/v1/jobs/' + jobID + '/cables')
             .then(data => {
                 const cables = data.cables || [];
                 displayEditAssignedCables(cables, jobID);
             })
             .catch(error => {
                 console.error('Error loading cables:', error);
-                document.getElementById('editAssignedCablesList').innerHTML = `
+                const container = document.getElementById('editAssignedCablesList');
+                container.innerHTML = `
                     <div class="rc-alert rc-alert-error rc-alert-sm">
                         <i class="bi bi-exclamation-triangle"></i>
-                        Error loading cables: ${error.message}
+                        <span class="edit-cables-error-message"></span>
                     </div>
                 `;
+                container.querySelector('.edit-cables-error-message').textContent = 'Error loading cables: ' + error.message;
             });
     }
 
@@ -3199,19 +3191,14 @@
             return;
         }
 
-        fetch('/api/v1/jobs/' + jobID + '/cables', {
+        fetchJSON('/api/v1/jobs/' + jobID + '/cables', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cable_id: cableID })
         })
-        .then(response => response.json())
         .then(data => {
-            if (data.error) {
-                alert('Error: ' + data.error);
-            } else {
-                input.value = '';
-                loadEditAssignedCables(jobID);
-            }
+            input.value = '';
+            loadEditAssignedCables(jobID);
         })
         .catch(error => {
             alert('Failed to add cable: ' + error.message);
@@ -3221,16 +3208,11 @@
     function removeCableFromEditJob(jobID, cableID) {
         if (!confirm('Remove this cable from the job?')) return;
 
-        fetch('/api/v1/jobs/' + jobID + '/cables/' + cableID, {
+        fetchJSON('/api/v1/jobs/' + jobID + '/cables/' + cableID, {
             method: 'DELETE'
         })
-        .then(response => response.json())
         .then(data => {
-            if (data.error) {
-                alert('Error: ' + data.error);
-            } else {
-                loadEditAssignedCables(jobID);
-            }
+            loadEditAssignedCables(jobID);
         })
         .catch(error => {
             alert('Failed to remove cable: ' + error.message);
