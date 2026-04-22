@@ -554,10 +554,12 @@ func (r *JobRepository) GetJobCables(jobID uint) ([]models.JobCable, error) {
 			return nil, err
 		}
 
+		// First pass: populate from stored snapshots, collect IDs that need fallback.
+		var missingIDs []int            // cable IDs that still need DB/API lookup
+		missingIdx := map[int][]int{}   // cableID → indices in jobCables slice
+
 		for i := range jobCables {
 			if len(jobCables[i].CableSnapshot) > 0 {
-				// Unmarshal the stored snapshot into the Cable field so callers
-				// receive identical-shaped data regardless of the code path.
 				var cable models.Cable
 				if err := json.Unmarshal(jobCables[i].CableSnapshot, &cable); err == nil {
 					jobCables[i].Cable = &cable
@@ -567,8 +569,7 @@ func (r *JobRepository) GetJobCables(jobID uint) ([]models.JobCable, error) {
 					jobCables[i].JobID, jobCables[i].CableID, err)
 			}
 
-			// Snapshot missing or corrupt – fall back to WarehouseCore API when
-			// a client is configured, then to a local DB preload.
+			// Snapshot missing or corrupt – try WarehouseCore API first.
 			if r.warehouseClient != nil {
 				snap, err := r.warehouseClient.GetCable(jobCables[i].CableID)
 				if err == nil {
@@ -584,11 +585,16 @@ func (r *JobRepository) GetJobCables(jobID uint) ([]models.JobCable, error) {
 							jobCables[i].CableSnapshot = raw
 						}
 					}
+					// Populate all fields from the snapshot so callers receive
+					// complete data regardless of the code path.
 					cable := models.Cable{
-						CableID: snap.CableID,
-						Length:  snap.Length,
-						MM2:     snap.MM2,
-						Name:    snap.Name,
+						CableID:    snap.CableID,
+						Connector1: snap.Connector1,
+						Connector2: snap.Connector2,
+						Type:       snap.Type,
+						Length:     snap.Length,
+						MM2:        snap.MM2,
+						Name:       snap.Name,
 					}
 					jobCables[i].Cable = &cable
 					continue
@@ -597,14 +603,34 @@ func (r *JobRepository) GetJobCables(jobID uint) ([]models.JobCable, error) {
 					jobCables[i].CableID, err)
 			}
 
-			// Final fallback: local DB join (original behaviour)
-			var cable models.Cable
+			// Collect for batched DB fallback.
+			cid := jobCables[i].CableID
+			if _, seen := missingIdx[cid]; !seen {
+				missingIDs = append(missingIDs, cid)
+			}
+			missingIdx[cid] = append(missingIdx[cid], i)
+		}
+
+		// Second pass: single batched DB query for all cables still missing data.
+		if len(missingIDs) > 0 {
+			var cables []models.Cable
 			if err := r.db.
 				Preload("Connector1Info").
 				Preload("Connector2Info").
 				Preload("TypeInfo").
-				First(&cable, jobCables[i].CableID).Error; err == nil {
-				jobCables[i].Cable = &cable
+				Where(`"cableID" IN ?`, missingIDs).
+				Find(&cables).Error; err == nil {
+				cableMap := make(map[int]*models.Cable, len(cables))
+				for idx := range cables {
+					cableMap[cables[idx].CableID] = &cables[idx]
+				}
+				for cid, indices := range missingIdx {
+					if c, ok := cableMap[cid]; ok {
+						for _, i := range indices {
+							jobCables[i].Cable = c
+						}
+					}
+				}
 			}
 		}
 

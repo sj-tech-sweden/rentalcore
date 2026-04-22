@@ -19,4 +19,9 @@
 ALTER TABLE job_cables
     ADD COLUMN IF NOT EXISTS cable_snapshot JSONB;
 
+-- Index on cableID supports:
+--   • the DB fallback path (batched IN-query when snapshots are missing)
+--   • future backfill queries (WHERE "cableID" = ?)
+-- The index will remain useful until the cross-service FK is removed in the
+-- follow-up PR; at that point it can be re-evaluated.
 CREATE INDEX IF NOT EXISTS idx_job_cables_cable_id ON job_cables ("cableID");
