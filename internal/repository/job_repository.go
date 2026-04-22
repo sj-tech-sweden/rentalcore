@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go-barcode-webapp/internal/models"
+	"go-barcode-webapp/internal/services/warehousecore"
 	"log"
 	"strings"
 
@@ -19,7 +21,9 @@ var (
 )
 
 type JobRepository struct {
-	db *Database
+	db                   *Database
+	warehouseClient      *warehousecore.Client
+	cableSnapshotEnabled bool
 }
 
 const jobRepoDebugLogsEnabled = false
@@ -50,6 +54,14 @@ func computeFinalRevenue(revenue, discount float64, discountType string) float64
 
 func NewJobRepository(db *Database) *JobRepository {
 	return &JobRepository{db: db}
+}
+
+// WithWarehouseCoreClient attaches a WarehouseCore client and enables the
+// cable-snapshot dual-mode feature flag on this repository instance.
+func (r *JobRepository) WithWarehouseCoreClient(client *warehousecore.Client, enabled bool) *JobRepository {
+	r.warehouseClient = client
+	r.cableSnapshotEnabled = enabled
+	return r
 }
 
 // GetDB returns the underlying database connection
@@ -532,6 +544,74 @@ func (r *JobRepository) UnassignDevice(jobID uint, deviceID string) error {
 
 func (r *JobRepository) GetJobCables(jobID uint) ([]models.JobCable, error) {
 	var jobCables []models.JobCable
+
+	if r.cableSnapshotEnabled {
+		// Snapshot mode: fetch rows (with cable_snapshot) and populate Cable from
+		// the stored JSONB when available; only fall back to a DB join when the
+		// snapshot is absent.
+		err := r.db.Where("jobid = ?", jobID).Find(&jobCables).Error
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range jobCables {
+			if len(jobCables[i].CableSnapshot) > 0 {
+				// Unmarshal the stored snapshot into the Cable field so callers
+				// receive identical-shaped data regardless of the code path.
+				var cable models.Cable
+				if err := json.Unmarshal(jobCables[i].CableSnapshot, &cable); err == nil {
+					jobCables[i].Cable = &cable
+					continue
+				}
+				log.Printf("warn: failed to unmarshal cable_snapshot for jobid=%d cableID=%d: %v",
+					jobCables[i].JobID, jobCables[i].CableID, err)
+			}
+
+			// Snapshot missing or corrupt – fall back to WarehouseCore API when
+			// a client is configured, then to a local DB preload.
+			if r.warehouseClient != nil {
+				snap, err := r.warehouseClient.GetCable(jobCables[i].CableID)
+				if err == nil {
+					raw, merr := json.Marshal(snap)
+					if merr == nil {
+						// Persist the newly fetched snapshot so future reads are
+						// served from the JSONB column.
+						if uerr := r.db.Model(&jobCables[i]).
+							Update("cable_snapshot", raw).Error; uerr != nil {
+							log.Printf("warn: failed to store cable_snapshot for cableID=%d: %v",
+								jobCables[i].CableID, uerr)
+						} else {
+							jobCables[i].CableSnapshot = raw
+						}
+					}
+					cable := models.Cable{
+						CableID: snap.CableID,
+						Length:  snap.Length,
+						MM2:     snap.MM2,
+						Name:    snap.Name,
+					}
+					jobCables[i].Cable = &cable
+					continue
+				}
+				log.Printf("warn: WarehouseCore GetCable(%d) failed: %v; falling back to DB",
+					jobCables[i].CableID, err)
+			}
+
+			// Final fallback: local DB join (original behaviour)
+			var cable models.Cable
+			if err := r.db.
+				Preload("Connector1Info").
+				Preload("Connector2Info").
+				Preload("TypeInfo").
+				First(&cable, jobCables[i].CableID).Error; err == nil {
+				jobCables[i].Cable = &cable
+			}
+		}
+
+		return jobCables, nil
+	}
+
+	// Default mode: original cross-service DB join
 	err := r.db.Where("jobid = ?", jobID).
 		Preload("Cable.Connector1Info").
 		Preload("Cable.Connector2Info").
@@ -573,6 +653,21 @@ func (r *JobRepository) AssignCable(jobID uint, cableID int) error {
 		JobID:   int(jobID),
 		CableID: cableID,
 	}
+
+	// When the cable-snapshot feature is enabled, eagerly fetch and store the
+	// snapshot from WarehouseCore so new assignments are immediately backed by
+	// denormalized data.  Failures are non-fatal: the row is still created and
+	// the backfill script can populate the snapshot later.
+	if r.cableSnapshotEnabled && r.warehouseClient != nil {
+		if snap, err := r.warehouseClient.GetCable(cableID); err == nil {
+			if raw, merr := json.Marshal(snap); merr == nil {
+				jobCable.CableSnapshot = raw
+			}
+		} else {
+			log.Printf("warn: GetCable(%d) during AssignCable failed: %v", cableID, err)
+		}
+	}
+
 	if err := r.db.Create(jobCable).Error; err != nil {
 		// Handle race condition: duplicate PK insert
 		var pgErr *pgconn.PgError

@@ -41,6 +41,7 @@ import (
 	"go-barcode-webapp/internal/repository"
 	"go-barcode-webapp/internal/services"
 	pdfsvc "go-barcode-webapp/internal/services/pdf"
+	"go-barcode-webapp/internal/services/warehousecore"
 
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -368,6 +369,15 @@ func main() {
 
 	// Initialize repositories
 	jobRepo := repository.NewJobRepository(db)
+
+	// Wire WarehouseCore client for cable-snapshot dual-mode (feature flag).
+	if cfg.WarehouseCore.BaseURL != "" {
+		whClient := warehousecore.NewClientWithConfig(cfg.WarehouseCore.BaseURL, cfg.WarehouseCore.APIKey)
+		jobRepo.WithWarehouseCoreClient(whClient, cfg.Features.CableSnapshotEnabled)
+		if cfg.Features.CableSnapshotEnabled {
+			log.Printf("Cable snapshot mode enabled (WarehouseCore: %s)", cfg.WarehouseCore.BaseURL)
+		}
+	}
 	deviceRepo := repository.NewDeviceRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
 	statusRepo := repository.NewStatusRepository(db)

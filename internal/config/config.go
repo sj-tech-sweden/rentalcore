@@ -12,16 +12,17 @@ import (
 )
 
 type Config struct {
-	Database DatabaseConfig `json:"database"`
-	Server   ServerConfig   `json:"server"`
-	UI       UIConfig       `json:"ui"`
-	Email    EmailConfig    `json:"email"`
-	Invoice  InvoiceConfig  `json:"invoice"`
-	PDF      PDFConfig      `json:"pdf"`
-	Security SecurityConfig `json:"security"`
-	Logging  LoggingConfig  `json:"logging"`
-	Backup   BackupConfig   `json:"backup"`
-	Features FeaturesConfig `json:"features"`
+	Database      DatabaseConfig      `json:"database"`
+	Server        ServerConfig        `json:"server"`
+	UI            UIConfig            `json:"ui"`
+	Email         EmailConfig         `json:"email"`
+	Invoice       InvoiceConfig       `json:"invoice"`
+	PDF           PDFConfig           `json:"pdf"`
+	Security      SecurityConfig      `json:"security"`
+	Logging       LoggingConfig       `json:"logging"`
+	Backup        BackupConfig        `json:"backup"`
+	Features      FeaturesConfig      `json:"features"`
+	WarehouseCore WarehouseCoreConfig `json:"warehousecore"`
 }
 
 type DatabaseConfig struct {
@@ -125,6 +126,19 @@ type FeaturesConfig struct {
 	// ScannerEnabled field deprecated - scanner functionality removed
 	// Kept for backwards compatibility with existing config files
 	ScannerEnabled bool `json:"scanner_enabled"`
+
+	// CableSnapshotEnabled switches GetJobCables to prefer cable_snapshot JSONB
+	// stored in job_cables over a live cross-service DB join to cables table.
+	// Enable this after running tools/backfill_cable_snapshots.go.
+	CableSnapshotEnabled bool `json:"cable_snapshot_enabled"`
+}
+
+// WarehouseCoreConfig holds connection details for the WarehouseCore service.
+// BaseURL and APIKey are read from environment variables WAREHOUSECORE_BASE_URL
+// and WAREHOUSECORE_API_KEY (which take priority over the JSON config file).
+type WarehouseCoreConfig struct {
+	BaseURL string `json:"base_url"`
+	APIKey  string `json:"api_key"`
 }
 
 func LoadConfig(path string) (*Config, error) {
@@ -256,7 +270,12 @@ func getDefaultConfig() *Config {
 			Path:          "backups/",
 		},
 		Features: FeaturesConfig{
-			ScannerEnabled: false, // Scanner functionality removed
+			ScannerEnabled:       false, // Scanner functionality removed
+			CableSnapshotEnabled: false, // Enable after running backfill script
+		},
+		WarehouseCore: WarehouseCoreConfig{
+			BaseURL: "",
+			APIKey:  "",
 		},
 	}
 }
@@ -380,6 +399,17 @@ func loadFromEnvironment(config *Config) {
 	// Scanner functionality has been removed, but we keep the config field for backwards compatibility
 	if scannerEnabled := os.Getenv("SCANNER_ENABLED"); scannerEnabled != "" {
 		config.Features.ScannerEnabled = false // Always false, scanner removed
+	}
+
+	// WarehouseCore configuration
+	if baseURL := os.Getenv("WAREHOUSECORE_BASE_URL"); baseURL != "" {
+		config.WarehouseCore.BaseURL = baseURL
+	}
+	if apiKey := os.Getenv("WAREHOUSECORE_API_KEY"); apiKey != "" {
+		config.WarehouseCore.APIKey = apiKey
+	}
+	if flag := os.Getenv("CABLE_SNAPSHOT_ENABLED"); flag != "" {
+		config.Features.CableSnapshotEnabled = flag == "true" || flag == "1"
 	}
 }
 
