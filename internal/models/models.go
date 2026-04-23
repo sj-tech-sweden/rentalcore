@@ -223,7 +223,7 @@ func (JobDevice) TableName() string {
 type JobCable struct {
 	JobID         int             `json:"jobID" gorm:"primaryKey;column:jobid"`
 	CableID       int             `json:"cableID" gorm:"primaryKey;column:cableID"`
-	CableSnapshot json.RawMessage `json:"cable_snapshot,omitempty" gorm:"type:jsonb;column:cable_snapshot"`
+	CableSnapshot json.RawMessage `json:"-" gorm:"type:jsonb;column:cable_snapshot"`
 	Job           *Job            `json:"job,omitempty" gorm:"foreignKey:JobID"`
 	Cable         *Cable          `json:"cable,omitempty" gorm:"foreignKey:CableID"`
 }

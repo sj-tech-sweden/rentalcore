@@ -570,39 +570,10 @@ func (r *JobRepository) GetJobCables(jobID uint) ([]models.JobCable, error) {
 					jobCables[i].JobID, jobCables[i].CableID, unmarshalErr)
 			}
 
-			// Snapshot missing or corrupt – try WarehouseCore API first.
-			if r.warehouseClient != nil {
-				snap, err := r.warehouseClient.GetCable(jobCables[i].CableID)
-				if err == nil {
-					raw, merr := json.Marshal(snap)
-					if merr == nil {
-						// Persist the newly fetched snapshot so future reads are
-						// served from the JSONB column.
-						if uerr := r.db.Model(&jobCables[i]).
-							Update("cable_snapshot", raw).Error; uerr != nil {
-							log.Printf("warn: failed to store cable_snapshot for cableID=%d: %v",
-								jobCables[i].CableID, uerr)
-						} else {
-							jobCables[i].CableSnapshot = raw
-						}
-					}
-					// Populate all fields from the snapshot so callers receive
-					// complete data regardless of the code path.
-					cable := models.Cable{
-						CableID:    snap.CableID,
-						Connector1: snap.Connector1,
-						Connector2: snap.Connector2,
-						Type:       snap.Type,
-						Length:     snap.Length,
-						MM2:        snap.MM2,
-						Name:       snap.Name,
-					}
-					jobCables[i].Cable = &cable
-					continue
-				}
-				log.Printf("warn: WarehouseCore GetCable(%d) failed: %v; falling back to DB",
-					jobCables[i].CableID, err)
-			}
+			// Snapshot missing or corrupt – collect for batched DB fallback.
+			// API fill-in is intentionally not performed on the read path to keep
+			// GetJobCables read-only and avoid per-request WarehouseCore latency.
+			// Missing snapshots are populated by AssignCable or the backfill tool.
 
 			// Collect for batched DB fallback.
 			cid := jobCables[i].CableID

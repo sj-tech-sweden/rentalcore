@@ -382,7 +382,7 @@ func main() {
 	} else {
 		jobRepo.WithWarehouseCoreClient(nil, cfg.Features.CableSnapshotEnabled)
 		if cfg.Features.CableSnapshotEnabled {
-			log.Printf("Warning: Cable snapshot mode enabled without WarehouseCore BaseURL; using snapshot-only mode (no API fallback)")
+			log.Printf("Warning: Cable snapshot mode enabled without WarehouseCore BaseURL; API fill-in is disabled and missing snapshots will fall back to the DB join path")
 		}
 	}
 	deviceRepo := repository.NewDeviceRepository(db)

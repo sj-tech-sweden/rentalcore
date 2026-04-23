@@ -2,8 +2,6 @@ package repository
 
 import (
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"go-barcode-webapp/internal/models"
@@ -108,25 +106,18 @@ func TestGetJobCables_SnapshotMode_UsesStoredSnapshot(t *testing.T) {
 	}
 }
 
-func TestGetJobCables_SnapshotMode_FetchesFromWarehouseWhenMissing(t *testing.T) {
+// TestGetJobCables_SnapshotMode_FallsBackToDBWhenSnapshotMissing verifies that
+// when snapshot mode is enabled but a cable has no stored snapshot, GetJobCables
+// falls back to the local DB preload path without calling WarehouseCore.
+// API fill-in is intentionally disabled on the read path; missing snapshots are
+// populated by AssignCable or the backfill tool.
+func TestGetJobCables_SnapshotMode_FallsBackToDBWhenSnapshotMissing(t *testing.T) {
 	db := newTestJobDB(t)
 	seedCableAndJobCable(t, db, nil) // no snapshot stored
 
-	// Spin up a fake WarehouseCore server
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/admin/cables/1" {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"cableID":1,"connector1":1,"connector2":2,"typ":1,"length":5.0}`)) //nolint:errcheck
-	}))
-	defer srv.Close()
-
-	whClient := warehousecore.NewClientWithConfig(srv.URL, "")
-
 	repo := NewJobRepository(db)
-	repo.WithWarehouseCoreClient(whClient, true)
+	repo.cableSnapshotEnabled = true
+	// No warehouse client configured; GetJobCables must not call WarehouseCore.
 
 	cables, err := repo.GetJobCables(1)
 	if err != nil {
@@ -136,43 +127,40 @@ func TestGetJobCables_SnapshotMode_FetchesFromWarehouseWhenMissing(t *testing.T)
 		t.Fatalf("GetJobCables() returned %d rows, want 1", len(cables))
 	}
 	if cables[0].Cable == nil {
-		t.Fatal("Cable should be populated from WarehouseCore API")
+		t.Fatal("Cable should be populated via DB preload fallback")
 	}
 	if cables[0].Cable.CableID != 1 {
 		t.Errorf("Cable.CableID = %d, want 1", cables[0].Cable.CableID)
 	}
-	// Snapshot should now be persisted
-	if len(cables[0].CableSnapshot) == 0 {
-		t.Error("CableSnapshot should be stored after successful API fetch")
+	// Snapshot should NOT be written during a read-only GetJobCables call.
+	if len(cables[0].CableSnapshot) != 0 {
+		t.Error("CableSnapshot should not be persisted on a read path")
 	}
 }
 
+// TestGetJobCables_SnapshotMode_FallsBackToDBWhenAPIFails verifies that when a
+// WarehouseCore client is configured but a snapshot is absent, GetJobCables uses
+// the local DB join and does NOT call the API (GetJobCables is read-only).
 func TestGetJobCables_SnapshotMode_FallsBackToDBWhenAPIFails(t *testing.T) {
 	db := newTestJobDB(t)
 	seedCableAndJobCable(t, db, nil)
 
-	// Fake WarehouseCore that always fails
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
-	}))
-	defer srv.Close()
-
-	whClient := warehousecore.NewClientWithConfig(srv.URL, "")
-
+	// Wire a warehouse client; GetJobCables should not call it regardless.
 	repo := NewJobRepository(db)
-	repo.WithWarehouseCoreClient(whClient, true)
+	repo.WithWarehouseCoreClient(
+		warehousecore.NewClientWithConfig("http://127.0.0.1:0", ""),
+		true,
+	)
 
-	// Should fall back to DB preload without returning an error
 	cables, err := repo.GetJobCables(1)
 	if err != nil {
-		t.Fatalf("GetJobCables() should not error on API failure, got: %v", err)
+		t.Fatalf("GetJobCables() error: %v", err)
 	}
 	if len(cables) != 1 {
 		t.Fatalf("GetJobCables() returned %d rows, want 1", len(cables))
 	}
-	// Cable is populated via DB fallback
 	if cables[0].Cable == nil {
-		t.Error("Cable should be populated from DB fallback when API fails")
+		t.Error("Cable should be populated from DB fallback")
 	}
 }
 
