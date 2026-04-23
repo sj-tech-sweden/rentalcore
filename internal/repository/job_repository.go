@@ -574,8 +574,6 @@ func (r *JobRepository) GetJobCables(jobID uint) ([]models.JobCable, error) {
 			// API fill-in is intentionally not performed on the read path to keep
 			// GetJobCables read-only and avoid per-request WarehouseCore latency.
 			// Missing snapshots are populated by AssignCable or the backfill tool.
-
-			// Collect for batched DB fallback.
 			cid := jobCables[i].CableID
 			if _, seen := missingIdx[cid]; !seen {
 				missingIDs = append(missingIDs, cid)
