@@ -7,9 +7,11 @@
 //
 //	go run ./tools/backfill_cable_snapshots [flags]
 //
-// Required environment variables:
+// Required environment variables (at least one of):
 //
 //	WAREHOUSECORE_BASE_URL                            – e.g. https://wh.example.com
+//	WAREHOUSECORE_DOMAIN                              – e.g. wh.example.com (fallback when BASE_URL is unset;
+//	                                                   http used for localhost/127.0.0.1, https otherwise)
 //
 // Optional environment variables:
 //
@@ -85,7 +87,7 @@ func main() {
 
 	cfg := backfillConfig{
 		dbDSN:       buildDSN(),
-		whBaseURL:   strings.TrimSuffix(mustEnv("WAREHOUSECORE_BASE_URL"), "/"),
+		whBaseURL:   resolveWarehouseCoreBaseURL(),
 		whAPIKey:    os.Getenv("WAREHOUSECORE_API_KEY"),
 		batchSize:   *batchSize,
 		dryRun:      *dryRun,
@@ -381,6 +383,25 @@ func mustEnv(key string) string {
 		log.Fatalf("required environment variable %s is not set", key)
 	}
 	return v
+}
+
+// resolveWarehouseCoreBaseURL returns the WarehouseCore base URL from
+// WAREHOUSECORE_BASE_URL, falling back to WAREHOUSECORE_DOMAIN with the same
+// protocol selection used by the application config (http for localhost/
+// 127.0.0.1, https otherwise). Exits if neither variable is set.
+func resolveWarehouseCoreBaseURL() string {
+	if v := os.Getenv("WAREHOUSECORE_BASE_URL"); v != "" {
+		return strings.TrimSuffix(v, "/")
+	}
+	if domain := os.Getenv("WAREHOUSECORE_DOMAIN"); domain != "" {
+		protocol := "https"
+		if strings.Contains(domain, "localhost") || strings.Contains(domain, "127.0.0.1") {
+			protocol = "http"
+		}
+		return fmt.Sprintf("%s://%s", protocol, strings.TrimSuffix(domain, "/"))
+	}
+	log.Fatalf("required environment variable WAREHOUSECORE_BASE_URL (or WAREHOUSECORE_DOMAIN) is not set")
+	return "" // unreachable
 }
 
 func getEnvOrDefault(key, def string) string {
