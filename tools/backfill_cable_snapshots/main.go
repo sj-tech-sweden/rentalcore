@@ -306,8 +306,8 @@ func isRetryable(err error) bool {
 	return ok
 }
 
-func doFetch(client *http.Client, url, apiKey string, cableID int) (*cableSnapshot, error) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+func doFetch(client *http.Client, requestURL, apiKey string, cableID int) (*cableSnapshot, error) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, requestURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -318,7 +318,7 @@ func doFetch(client *http.Client, url, apiKey string, cableID int) (*cableSnapsh
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, retryableError{fmt.Errorf("GET %s: %w", url, err)}
+		return nil, retryableError{fmt.Errorf("GET %s: %w", requestURL, err)}
 	}
 	defer func() {
 		_, _ = io.Copy(io.Discard, resp.Body)
