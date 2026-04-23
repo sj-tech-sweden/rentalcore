@@ -128,12 +128,11 @@ func (c *Client) GetCable(id int) (*CableSnapshot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetch cable %d: %w", id, err)
 	}
-	defer resp.Body.Close()
-
-	// Always drain the body to allow connection reuse.
-	if resp.StatusCode != http.StatusOK {
+	defer func() {
+		// Drain any remaining body content to allow keep-alive connection reuse.
 		_, _ = io.Copy(io.Discard, resp.Body)
-	}
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("%w (id=%d)", ErrCableNotFound, id)
@@ -179,10 +178,12 @@ func (c *Client) GetRentalEquipment() ([]RentalEquipmentItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetch rental equipment: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
-		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, fmt.Errorf("rental equipment API returned status %d", resp.StatusCode)
 	}
 

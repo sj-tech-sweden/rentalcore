@@ -282,12 +282,10 @@ func doFetch(client *http.Client, url, apiKey string, cableID int) (*cableSnapsh
 	if err != nil {
 		return nil, retryableError{fmt.Errorf("GET %s: %w", url, err)}
 	}
-	defer resp.Body.Close()
-
-	// Always drain the body to allow connection reuse.
-	if resp.StatusCode != http.StatusOK {
+	defer func() {
 		_, _ = io.Copy(io.Discard, resp.Body)
-	}
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("cable %d not found (404)", cableID)
