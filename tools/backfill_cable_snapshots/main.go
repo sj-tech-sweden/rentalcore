@@ -9,12 +9,15 @@
 //
 // Required environment variables:
 //
-//	DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD   – PostgreSQL connection
 //	WAREHOUSECORE_BASE_URL                            – e.g. https://wh.example.com
 //
 // Optional environment variables:
 //
 //	WAREHOUSECORE_API_KEY                             – admin API key for authenticated WarehouseCore requests
+//	DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD,
+//	DB_SSLMODE                                        – PostgreSQL connection settings; if unset,
+//	                                                   buildDSN() uses the defaults (localhost:5432,
+//	                                                   db=rentalcore, user=rentalcore, sslmode=disable)
 //
 // Optional flags:
 //
@@ -168,10 +171,18 @@ func run(cfg backfillConfig) error {
 				continue
 			}
 
-			if err := updateSnapshot(db, row.jobID, row.cableID, raw); err != nil {
+			updated, err := updateSnapshot(db, row.jobID, row.cableID, raw)
+			if err != nil {
 				log.Printf("ERROR update jobid=%d cableID=%d: %v", row.jobID, row.cableID, err)
 				totalFailed++
 				skipSet[[2]int{row.jobID, row.cableID}] = true
+				continue
+			}
+			if !updated {
+				// Another writer (AssignCable or a parallel backfill) already
+				// populated the snapshot between fetchBatch's SELECT and this
+				// UPDATE – log as a skip, not a success.
+				log.Printf("SKIP already populated jobid=%d cableID=%d", row.jobID, row.cableID)
 				continue
 			}
 
@@ -228,7 +239,10 @@ func fetchBatch(db *sql.DB, limit, afterJobID, afterCableID int) ([]jobCableRow,
 // updateSnapshot persists the JSONB blob to the database only when the row
 // does not yet have a snapshot, guarding against concurrent writes from
 // AssignCable or a parallel backfill run.
-func updateSnapshot(db *sql.DB, jobID, cableID int, raw json.RawMessage) error {
+// Returns (true, nil) when the row was updated, (false, nil) when it was
+// already populated by another writer (treated as a benign no-op), and
+// (false, err) on DB errors.
+func updateSnapshot(db *sql.DB, jobID, cableID int, raw json.RawMessage) (bool, error) {
 	const q = `UPDATE job_cables
 	              SET cable_snapshot = $1
 	            WHERE jobid = $2
@@ -240,13 +254,16 @@ func updateSnapshot(db *sql.DB, jobID, cableID int, raw json.RawMessage) error {
 
 	result, err := db.ExecContext(ctx, q, raw, jobID, cableID)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	// rowsAffected == 0 means another writer already populated the snapshot
-	// after fetchBatch selected this row.  Treat it as a benign no-op.
-	_, _ = result.RowsAffected()
-	return nil
+	n, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	// n == 0: another writer already populated cable_snapshot between
+	// fetchBatch's SELECT and this UPDATE – treat as a benign no-op.
+	return n > 0, nil
 }
 
 // fetchCableWithRetry calls GET /admin/cables/{id} with exponential back-off

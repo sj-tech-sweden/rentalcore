@@ -373,8 +373,11 @@ func main() {
 	// Wire WarehouseCore client for cable-snapshot dual-mode (feature flag).
 	// Snapshot mode can operate without a WarehouseCore client if all rows are
 	// already backfilled; the client is only needed to fetch missing snapshots.
+	// A single client instance is shared by jobRepo and jobHandler so they use
+	// the same base URL, API key, and HTTP connection pool.
+	var whClient *warehousecore.Client
 	if cfg.WarehouseCore.BaseURL != "" {
-		whClient := warehousecore.NewClientWithConfig(cfg.WarehouseCore.BaseURL, cfg.WarehouseCore.APIKey)
+		whClient = warehousecore.NewClientWithConfig(cfg.WarehouseCore.BaseURL, cfg.WarehouseCore.APIKey)
 		jobRepo.WithWarehouseCoreClient(whClient, cfg.Features.CableSnapshotEnabled)
 		if cfg.Features.CableSnapshotEnabled {
 			log.Printf("Cable snapshot mode enabled (WarehouseCore: %s)", cfg.WarehouseCore.BaseURL)
@@ -414,6 +417,11 @@ func main() {
 
 	// Initialize handlers
 	jobHandler := handlers.NewJobHandler(jobRepo, jobPackageRepo, deviceRepo, customerRepo, statusRepo, jobCategoryRepo, jobEditSessionRepo, jobHistoryService, rentalEquipmentRepo)
+	// Share the same WarehouseCore client (nil when BaseURL is unconfigured) so
+	// jobHandler and jobRepo use identical config and HTTP connection pool.
+	if whClient != nil {
+		jobHandler.SetWarehouseClient(whClient)
+	}
 	jobHistoryHandler := handlers.NewJobHistoryHandler(db.DB)
 	deviceHandler := handlers.NewDeviceHandler(deviceRepo, barcodeService, productRepo)
 	customerHandler := handlers.NewCustomerHandler(customerRepo)
