@@ -19,7 +19,10 @@ func newTestJobDB(t *testing.T) *Database {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	sqlDB, _ := db.DB()
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("get sql DB: %v", err)
+	}
 	sqlDB.SetMaxOpenConns(1)
 	sqlDB.SetMaxIdleConns(1)
 
