@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/gin-gonic/gin v1.9.1
-	github.com/jackc/pgx/v5 v5.9.0
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	github.com/makiuchi-d/gozxing v0.1.1
