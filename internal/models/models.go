@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -220,10 +221,11 @@ func (JobDevice) TableName() string {
 
 // JobCable represents a cable assigned to a job
 type JobCable struct {
-	JobID   int    `json:"jobID" gorm:"primaryKey;column:jobid"`
-	CableID int    `json:"cableID" gorm:"primaryKey;column:cableID"`
-	Job     *Job   `json:"job,omitempty" gorm:"foreignKey:JobID"`
-	Cable   *Cable `json:"cable,omitempty" gorm:"foreignKey:CableID"`
+	JobID         int             `json:"jobID" gorm:"primaryKey;column:jobid"`
+	CableID       int             `json:"cableID" gorm:"primaryKey;column:cableID"`
+	CableSnapshot json.RawMessage `json:"-" gorm:"type:jsonb;column:cable_snapshot"`
+	Job           *Job            `json:"job,omitempty" gorm:"foreignKey:JobID"`
+	Cable         *Cable          `json:"cable,omitempty" gorm:"foreignKey:CableID"`
 }
 
 func (JobCable) TableName() string {

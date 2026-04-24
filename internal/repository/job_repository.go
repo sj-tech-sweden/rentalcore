@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go-barcode-webapp/internal/models"
+	"go-barcode-webapp/internal/services/warehousecore"
 	"log"
 	"strings"
 
@@ -19,7 +21,9 @@ var (
 )
 
 type JobRepository struct {
-	db *Database
+	db                   *Database
+	warehouseClient      *warehousecore.Client
+	cableSnapshotEnabled bool
 }
 
 const jobRepoDebugLogsEnabled = false
@@ -50,6 +54,14 @@ func computeFinalRevenue(revenue, discount float64, discountType string) float64
 
 func NewJobRepository(db *Database) *JobRepository {
 	return &JobRepository{db: db}
+}
+
+// WithWarehouseCoreClient attaches a WarehouseCore client and enables the
+// cable-snapshot dual-mode feature flag on this repository instance.
+func (r *JobRepository) WithWarehouseCoreClient(client *warehousecore.Client, enabled bool) *JobRepository {
+	r.warehouseClient = client
+	r.cableSnapshotEnabled = enabled
+	return r
 }
 
 // GetDB returns the underlying database connection
@@ -532,12 +544,160 @@ func (r *JobRepository) UnassignDevice(jobID uint, deviceID string) error {
 
 func (r *JobRepository) GetJobCables(jobID uint) ([]models.JobCable, error) {
 	var jobCables []models.JobCable
+
+	if r.cableSnapshotEnabled {
+		// Snapshot mode: fetch rows (with cable_snapshot) and populate Cable from
+		// the stored JSONB when available; only fall back to a DB join when the
+		// snapshot is absent.
+		err := r.db.Where("jobid = ?", jobID).Find(&jobCables).Error
+		if err != nil {
+			return nil, err
+		}
+
+		// First pass: populate from stored snapshots, collect IDs that need fallback.
+		var missingIDs []int          // cable IDs that still need DB/API lookup
+		missingIdx := map[int][]int{} // cableID → indices in jobCables slice
+
+		for i := range jobCables {
+			if len(jobCables[i].CableSnapshot) > 0 {
+				var cable models.Cable
+				unmarshalErr := json.Unmarshal(jobCables[i].CableSnapshot, &cable)
+				if unmarshalErr == nil {
+					jobCables[i].Cable = &cable
+					continue
+				}
+				log.Printf("warn: failed to unmarshal cable_snapshot for jobid=%d cableID=%d: %v",
+					jobCables[i].JobID, jobCables[i].CableID, unmarshalErr)
+			}
+
+			// Snapshot missing or corrupt – collect for batched DB fallback.
+			// API fill-in is intentionally not performed on the read path to keep
+			// GetJobCables read-only and avoid per-request WarehouseCore latency.
+			// Missing snapshots are populated by AssignCable or the backfill tool.
+			cid := jobCables[i].CableID
+			if _, seen := missingIdx[cid]; !seen {
+				missingIDs = append(missingIDs, cid)
+			}
+			missingIdx[cid] = append(missingIdx[cid], i)
+		}
+
+		// Second pass: single batched DB query for all cables still missing data.
+		if len(missingIDs) > 0 {
+			var cables []models.Cable
+			if err := r.db.
+				Preload("Connector1Info").
+				Preload("Connector2Info").
+				Preload("TypeInfo").
+				Where(`"cableID" IN ?`, missingIDs).
+				Find(&cables).Error; err != nil {
+				return nil, fmt.Errorf("db fallback for cables %v: %w", missingIDs, err)
+			}
+			cableMap := make(map[int]*models.Cable, len(cables))
+			for idx := range cables {
+				cableMap[cables[idx].CableID] = &cables[idx]
+			}
+			for cid, indices := range missingIdx {
+				if c, ok := cableMap[cid]; ok {
+					for _, i := range indices {
+						jobCables[i].Cable = c
+					}
+				}
+			}
+		}
+
+		// Third pass: populate TypeInfo/Connector1Info/Connector2Info for cables
+		// that were loaded from snapshots or the WarehouseCore API.  Those cables
+		// only carry scalar ID fields; the lookup tables (cable_connectors,
+		// cable_types) are local and cheap to query in bulk.
+		if err := r.populateCableLookups(jobCables); err != nil {
+			log.Printf("warn: failed to populate cable lookup relations: %v", err)
+			// Non-fatal – callers receive the cable data, just without name strings.
+		}
+
+		return jobCables, nil
+	}
+
+	// Default mode: original cross-service DB join
 	err := r.db.Where("jobid = ?", jobID).
 		Preload("Cable.Connector1Info").
 		Preload("Cable.Connector2Info").
 		Preload("Cable.TypeInfo").
 		Find(&jobCables).Error
 	return jobCables, err
+}
+
+// populateCableLookups enriches Cable objects that were populated from JSONB
+// snapshots or the WarehouseCore API.  Those cables carry only scalar IDs for
+// Connector1, Connector2, and Type; this helper resolves them via two batched
+// queries against the local cable_connectors and cable_types lookup tables.
+// Cables already having TypeInfo populated (e.g. from the DB preload fallback)
+// are skipped.
+func (r *JobRepository) populateCableLookups(jobCables []models.JobCable) error {
+	// Collect unique IDs from cables that need lookup.
+	var connectorIDs, typeIDs []int
+	connectorSeen := map[int]bool{}
+	typeSeen := map[int]bool{}
+
+	for i := range jobCables {
+		c := jobCables[i].Cable
+		if c == nil || c.TypeInfo != nil {
+			continue // nil or already populated via DB preload
+		}
+		if !connectorSeen[c.Connector1] {
+			connectorSeen[c.Connector1] = true
+			connectorIDs = append(connectorIDs, c.Connector1)
+		}
+		if !connectorSeen[c.Connector2] {
+			connectorSeen[c.Connector2] = true
+			connectorIDs = append(connectorIDs, c.Connector2)
+		}
+		if !typeSeen[c.Type] {
+			typeSeen[c.Type] = true
+			typeIDs = append(typeIDs, c.Type)
+		}
+	}
+
+	if len(connectorIDs) == 0 && len(typeIDs) == 0 {
+		return nil
+	}
+
+	connectorMap := make(map[int]*models.CableConnector)
+	typeMap := make(map[int]*models.CableType)
+
+	if len(connectorIDs) > 0 {
+		var connectors []models.CableConnector
+		if err := r.db.Where(`"cable_connectorsID" IN ?`, connectorIDs).
+			Find(&connectors).Error; err != nil {
+			return fmt.Errorf("load cable connectors: %w", err)
+		}
+		for idx := range connectors {
+			connectorMap[connectors[idx].CableConnectorsID] = &connectors[idx]
+		}
+	}
+
+	if len(typeIDs) > 0 {
+		var cableTypes []models.CableType
+		if err := r.db.Where(`"cable_typesID" IN ?`, typeIDs).
+			Find(&cableTypes).Error; err != nil {
+			return fmt.Errorf("load cable types: %w", err)
+		}
+		for idx := range cableTypes {
+			typeMap[cableTypes[idx].CableTypesID] = &cableTypes[idx]
+		}
+	}
+
+	// Attach lookup data to cables that were loaded from snapshots/API.
+	for i := range jobCables {
+		c := jobCables[i].Cable
+		if c == nil || c.TypeInfo != nil {
+			continue
+		}
+		c.Connector1Info = connectorMap[c.Connector1]
+		c.Connector2Info = connectorMap[c.Connector2]
+		c.TypeInfo = typeMap[c.Type]
+	}
+
+	return nil
 }
 
 func (r *JobRepository) AssignCable(jobID uint, cableID int) error {
@@ -573,6 +733,21 @@ func (r *JobRepository) AssignCable(jobID uint, cableID int) error {
 		JobID:   int(jobID),
 		CableID: cableID,
 	}
+
+	// When the cable-snapshot feature is enabled, eagerly fetch and store the
+	// snapshot from WarehouseCore so new assignments are immediately backed by
+	// denormalized data.  Failures are non-fatal: the row is still created and
+	// the backfill script can populate the snapshot later.
+	if r.cableSnapshotEnabled && r.warehouseClient != nil {
+		if snap, err := r.warehouseClient.GetCable(cableID); err == nil {
+			if raw, merr := json.Marshal(snap); merr == nil {
+				jobCable.CableSnapshot = raw
+			}
+		} else {
+			log.Printf("warn: GetCable(%d) during AssignCable failed: %v", cableID, err)
+		}
+	}
+
 	if err := r.db.Create(jobCable).Error; err != nil {
 		// Handle race condition: duplicate PK insert
 		var pgErr *pgconn.PgError

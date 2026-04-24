@@ -192,6 +192,13 @@ func (h *JobHandler) SetTwentyService(svc *services.TwentyService) {
 	h.twentyService = svc
 }
 
+// SetWarehouseClient replaces the default env-driven WarehouseCore client with
+// an explicitly configured one. Call this from main.go to share the same client
+// instance (and config) used by JobRepository.
+func (h *JobHandler) SetWarehouseClient(client *warehousecore.Client) {
+	h.warehouseClient = client
+}
+
 // processRentalEquipmentSelections handles adding/updating rental equipment to a job
 func (h *JobHandler) processRentalEquipmentSelections(jobID uint, selections []RentalEquipmentSelection) error {
 	if h.rentalEquipRepo == nil {

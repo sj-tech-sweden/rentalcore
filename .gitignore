@@ -77,6 +77,7 @@ build/
 *.dylib
 server
 server.exe
+backfill_cable_snapshots
 
 # Go specific
 vendor/
